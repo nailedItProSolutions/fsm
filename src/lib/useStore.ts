@@ -1,0 +1,49 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { FSMStore } from './store';
+import { Client, Property, Job, Invoice, Estimate } from '@/types';
+
+export function useFSMStore() {
+  const store = FSMStore.getInstance();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => {
+      setTick((prev) => prev + 1);
+    });
+    return unsubscribe;
+  }, [store]);
+
+  return {
+    clients: store.getClients(),
+    properties: store.getProperties(),
+    jobs: store.getJobs(),
+    invoices: store.getInvoices(),
+    estimates: store.getEstimates(),
+    getClientById: (id: string) => store.getClientById(id),
+    getJobById: (id: string) => store.getJobById(id),
+    getEstimateById: (id: string) => store.getEstimateById(id),
+    getInvoiceById: (id: string) => store.getInvoiceById(id),
+    getTechnicians: () => store.getTechnicians(),
+    getPropertiesByClientId: (clientId: string) => store.getPropertiesByClientId(clientId),
+    getPropertyById: (id: string) => store.getPropertyById(id),
+    getJobsByClientId: (clientId: string) => store.getJobsByClientId(clientId),
+    getJobsByTechId: (techId: string) => store.getJobsByTechId(techId),
+    getInvoicesByClientId: (clientId: string) => store.getInvoicesByClientId(clientId),
+    getEstimatesByClientId: (clientId: string) => store.getEstimatesByClientId(clientId),
+    addClient: (clientData: any, initialProperty?: any) => store.addClient(clientData, initialProperty),
+    addProperty: (propertyData: any) => store.addProperty(propertyData),
+    addJob: (jobData: any) => store.addJob(jobData),
+    updateJob: (jobId: string, updates: any) => store.updateJob(jobId, updates),
+    updateJobStatus: (jobId: string, status: any) => store.updateJobStatus(jobId, status),
+    toggleChecklistItem: (jobId: string, itemId: string) => store.toggleChecklistItem(jobId, itemId),
+    addJobPhoto: (jobId: string, type: 'before' | 'after', photoUrl: string) => store.addJobPhoto(jobId, type, photoUrl),
+    addEstimate: (estimateData: any) => store.addEstimate(estimateData),
+    updateEstimateStatus: (id: string, status: any) => store.updateEstimateStatus(id, status),
+    convertEstimateToJob: (estimateId: string, date?: string, techId?: string) => store.convertEstimateToJob(estimateId, date, techId),
+    addInvoice: (invoiceData: any) => store.addInvoice(invoiceData),
+    markInvoicePaid: (invoiceId: string, stripePaymentIntentId?: string) => store.markInvoicePaid(invoiceId, stripePaymentIntentId),
+    resetToDefault: () => store.resetToDefault(),
+  };
+}
