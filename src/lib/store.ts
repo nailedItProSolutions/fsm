@@ -586,6 +586,15 @@ export const INITIAL_ESTIMATES: Estimate[] = [
     status: 'sent',
     validUntil: '2026-10-31',
     createdAt: '2024-03-22T14:30:00Z',
+    marketComparison: {
+      trade: 'plumbing',
+      tradeLabel: 'Plumbing & Bathroom Moisture Remediation',
+      romeLowEstimate: 395.00,
+      romeMedianEstimate: 475.00,
+      romeHighEstimate: 585.00,
+      customerDollarSavings: 41.65,
+      percentBelowMedian: 8.8,
+    },
   },
   {
     id: 'est-203',
@@ -645,7 +654,7 @@ export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
 ];
 
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v6';
+const STORAGE_KEY = 'nailed_it_fsm_store_v7';
 
 export class FSMStore {
   private static instance: FSMStore;

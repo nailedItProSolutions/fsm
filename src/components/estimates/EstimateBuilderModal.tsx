@@ -13,8 +13,11 @@ import {
   Building2, 
   User, 
   CheckCircle2, 
-  Send
+  Send,
+  Calculator,
+  Sparkles
 } from 'lucide-react';
+import { DynamicRepairEstimator } from './DynamicRepairEstimator';
 
 interface EstimateBuilderModalProps {
   isOpen: boolean;
@@ -37,6 +40,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     return d.toISOString().split('T')[0];
   });
   const [taxRate, setTaxRate] = useState(0.07); // 7% Floyd County GA
+  const [showRomeCalculator, setShowRomeCalculator] = useState(false);
+  const [marketComparisonData, setMarketComparisonData] = useState<any | null>(null);
   const [items, setItems] = useState<EstimateItem[]>([
     { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
     { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
@@ -47,6 +52,15 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       setClientId(clients[0].id);
     }
   }, [clients, clientId]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('rome') === 'true') {
+        setShowRomeCalculator(true);
+      }
+    }
+  }, []);
 
   const clientProperties = properties.filter((p) => p.clientId === clientId);
 
@@ -122,6 +136,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       total,
       status,
       validUntil,
+      marketComparison: marketComparisonData || undefined,
     });
 
     if (onSuccess) onSuccess(created.id);
@@ -218,6 +233,62 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Rome, GA Market Pegged Calculator Trigger Card */}
+          <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-[#fdfbf7] flex items-center gap-1.5">
+                  <Calculator className="w-3.5 h-3.5 text-[#c5a059]" />
+                  <span>Rome, GA Dynamic Repair Pricing Calculator</span>
+                </span>
+                <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
+                  5-10% Below Median
+                </span>
+              </div>
+              <p className="text-[11px] text-[#b8b0a5] mt-0.5">
+                Automatically generate standardized labor & materials pegged below local Floyd County rates
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowRomeCalculator(!showRomeCalculator)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
+                showRomeCalculator
+                  ? 'bg-[#c5a059] text-black font-extrabold shadow-md'
+                  : 'bg-[#222222] hover:bg-[#2c2c2c] text-[#c5a059] border border-[#c5a059]/40'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{showRomeCalculator ? 'Hide Pegging Tool' : 'Launch Rome Calculator'}</span>
+            </button>
+          </div>
+
+          {/* Inline Dynamic Repair Estimator */}
+          {showRomeCalculator && (
+            <DynamicRepairEstimator
+              onApplyEstimateItems={(newItems, comparison) => {
+                setItems(newItems);
+                setMarketComparisonData(comparison);
+                setShowRomeCalculator(false);
+              }}
+              onClose={() => setShowRomeCalculator(false)}
+            />
+          )}
+
+          {/* Market Comparison Status Pill if set */}
+          {marketComparisonData && (
+            <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-3 flex justify-between items-center text-xs">
+              <span className="text-emerald-300 font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Estimate pegged to Rome, GA median for {marketComparisonData.tradeLabel}</span>
+              </span>
+              <span className="font-mono text-emerald-400 font-bold">
+                Customer Saves ${marketComparisonData.customerDollarSavings.toFixed(2)} ({marketComparisonData.percentBelowMedian}% below local median)
+              </span>
+            </div>
+          )}
 
           {/* Line Items Table */}
           <div className="border border-[#262626] rounded-xl overflow-hidden bg-[#161616]">

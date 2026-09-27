@@ -14,6 +14,7 @@ import {
   Check, 
   AlertCircle 
 } from 'lucide-react';
+import { ValueProofComparison } from '@/components/estimates/ValueProofComparison';
 
 export default function CustomerEstimateApprovalPage() {
   const params = useParams();
@@ -169,6 +170,17 @@ export default function CustomerEstimateApprovalPage() {
             </div>
           </div>
         </div>
+
+        {/* The Value Proof™ Rome, GA Market Pegging Visual Component */}
+        <ValueProofComparison
+          nailedItTotal={estimate.total}
+          tradeLabel={estimate.marketComparison?.tradeLabel || estimate.items[0]?.description}
+          romeLow={estimate.marketComparison?.romeLowEstimate}
+          romeMedian={estimate.marketComparison?.romeMedianEstimate}
+          romeHigh={estimate.marketComparison?.romeHighEstimate}
+          clientSavings={estimate.marketComparison?.customerDollarSavings}
+          percentBelowMedian={estimate.marketComparison?.percentBelowMedian}
+        />
 
         {/* Digital Approval Card */}
         {!isAlreadyApproved ? (

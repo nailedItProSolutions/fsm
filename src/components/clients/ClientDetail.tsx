@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Client, Property, Job, Invoice } from '@/types';
 import { useFSMStore } from '@/lib/useStore';
@@ -27,6 +27,7 @@ import {
   Sparkles,
   Check
 } from 'lucide-react';
+import { DynamicSubscriptionCalculator } from '@/components/pricing/DynamicSubscriptionCalculator';
 
 interface ClientDetailProps {
   client: Client;
@@ -55,6 +56,16 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
   const jobs = getJobsByClientId(client.id);
   const invoices = getInvoicesByClientId(client.id);
   const subscriptions = getSubscriptionsByClientId(client.id);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('quote') === 'true') {
+        if (properties.length > 0) setSelectedPropIdForSub(properties[0].id);
+        setShowNewSubModal(true);
+      }
+    }
+  }, [properties]);
 
   const getStatusBadge = (status: Job['status']) => {
     switch (status) {
@@ -717,115 +728,18 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
             </div>
           )}
 
-          {/* Modal to Enroll New Property in Subscription */}
+          {/* Dynamic "Fair & Profitable" Subscription Calculator Modal */}
           {showNewSubModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-              <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-                <div className="p-5 border-b border-[#222222] bg-[#141414] flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div className="p-2 rounded-xl bg-[#c5a059]/20 text-[#c5a059]">
-                      <Repeat className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm text-[#fdfbf7]">
-                        Enroll Property in $99/mo Maintenance
-                      </h3>
-                      <p className="text-[11px] text-[#b8b0a5]">Stripe Recurring Billing Setup</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowNewSubModal(false)}
-                    className="text-[#78716c] hover:text-[#fdfbf7]"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-[#b8b0a5]">Plan:</span>
-                      <span className="font-bold text-[#fdfbf7]">Preventative Maintenance Plan</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#b8b0a5]">Billing Rate:</span>
-                      <span className="font-bold text-[#c5a059] font-mono">$99.00 / Month</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#b8b0a5]">Billing Provider:</span>
-                      <span className="text-white font-semibold flex items-center gap-1">
-                        <span className="text-[#635BFF] font-bold">Stripe</span> Billing
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#b8b0a5] mb-1.5">
-                      Select Property to Cover *
-                    </label>
-                    <select
-                      value={selectedPropIdForSub}
-                      onChange={(e) => setSelectedPropIdForSub(e.target.value)}
-                      className="w-full bg-[#181818] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
-                    >
-                      {properties.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.label ? `${p.label} - ` : ''}{p.street}, {p.city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="text-[11px] text-[#78716c] space-y-1 bg-[#141414] p-3 rounded-lg border border-[#222222]">
-                    <div className="font-semibold text-[#b8b0a5]">Automated Dispatch Guarantee:</div>
-                    <p>
-                      Upon renewal, our system automatically schedules quarterly HVAC filter swaps, safety alarm tests, and plumbing inspections into your dispatch calendar.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-end space-x-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowNewSubModal(false)}
-                      className="px-4 py-2 text-xs font-semibold text-[#b8b0a5] hover:text-[#fdfbf7]"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const prop = properties.find((p) => p.id === selectedPropIdForSub) || properties[0];
-                        if (prop) {
-                          const now = new Date();
-                          const nextMonth = new Date();
-                          nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-                          createSubscription({
-                            clientId: client.id,
-                            clientName: client.isCompany ? client.companyName || `${client.firstName} ${client.lastName}` : `${client.firstName} ${client.lastName}`,
-                            propertyId: prop.id,
-                            propertyAddress: `${prop.street}, ${prop.city}, ${prop.state}`,
-                            planName: 'Preventative Maintenance Plan ($99/mo)',
-                            amount: 99.00,
-                            billingInterval: 'month',
-                            status: 'active',
-                            stripeSubscriptionId: `sub_stripe_${Date.now()}`,
-                            currentPeriodStart: now.toISOString(),
-                            currentPeriodEnd: nextMonth.toISOString(),
-                            autoDispatchEnabled: true,
-                          });
-                          setShowNewSubModal(false);
-                        }
-                      }}
-                      className="bg-[#c5a059] hover:bg-[#d4b068] text-black font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-1.5"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Confirm & Activate Subscription</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <DynamicSubscriptionCalculator
+              clientId={client.id}
+              clientName={client.isCompany ? (client.companyName || `${client.firstName} ${client.lastName}`) : `${client.firstName} ${client.lastName}`}
+              isOpen={showNewSubModal}
+              preselectedPropertyId={selectedPropIdForSub || (properties.length > 0 ? properties[0].id : undefined)}
+              onClose={() => setShowNewSubModal(false)}
+              onSuccess={() => {
+                setShowNewSubModal(false);
+              }}
+            />
           )}
         </div>
       )}

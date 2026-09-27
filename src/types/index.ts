@@ -108,6 +108,15 @@ export interface Estimate {
   convertedToJobId?: string;
   validUntil: string;
   createdAt: string;
+  marketComparison?: {
+    trade: string;
+    tradeLabel: string;
+    romeLowEstimate: number;
+    romeMedianEstimate: number;
+    romeHighEstimate: number;
+    customerDollarSavings: number;
+    percentBelowMedian: number;
+  };
 }
 
 export interface InvoiceItem {
@@ -157,4 +166,23 @@ export interface Subscription {
   autoDispatchEnabled: boolean;
   lastDispatchedJobId?: string;
   createdAt: string;
+  tier?: 'essentials' | 'plus' | 'premium';
+  pricingVariables?: {
+    sqFt: number;
+    beds: number;
+    baths: number;
+    hvacUnits: number;
+    kitchens: number;
+    propertyAgeYears: number;
+    inspectionGrade: string;
+  };
+  selectedAddOns?: Array<{
+    id: string;
+    name: string;
+    category: string;
+    billingType: 'monthly_recurring' | 'one_time';
+    nailedItPrice: number;
+  }>;
+  monthlyAddOnsTotal?: number;
+  oneTimeAddOnsTotal?: number;
 }

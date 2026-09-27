@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useFSMStore } from '@/lib/useStore';
 import { Estimate } from '@/types';
@@ -28,6 +28,15 @@ export const EstimatesList: React.FC = () => {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [convertedJobAlert, setConvertedJobAlert] = useState<{ estNum: string; jobNum: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('new') === 'true') {
+        setIsBuilderOpen(true);
+      }
+    }
+  }, []);
 
   const filteredEstimates = useMemo(() => {
     if (filterStatus === 'all') return estimates;
