@@ -21,23 +21,40 @@ import {
   DollarSign, 
   ArrowLeft,
   Wrench,
-  ChevronRight
+  ChevronRight,
+  Repeat,
+  ShieldCheck,
+  Sparkles,
+  Check
 } from 'lucide-react';
 
 interface ClientDetailProps {
   client: Client;
   onBack?: () => void;
+  initialTab?: 'properties' | 'history' | 'billing' | 'subscriptions' | 'notes';
 }
 
-export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack }) => {
-  const { getPropertiesByClientId, getJobsByClientId, getInvoicesByClientId } = useFSMStore();
+export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, initialTab }) => {
+  const { 
+    getPropertiesByClientId, 
+    getJobsByClientId, 
+    getInvoicesByClientId,
+    getSubscriptionsByClientId,
+    createSubscription,
+    cancelSubscription,
+    triggerSubscriptionRenewal
+  } = useFSMStore();
 
-  const [activeTab, setActiveTab] = useState<'properties' | 'history' | 'billing' | 'notes'>('properties');
+  const [activeTab, setActiveTab] = useState<'properties' | 'history' | 'billing' | 'subscriptions' | 'notes'>(initialTab || 'properties');
   const [showAddProperty, setShowAddProperty] = useState(false);
+  const [showNewSubModal, setShowNewSubModal] = useState(false);
+  const [selectedPropIdForSub, setSelectedPropIdForSub] = useState('');
+  const [renewalNotice, setRenewalNotice] = useState<{ jobNum: string; invNum: string; subId: string } | null>(null);
 
   const properties = getPropertiesByClientId(client.id);
   const jobs = getJobsByClientId(client.id);
   const invoices = getInvoicesByClientId(client.id);
+  const subscriptions = getSubscriptionsByClientId(client.id);
 
   const getStatusBadge = (status: Job['status']) => {
     switch (status) {
@@ -192,6 +209,23 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack }) =>
           >
             <DollarSign className="w-4 h-4" />
             <span>Invoices & Billing ({invoices.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('subscriptions')}
+            className={`pb-3 border-b-2 flex items-center space-x-2 transition ${
+              activeTab === 'subscriptions'
+                ? 'border-[#c5a059] text-[#c5a059]'
+                : 'border-transparent text-[#b8b0a5] hover:text-[#fdfbf7]'
+            }`}
+          >
+            <Repeat className="w-4 h-4 text-[#FF8A00]" />
+            <span>Subscriptions ({subscriptions.length})</span>
+            {subscriptions.length > 0 && (
+              <span className="bg-[#c5a059]/20 text-[#c5a059] text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
+                $99/mo
+              </span>
+            )}
           </button>
 
           <button
@@ -477,6 +511,322 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack }) =>
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Subscriptions Tab (Module 1: Stripe Recurring Memberships) */}
+      {activeTab === 'subscriptions' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-1">
+                <Repeat className="w-4 h-4 text-[#FF8A00]" />
+                <span>Stripe Billing & Automated Maintenance</span>
+              </div>
+              <h2 className="text-xl font-bold font-heading text-[#fdfbf7]">
+                Recurring Preventative Maintenance ($99/mo)
+              </h2>
+              <p className="text-xs text-[#b8b0a5] mt-1 max-w-2xl">
+                Active subscriptions automatically renew monthly via Stripe. Each renewal triggers an automatic preventative maintenance inspection job into the <span className="text-[#FF8A00] font-semibold">Unscheduled queue</span> of the Dispatch Board.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                if (properties.length > 0) {
+                  setSelectedPropIdForSub(properties[0].id);
+                }
+                setShowNewSubModal(true);
+              }}
+              className="bg-[#c5a059] hover:bg-[#d4b068] text-black text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2 flex-shrink-0"
+            >
+              <Plus className="w-4 h-4 text-black" />
+              <span>Enroll New Property ($99/mo)</span>
+            </button>
+          </div>
+
+          {/* Renewal Event Success Alert */}
+          {renewalNotice && (
+            <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-lg animate-in fade-in">
+              <div className="flex items-center space-x-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <div>
+                  <div className="font-bold text-emerald-300">
+                    Stripe Subscription Renewal Successfully Triggered!
+                  </div>
+                  <div className="text-emerald-200/80 text-[11px] mt-0.5">
+                    Generated renewal invoice <span className="font-mono font-bold text-white">{renewalNotice.invNum}</span> ($99.00 Paid) and auto-dispatched <span className="font-mono font-bold text-[#c5a059]">{renewalNotice.jobNum}</span> to the Unscheduled Board.
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                <Link
+                  href="/dashboard/schedule"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg transition text-[11px] flex items-center space-x-1"
+                >
+                  <span>Open Dispatch Board →</span>
+                </Link>
+                <button
+                  onClick={() => setRenewalNotice(null)}
+                  className="text-emerald-400 hover:text-white px-2 py-1 text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Subscriptions List */}
+          {subscriptions.length === 0 ? (
+            <div className="bg-[#111111] border border-[#222222] rounded-2xl p-8 text-center space-y-4">
+              <Repeat className="w-12 h-12 text-[#78716c] mx-auto opacity-50" />
+              <div className="max-w-md mx-auto">
+                <h3 className="text-base font-bold text-[#fdfbf7] font-heading">
+                  No Active Preventative Maintenance Memberships
+                </h3>
+                <p className="text-xs text-[#b8b0a5] mt-1.5">
+                  Enroll this client into the $99/month preventative maintenance plan to automate quarterly HVAC filter changes, plumbing safety checks, and smoke detector testing.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (properties.length > 0) setSelectedPropIdForSub(properties[0].id);
+                  setShowNewSubModal(true);
+                }}
+                className="bg-[#c5a059] hover:bg-[#d4b068] text-black font-bold text-xs px-5 py-2.5 rounded-xl transition inline-flex items-center space-x-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Enroll in $99/mo Maintenance Membership</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {subscriptions.map((sub) => {
+                const isActive = sub.status === 'active';
+                const property = properties.find((p) => p.id === sub.propertyId);
+
+                return (
+                  <div
+                    key={sub.id}
+                    className={`bg-[#111111] border rounded-2xl p-6 shadow-xl transition space-y-4 ${
+                      isActive ? 'border-[#2a2a2a] hover:border-[#c5a059]/40' : 'border-red-900/40 opacity-70'
+                    }`}
+                  >
+                    {/* Top Subscription Row */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-[#222222]">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#c5a059] bg-[#c5a059]/10 px-2.5 py-0.5 rounded border border-[#c5a059]/30">
+                            Stripe Billing
+                          </span>
+                          <h3 className="font-bold text-base text-[#fdfbf7] font-heading">
+                            {sub.planName}
+                          </h3>
+                        </div>
+                        <div className="text-xs text-[#b8b0a5] mt-1 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-[#FF8A00]" />
+                          <span>Covered Property: <strong className="text-[#fdfbf7]">{sub.propertyAddress}</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <div className="text-right">
+                          <div className="text-base font-bold font-mono text-[#c5a059]">${sub.amount.toFixed(2)}/mo</div>
+                          <div className="text-[10px] text-[#78716c]">Billed Monthly</div>
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full border inline-flex items-center gap-1 ${
+                            isActive
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                              : 'bg-red-500/10 text-red-400 border-red-500/30'
+                          }`}
+                        >
+                          {isActive && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>}
+                          {sub.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Metadata Details */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-[#161616] p-4 rounded-xl border border-[#242424]">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-[#78716c]">Stripe Subscription ID</span>
+                        <div className="font-mono text-[#fdfbf7] text-xs mt-0.5 truncate">
+                          {sub.stripeSubscriptionId}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-[#78716c]">Current Billing Cycle</span>
+                        <div className="text-[#b8b0a5] text-xs mt-0.5">
+                          {new Date(sub.currentPeriodStart).toLocaleDateString()} — {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-[#78716c]">Dispatch Automation</span>
+                        <div className="text-emerald-400 font-semibold text-xs mt-0.5 flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Unscheduled Queue Auto-Trigger</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions & Simulation Trigger */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-1">
+                      <div className="text-[11px] text-[#78716c]">
+                        Floyd County Preventative Maintenance Program
+                      </div>
+
+                      <div className="flex items-center space-x-2.5 w-full sm:w-auto">
+                        {isActive && (
+                          <>
+                            <button
+                              onClick={() => {
+                                const res = triggerSubscriptionRenewal(sub.id);
+                                if (res) {
+                                  setRenewalNotice({
+                                    jobNum: res.job.jobNumber,
+                                    invNum: res.renewalInvoice.invoiceNumber,
+                                    subId: sub.id,
+                                  });
+                                }
+                              }}
+                              className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-[#c5a059] border border-[#c5a059]/40 hover:border-[#c5a059] font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-sm"
+                              title="Simulate successful monthly Stripe renewal and auto-generate an Unscheduled Preventative Maintenance job"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-[#FF8A00]" />
+                              <span>Simulate Monthly Renewal (Auto-Dispatch)</span>
+                            </button>
+
+                            <button
+                              onClick={() => cancelSubscription(sub.id)}
+                              className="text-xs text-[#78716c] hover:text-red-400 font-semibold px-2 py-1.5 transition"
+                            >
+                              Cancel Plan
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Modal to Enroll New Property in Subscription */}
+          {showNewSubModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+              <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                <div className="p-5 border-b border-[#222222] bg-[#141414] flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="p-2 rounded-xl bg-[#c5a059]/20 text-[#c5a059]">
+                      <Repeat className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-[#fdfbf7]">
+                        Enroll Property in $99/mo Maintenance
+                      </h3>
+                      <p className="text-[11px] text-[#b8b0a5]">Stripe Recurring Billing Setup</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowNewSubModal(false)}
+                    className="text-[#78716c] hover:text-[#fdfbf7]"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-[#b8b0a5]">Plan:</span>
+                      <span className="font-bold text-[#fdfbf7]">Preventative Maintenance Plan</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#b8b0a5]">Billing Rate:</span>
+                      <span className="font-bold text-[#c5a059] font-mono">$99.00 / Month</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#b8b0a5]">Billing Provider:</span>
+                      <span className="text-white font-semibold flex items-center gap-1">
+                        <span className="text-[#635BFF] font-bold">Stripe</span> Billing
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#b8b0a5] mb-1.5">
+                      Select Property to Cover *
+                    </label>
+                    <select
+                      value={selectedPropIdForSub}
+                      onChange={(e) => setSelectedPropIdForSub(e.target.value)}
+                      className="w-full bg-[#181818] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+                    >
+                      {properties.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.label ? `${p.label} - ` : ''}{p.street}, {p.city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="text-[11px] text-[#78716c] space-y-1 bg-[#141414] p-3 rounded-lg border border-[#222222]">
+                    <div className="font-semibold text-[#b8b0a5]">Automated Dispatch Guarantee:</div>
+                    <p>
+                      Upon renewal, our system automatically schedules quarterly HVAC filter swaps, safety alarm tests, and plumbing inspections into your dispatch calendar.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowNewSubModal(false)}
+                      className="px-4 py-2 text-xs font-semibold text-[#b8b0a5] hover:text-[#fdfbf7]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prop = properties.find((p) => p.id === selectedPropIdForSub) || properties[0];
+                        if (prop) {
+                          const now = new Date();
+                          const nextMonth = new Date();
+                          nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+                          createSubscription({
+                            clientId: client.id,
+                            clientName: client.isCompany ? client.companyName || `${client.firstName} ${client.lastName}` : `${client.firstName} ${client.lastName}`,
+                            propertyId: prop.id,
+                            propertyAddress: `${prop.street}, ${prop.city}, ${prop.state}`,
+                            planName: 'Preventative Maintenance Plan ($99/mo)',
+                            amount: 99.00,
+                            billingInterval: 'month',
+                            status: 'active',
+                            stripeSubscriptionId: `sub_stripe_${Date.now()}`,
+                            currentPeriodStart: now.toISOString(),
+                            currentPeriodEnd: nextMonth.toISOString(),
+                            autoDispatchEnabled: true,
+                          });
+                          setShowNewSubModal(false);
+                        }
+                      }}
+                      className="bg-[#c5a059] hover:bg-[#d4b068] text-black font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Confirm & Activate Subscription</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

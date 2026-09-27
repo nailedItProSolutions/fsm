@@ -302,28 +302,30 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
               );
             })}
 
-            {/* Unassigned Queue Swimlane */}
-            {filteredJobs.filter(j => !j.assignedTechId).length > 0 && (
-              <div className="grid grid-cols-12 p-4 items-center bg-[#1a1414] hover:bg-[#201818] transition">
+            {/* Unassigned & Unscheduled Maintenance Queue Swimlane */}
+            {filteredJobs.filter(j => !j.assignedTechId || j.status === 'unscheduled').length > 0 && (
+              <div className="grid grid-cols-12 p-4 items-center bg-[#1a1414] hover:bg-[#201818] transition border-t border-red-950/60">
                 <div className="col-span-3 flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-red-950/60 border border-red-800 text-red-400 flex items-center justify-center font-bold text-xs">
-                    ?
+                  <div className="w-10 h-10 rounded-full bg-amber-950/60 border border-amber-600 text-amber-400 flex items-center justify-center font-bold text-xs">
+                    ⏳
                   </div>
                   <div>
-                    <div className="font-bold text-sm text-red-300">Unassigned Dispatch Queue</div>
-                    <div className="text-[11px] text-red-400">Needs technician allocation</div>
+                    <div className="font-bold text-sm text-amber-300">Unscheduled & PM Queue</div>
+                    <div className="text-[11px] text-amber-400/80">Awaiting technician allocation</div>
                   </div>
                 </div>
                 <div className="col-span-9 grid grid-cols-4 gap-3">
-                  {filteredJobs.filter(j => !j.assignedTechId).map((job) => (
+                  {filteredJobs.filter(j => !j.assignedTechId || j.status === 'unscheduled').map((job) => (
                     <div
                       key={job.id}
                       onClick={() => setSelectedJob(job)}
-                      className="bg-[#181818] border-l-4 border-red-500 p-3 rounded-lg shadow-sm hover:bg-[#222222] cursor-pointer transition space-y-1"
+                      className="bg-[#181818] border-l-4 border-amber-500 p-3 rounded-lg shadow-sm hover:bg-[#222222] cursor-pointer transition space-y-1"
                     >
                       <div className="flex justify-between items-start">
-                        <span className="font-mono text-[10px] font-bold text-red-400">{job.jobNumber}</span>
-                        <span className="text-[9px] bg-red-900/40 text-red-300 px-1.5 py-0.5 rounded font-bold">UNASSIGNED</span>
+                        <span className="font-mono text-[10px] font-bold text-amber-400">{job.jobNumber}</span>
+                        <span className="text-[9px] bg-amber-900/40 text-amber-300 px-1.5 py-0.5 rounded font-bold uppercase">
+                          {job.title.includes('Preventative') ? 'AUTO PM' : 'UNSCHEDULED'}
+                        </span>
                       </div>
                       <h4 className="font-bold text-xs text-[#fdfbf7] truncate">{job.title}</h4>
                       <div className="text-[11px] text-[#b8b0a5] truncate">{job.clientName}</div>

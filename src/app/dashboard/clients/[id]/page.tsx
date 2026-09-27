@@ -1,19 +1,21 @@
 'use client';
 
-import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useFSMStore } from '@/lib/useStore';
 import { ClientDetail } from '@/components/clients/ClientDetail';
 import Link from 'next/link';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 
-export default function ClientDetailPage() {
+function ClientDetailContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { getClientById } = useFSMStore();
 
   const clientId = params.id as string;
   const client = getClientById(clientId);
+  const tabParam = searchParams.get('tab') as any;
 
   if (!client) {
     return (
@@ -34,5 +36,19 @@ export default function ClientDetailPage() {
     );
   }
 
-  return <ClientDetail client={client} onBack={() => router.push('/dashboard/clients')} />;
+  return (
+    <ClientDetail
+      client={client}
+      initialTab={tabParam}
+      onBack={() => router.push('/dashboard/clients')}
+    />
+  );
+}
+
+export default function ClientDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-[#78716c]">Loading Client Profile...</div>}>
+      <ClientDetailContent />
+    </Suspense>
+  );
 }

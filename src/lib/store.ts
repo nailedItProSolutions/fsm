@@ -1,6 +1,4 @@
-'use client';
-
-import { Client, Property, Job, Estimate, Invoice, UserProfile } from '@/types';
+import { Client, Property, Job, Estimate, Invoice, UserProfile, Subscription } from '@/types';
 
 // Seed Initial Data
 export const INITIAL_USERS: UserProfile[] = [
@@ -302,6 +300,32 @@ export const INITIAL_JOBS: Job[] = [
     totalAmount: 320.00,
     createdAt: '2024-03-15T09:00:00Z',
   },
+  {
+    id: 'job-pm-1',
+    jobNumber: 'JOB-1048',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-1',
+    propertyAddress: '4512 Oakwood Ave (Bldg A), Rome, GA',
+    title: 'Preventative Maintenance: Quarterly HVAC, Plumbing & Safety Audit',
+    description: 'Automated monthly preventative maintenance service triggered by active $99/mo Stripe subscription renewal [sub_1Oxyz99RomeGa_apex].',
+    status: 'unscheduled',
+    priority: 'medium',
+    scheduledDate: new Date().toISOString().split('T')[0],
+    timeWindowStart: '09:00',
+    timeWindowEnd: '12:00',
+    checklist: [
+      { id: 'c-pm-1', text: 'Replace HVAC air filters & inspect blower cage', done: false },
+      { id: 'c-pm-2', text: 'Test all smoke & carbon monoxide detectors', done: false },
+      { id: 'c-pm-3', text: 'Inspect under-sink plumbing stops & water heater pressure relief valve', done: false },
+      { id: 'c-pm-4', text: 'Exterior perimeter gutter & downspout visual inspection', done: false },
+    ],
+    photosBefore: [],
+    photosAfter: [],
+    notes: 'Auto-dispatched via Stripe Subscription renewal webhook (sub_1Oxyz99RomeGa_apex)',
+    totalAmount: 99.00,
+    createdAt: '2026-09-26T10:00:00Z',
+  },
 ];
 
 export const INITIAL_INVOICES: Invoice[] = [
@@ -415,8 +439,43 @@ export const INITIAL_ESTIMATES: Estimate[] = [
   }
 ];
 
+export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
+  {
+    id: 'sub-101',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-1',
+    propertyAddress: '4512 Oakwood Ave, Rome, GA',
+    planName: 'Preventative Maintenance Plan ($99/mo)',
+    amount: 99.00,
+    billingInterval: 'month',
+    status: 'active',
+    stripeSubscriptionId: 'sub_1Oxyz99RomeGa_apex',
+    currentPeriodStart: '2026-09-01T00:00:00Z',
+    currentPeriodEnd: '2026-10-01T00:00:00Z',
+    autoDispatchEnabled: true,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'sub-102',
+    clientId: 'client-2',
+    clientName: 'Sarah Jenkins',
+    propertyId: 'prop-4',
+    propertyAddress: '742 Evergreen Terrace, Rome, GA',
+    planName: 'Preventative Maintenance Plan ($99/mo)',
+    amount: 99.00,
+    billingInterval: 'month',
+    status: 'active',
+    stripeSubscriptionId: 'sub_1Oxyz99RomeGa_sarah',
+    currentPeriodStart: '2026-09-15T00:00:00Z',
+    currentPeriodEnd: '2026-10-15T00:00:00Z',
+    autoDispatchEnabled: true,
+    createdAt: '2026-03-15T00:00:00Z',
+  }
+];
+
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v1';
+const STORAGE_KEY = 'nailed_it_fsm_store_v2';
 
 export class FSMStore {
   private static instance: FSMStore;
@@ -425,6 +484,7 @@ export class FSMStore {
   private jobs: Job[] = INITIAL_JOBS;
   private invoices: Invoice[] = INITIAL_INVOICES;
   private estimates: Estimate[] = INITIAL_ESTIMATES;
+  private subscriptions: Subscription[] = INITIAL_SUBSCRIPTIONS;
   private users: UserProfile[] = INITIAL_USERS;
   private listeners: Array<() => void> = [];
 
@@ -439,6 +499,7 @@ export class FSMStore {
           this.jobs = parsed.jobs || INITIAL_JOBS;
           this.invoices = parsed.invoices || INITIAL_INVOICES;
           this.estimates = parsed.estimates || INITIAL_ESTIMATES;
+          this.subscriptions = parsed.subscriptions || INITIAL_SUBSCRIPTIONS;
           this.users = parsed.users || INITIAL_USERS;
         }
       } catch (e) {
@@ -465,6 +526,7 @@ export class FSMStore {
             jobs: this.jobs,
             invoices: this.invoices,
             estimates: this.estimates,
+            subscriptions: this.subscriptions,
             users: this.users,
           })
         );
@@ -792,6 +854,141 @@ export class FSMStore {
     }
   }
 
+  // --- Subscriptions (Module 1: Stripe Recurring Memberships) ---
+  public getSubscriptions(): Subscription[] {
+    return [...this.subscriptions];
+  }
+
+  public getSubscriptionById(id: string): Subscription | undefined {
+    return this.subscriptions.find((s) => s.id === id);
+  }
+
+  public getSubscriptionsByClientId(clientId: string): Subscription[] {
+    return this.subscriptions.filter((s) => s.clientId === clientId);
+  }
+
+  public createSubscription(
+    subData: Omit<Subscription, 'id' | 'createdAt'>
+  ): Subscription {
+    const subId = `sub-${Date.now()}`;
+    const newSub: Subscription = {
+      ...subData,
+      id: subId,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.subscriptions.unshift(newSub);
+    this.persist();
+    return newSub;
+  }
+
+  public cancelSubscription(id: string) {
+    const sub = this.subscriptions.find((s) => s.id === id);
+    if (sub) {
+      sub.status = 'canceled';
+      this.persist();
+    }
+  }
+
+  public triggerSubscriptionRenewal(subscriptionId: string): { job: Job; renewalInvoice: Invoice } | null {
+    const sub = this.subscriptions.find((s) => s.id === subscriptionId);
+    if (!sub || sub.status !== 'active') return null;
+
+    const now = new Date();
+    // Advance period dates by 1 month
+    const newStart = sub.currentPeriodEnd || now.toISOString();
+    const endDateObj = new Date(newStart);
+    endDateObj.setMonth(endDateObj.getMonth() + 1);
+    const newEnd = endDateObj.toISOString();
+
+    sub.currentPeriodStart = newStart;
+    sub.currentPeriodEnd = newEnd;
+
+    // 1. Generate automated renewal invoice (Stripe $99 paid invoice)
+    const invId = `inv-sub-${Date.now()}`;
+    const invoiceNumber = `INV-${Math.floor(5000 + Math.random() * 4999)}`;
+    const newInv: Invoice = {
+      id: invId,
+      invoiceNumber,
+      jobId: 'sub-recurring',
+      jobNumber: 'STRIPE-SUB',
+      clientId: sub.clientId,
+      clientName: sub.clientName,
+      propertyId: sub.propertyId,
+      propertyAddress: sub.propertyAddress,
+      items: [
+        {
+          id: `item-sub-${Date.now()}`,
+          description: `${sub.planName} - Automated Monthly Maintenance`,
+          quantity: 1,
+          unitPrice: sub.amount,
+          total: sub.amount,
+        },
+      ],
+      subtotal: sub.amount,
+      tax: 0,
+      total: sub.amount,
+      amountPaid: sub.amount,
+      balanceDue: 0,
+      status: 'paid',
+      stripePaymentLink: `https://dashboard.stripe.com/test/subscriptions/${sub.stripeSubscriptionId}`,
+      dueDate: newStart.split('T')[0],
+      paidAt: now.toISOString(),
+      createdAt: now.toISOString(),
+    };
+    this.invoices.unshift(newInv);
+
+    // 2. Automatically generate a new "Preventative Maintenance" job in the "unscheduled" queue
+    const jobId = `job-${Date.now()}`;
+    const jobNumber = `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newJob: Job = {
+      id: jobId,
+      jobNumber,
+      clientId: sub.clientId,
+      clientName: sub.clientName,
+      propertyId: sub.propertyId,
+      propertyAddress: sub.propertyAddress,
+      title: 'Preventative Maintenance: Quarterly HVAC, Plumbing & Safety Audit',
+      description: `Automated monthly preventative maintenance service triggered by active $99/mo Stripe subscription renewal [${sub.stripeSubscriptionId}].`,
+      status: 'unscheduled', // Placed directly into Unscheduled queue on Dispatch Board
+      priority: 'medium',
+      scheduledDate: now.toISOString().split('T')[0],
+      timeWindowStart: '09:00',
+      timeWindowEnd: '12:00',
+      checklist: [
+        { id: `chk-pm-1`, text: 'Replace HVAC air filters & inspect blower cage', done: false },
+        { id: `chk-pm-2`, text: 'Test all smoke & carbon monoxide detectors', done: false },
+        { id: `chk-pm-3`, text: 'Inspect under-sink plumbing stops & water heater pressure relief valve', done: false },
+        { id: `chk-pm-4`, text: 'Exterior perimeter gutter & downspout visual inspection', done: false },
+        { id: `chk-pm-5`, text: 'Lubricate garage door tracks & test auto-reverse safety eye', done: false },
+      ],
+      photosBefore: [],
+      photosAfter: [],
+      invoiceId: invId,
+      notes: `Automated dispatch via Stripe Subscription renewal (${sub.stripeSubscriptionId})`,
+      totalAmount: sub.amount,
+      createdAt: now.toISOString(),
+    };
+    this.jobs.unshift(newJob);
+
+    // Update client active jobs and property history
+    const client = this.clients.find((c) => c.id === sub.clientId);
+    if (client) {
+      client.activeJobsCount = (client.activeJobsCount || 0) + 1;
+      client.totalSpent = (client.totalSpent || 0) + sub.amount;
+    }
+
+    const prop = this.properties.find((p) => p.id === sub.propertyId);
+    if (prop) {
+      prop.serviceHistoryJobIds.push(jobId);
+    }
+
+    sub.lastDispatchedJobId = jobId;
+    this.persist();
+
+    return { job: newJob, renewalInvoice: newInv };
+  }
+
   // Reset demo data helper
   public resetToDefault() {
     this.clients = INITIAL_CLIENTS;
@@ -799,6 +996,7 @@ export class FSMStore {
     this.jobs = INITIAL_JOBS;
     this.invoices = INITIAL_INVOICES;
     this.estimates = INITIAL_ESTIMATES;
+    this.subscriptions = INITIAL_SUBSCRIPTIONS;
     this.users = INITIAL_USERS;
     this.persist();
   }

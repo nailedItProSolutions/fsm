@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'dispatcher' | 'technician';
+export type UserRole = 'admin' | 'dispatcher' | 'technician' | 'client';
 
 export interface UserProfile {
   uid: string;
@@ -136,5 +136,24 @@ export interface Invoice {
   stripePaymentLink?: string;
   dueDate: string;
   paidAt?: string;
+  createdAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  clientId: string;
+  clientName: string;
+  propertyId: string;
+  propertyAddress: string;
+  planName: string; // e.g. "Preventative Maintenance Membership"
+  amount: number;   // 99.00
+  billingInterval: 'month' | 'year';
+  status: 'active' | 'past_due' | 'canceled' | 'trialing';
+  stripeSubscriptionId: string;
+  stripePriceId?: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  autoDispatchEnabled: boolean;
+  lastDispatchedJobId?: string;
   createdAt: string;
 }
