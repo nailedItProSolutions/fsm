@@ -198,6 +198,36 @@ export const INITIAL_CLIENTS: Client[] = [
 
 export const INITIAL_JOBS: Job[] = [
   {
+    id: 'job-emergency-1',
+    jobNumber: 'JOB-1044',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-1',
+    propertyAddress: '4512 Oakwood Ave (Bldg A, Unit 201), Austin, TX',
+    assignedTechId: 'user-tech-1',
+    assignedTechName: 'Mike Rivera',
+    title: '🚨 EMERGENCY: Active Second-Floor Supply Pipe Burst Flooding Unit 101',
+    description: 'Catastrophic water line rupture under bathroom vanity. Main riser shutoff required immediately. Water spreading into unit below.',
+    status: 'in_progress',
+    priority: 'emergency',
+    scheduledDate: new Date().toISOString().split('T')[0],
+    timeWindowStart: '08:00',
+    timeWindowEnd: '10:00',
+    checklist: [
+      { id: 'em-1', text: 'Shut off main water riser in utility closet (Bldg A north)', done: true },
+      { id: 'em-2', text: 'Extract standing water & set commercial dehumidifiers', done: true },
+      { id: 'em-3', text: 'Replace ruptured 1/2" copper supply coupling & pressure test', done: false },
+      { id: 'em-4', text: 'Cut out wet drywall ceiling in Unit 101 below to prevent mold', done: false },
+    ],
+    photosBefore: [
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80',
+    ],
+    photosAfter: [],
+    notes: '24/7 Emergency response dispatched via Twilio SMS to Mike Rivera. Water main key is on utility wall.',
+    totalAmount: 850.00,
+    createdAt: '2026-09-26T08:15:00Z',
+  },
+  {
     id: 'job-1',
     jobNumber: 'JOB-1041',
     clientId: 'client-1',
@@ -615,7 +645,7 @@ export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
 ];
 
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v5';
+const STORAGE_KEY = 'nailed_it_fsm_store_v6';
 
 export class FSMStore {
   private static instance: FSMStore;

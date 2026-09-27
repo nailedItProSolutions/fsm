@@ -14,9 +14,17 @@ import {
   Trash2, 
   CheckCircle2, 
   AlertTriangle,
-  Building2,
   DollarSign,
-  Key
+  Key,
+  Radio,
+  Smartphone,
+  Send,
+  Zap,
+  ChevronRight,
+  ShieldAlert,
+  Building2,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 
 interface NewJobModalProps {
@@ -24,6 +32,7 @@ interface NewJobModalProps {
   onClose: () => void;
   preselectedClientId?: string;
   preselectedPropertyId?: string;
+  initialIsEmergency?: boolean;
   onSuccess?: (jobId: string) => void;
 }
 
@@ -32,6 +41,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
   onClose,
   preselectedClientId,
   preselectedPropertyId,
+  initialIsEmergency = false,
   onSuccess,
 }) => {
   const { clients, properties, getTechnicians, addJob } = useFSMStore();
@@ -39,11 +49,25 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
 
   const [clientId, setClientId] = useState(preselectedClientId || '');
   const [propertyId, setPropertyId] = useState(preselectedPropertyId || '');
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialIsEmergency ? '🚨 EMERGENCY: 24/7 Service Call' : '');
   const [description, setDescription] = useState('');
   const [assignedTechId, setAssignedTechId] = useState('user-tech-1');
   const [status, setStatus] = useState<JobStatus>('scheduled');
-  const [priority, setPriority] = useState<JobPriority>('medium');
+  const [priority, setPriority] = useState<JobPriority>(initialIsEmergency ? 'emergency' : 'medium');
+  const [isEmergency, setIsEmergency] = useState(initialIsEmergency);
+  const [emergencySmsPayload, setEmergencySmsPayload] = useState<{
+    techName: string;
+    techPhone: string;
+    job: any;
+  } | null>(null);
+
+  useEffect(() => {
+    if (initialIsEmergency) {
+      setIsEmergency(true);
+      setPriority('emergency');
+      if (!title) setTitle('🚨 EMERGENCY: 24/7 Service Call');
+    }
+  }, [initialIsEmergency]);
   const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [timeWindowStart, setTimeWindowStart] = useState('09:00');
   const [timeWindowEnd, setTimeWindowEnd] = useState('11:30');
@@ -112,6 +136,8 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
 
     const propAddressString = `${selectedProperty.street} ${selectedProperty.unit ? `(${selectedProperty.unit})` : ''}, ${selectedProperty.city}, ${selectedProperty.state}`;
 
+    const finalPriority = isEmergency ? 'emergency' : priority;
+
     const newJob = addJob({
       clientId: selectedClient.id,
       clientName: clientDisplayName,
@@ -122,7 +148,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
       title,
       description,
       status,
-      priority,
+      priority: finalPriority,
       scheduledDate,
       timeWindowStart,
       timeWindowEnd,
@@ -133,11 +159,167 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
       totalAmount: parseFloat(totalAmount) || 0,
     });
 
-    if (onSuccess) {
-      onSuccess(newJob.id);
+    if (isEmergency || finalPriority === 'emergency') {
+      setEmergencySmsPayload({
+        techName: tech ? tech.displayName : (assignedTechId ? 'Field Tech' : 'Rome On-Call Tech'),
+        techPhone: tech?.phone || '(706) 844-8193',
+        job: newJob,
+      });
+    } else {
+      if (onSuccess) {
+        onSuccess(newJob.id);
+      }
+      onClose();
     }
-    onClose();
   };
+
+  if (emergencySmsPayload) {
+    const job = emergencySmsPayload.job;
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="bg-[#100c0c] text-[#fdfbf7] rounded-3xl shadow-2xl max-w-lg w-full border-2 border-red-500 shadow-red-950/80 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+          {/* Top Banner */}
+          <div className="bg-gradient-to-r from-red-950 via-[#360e0e] to-red-950 p-5 border-b border-red-800/60 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-lg animate-pulse">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-bold text-sm text-white uppercase tracking-wider font-heading">
+                    24/7 Emergency Dispatch Active
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-600 text-white animate-pulse">
+                    Live SMS Sent
+                  </span>
+                </div>
+                <p className="text-xs text-red-200/80">Twilio Programmable SMS Gateway • Automated Field Alert</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (onSuccess) onSuccess(job.id);
+                setEmergencySmsPayload(null);
+                onClose();
+              }}
+              className="text-red-300 hover:text-white p-1 rounded-lg hover:bg-red-900/40 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* Twilio Carrier Delivery Telemetry Bar */}
+            <div className="bg-[#181010] border border-red-900/50 rounded-xl p-3 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-mono text-emerald-400 font-bold">HTTP 200 OK</span>
+                <span className="text-[#a8a095]">|</span>
+                <span className="text-[#c8c0b5] font-mono text-[11px]">SID: SM{job.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16).padEnd(16, '0')}</span>
+              </div>
+              <span className="text-[11px] text-red-400 font-bold bg-red-950/60 px-2 py-0.5 rounded border border-red-800/40">
+                Carrier: Verizon FirstNet
+              </span>
+            </div>
+
+            {/* Recipient Details */}
+            <div className="bg-[#161616] p-3.5 rounded-xl border border-[#2a2a2a] text-xs space-y-1">
+              <div className="flex justify-between text-[#b8b0a5]">
+                <span>Dispatched Technician:</span>
+                <span className="text-white font-bold">{emergencySmsPayload.techName}</span>
+              </div>
+              <div className="flex justify-between text-[#b8b0a5]">
+                <span>Technician Direct Phone:</span>
+                <span className="text-[#c5a059] font-mono">{emergencySmsPayload.techPhone}</span>
+              </div>
+              <div className="flex justify-between text-[#b8b0a5]">
+                <span>Dispatch Mode:</span>
+                <span className="text-red-400 font-bold uppercase tracking-wider text-[10px]">Priority 1 Audio/Vibrate Trigger</span>
+              </div>
+            </div>
+
+            {/* Realistic Smartphone Preview */}
+            <div className="bg-[#050505] rounded-2xl border-4 border-[#333333] shadow-2xl p-4 space-y-3">
+              {/* Phone Status Header */}
+              <div className="flex items-center justify-between text-[10px] text-[#78716c] pb-2 border-b border-[#222222]">
+                <div className="flex items-center space-x-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-red-400" />
+                  <span className="font-bold text-[#b8b0a5]">Messages</span>
+                </div>
+                <span>+1 (706) 555-0199 • Nailed It Dispatch</span>
+                <span className="font-mono text-emerald-400 font-bold">5G LTE</span>
+              </div>
+
+              {/* SMS Speech Bubble */}
+              <div className="bg-gradient-to-br from-[#2b0c0c] to-[#1a0808] border border-red-600/60 rounded-2xl rounded-tl-sm p-4 text-xs space-y-2.5 shadow-lg">
+                <div className="flex items-center space-x-2 text-red-400 font-extrabold text-[11px] uppercase tracking-wider">
+                  <AlertTriangle className="w-4 h-4 shrink-0 animate-bounce" />
+                  <span>🚨 24/7 EMERGENCY WORK ORDER DISPATCH</span>
+                </div>
+
+                <div className="space-y-1 text-white font-mono text-[11px] leading-relaxed">
+                  <div><span className="text-[#a8a095]">WORK ORDER:</span> <span className="font-bold text-[#c5a059]">{job.jobNumber}</span></div>
+                  <div><span className="text-[#a8a095]">CLIENT:</span> <span className="font-bold">{job.clientName}</span></div>
+                  <div><span className="text-[#a8a095]">LOCATION:</span> <span className="font-bold text-amber-200">{job.propertyAddress}</span></div>
+                  <div><span className="text-[#a8a095]">EMERGENCY ISSUE:</span> <span className="font-bold text-red-300">{job.title}</span></div>
+                  {job.description && (
+                    <div><span className="text-[#a8a095]">SCOPE:</span> <span>{job.description}</span></div>
+                  )}
+                  {selectedProperty?.gateCode && (
+                    <div><span className="text-[#a8a095]">GATE / LOCKBOX:</span> <span className="font-bold text-emerald-400">{selectedProperty.gateCode}</span></div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-red-900/60 text-[10px] space-y-1 text-red-200">
+                  <div className="font-bold text-[#c5a059] flex items-center gap-1">
+                    <span>📲 DIRECT MOBILE TECH DISPATCH PORTAL:</span>
+                  </div>
+                  <div className="underline text-blue-400 font-mono break-all">
+                    https://fsm.naileditpropertysolutions.com/mobile/tech?job={job.id}
+                  </div>
+                  <div className="text-[#a8a095] italic text-[9px] pt-1">
+                    Reply &quot;ACK&quot; to confirm on-site transit.
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right text-[10px] text-[#78716c] flex items-center justify-end space-x-1">
+                <Check className="w-3 h-3 text-emerald-400" />
+                <span className="text-emerald-400 font-bold">Delivered</span>
+                <span>• Just now</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+              <a
+                href={`/mobile/tech?job=${job.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-3 px-4 rounded-xl bg-[#222222] hover:bg-[#2e2e2e] text-[#fdfbf7] text-xs font-bold text-center border border-[#3a3a3a] flex items-center justify-center space-x-1.5 transition"
+              >
+                <span>View Tech Mobile View</span>
+                <ExternalLink className="w-3.5 h-3.5 text-[#c5a059]" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onSuccess) onSuccess(job.id);
+                  setEmergencySmsPayload(null);
+                  onClose();
+                }}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-black uppercase tracking-wider text-center shadow-lg shadow-red-950/80 flex items-center justify-center space-x-1.5 transition"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Acknowledge & View Board</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
@@ -221,6 +403,74 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
               </span>
             </div>
           )}
+
+          {/* Emergency / 24-7 Response Toggle Card */}
+          <div
+            className={`p-4 rounded-xl border transition-all ${
+              isEmergency
+                ? 'bg-gradient-to-r from-red-950 via-[#260e0e] to-[#1a0a0a] border-red-500 shadow-xl shadow-red-950/70 ring-2 ring-red-500/30'
+                : 'bg-[#161616] border-[#2a2a2a]'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-start space-x-3">
+                <div
+                  className={`p-2.5 rounded-xl ${
+                    isEmergency
+                      ? 'bg-red-600 text-white animate-bounce shadow-lg shadow-red-900/60'
+                      : 'bg-[#222222] text-[#888888]'
+                  }`}
+                >
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <label
+                      htmlFor="emergency-toggle"
+                      className="text-xs font-black uppercase tracking-wider text-white cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>Emergency / 24-7 Response</span>
+                    </label>
+                    {isEmergency && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white shadow">
+                        Active Alert Mode
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#a8a095] mt-0.5 leading-relaxed">
+                    Flags job with bright red highlighting on Dispatch Board and dispatches instant SMS alert to assigned technician via Twilio.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                id="emergency-toggle"
+                role="switch"
+                aria-checked={isEmergency}
+                onClick={() => {
+                  const next = !isEmergency;
+                  setIsEmergency(next);
+                  if (next) {
+                    setPriority('emergency');
+                    if (!title) setTitle('🚨 EMERGENCY: Active Service Call');
+                  } else if (priority === 'emergency') {
+                    setPriority('medium');
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isEmergency ? 'bg-red-600 ring-2 ring-red-400/50' : 'bg-[#333333]'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    isEmergency ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
 
           {/* Job Title & Scope */}
           <div>
