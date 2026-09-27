@@ -119,7 +119,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
               Management Modules
             </div>
 
-            {navItems.map((item) => {
+            {navItems
+              .filter((item) => !role || item.roles.includes(role))
+              .map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 

@@ -32,7 +32,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/dashboard',
     '/dashboard/:path*',
+    '/vault',
     '/vault/:path*',
     '/login',
   ],

@@ -62,7 +62,7 @@ export function useFSMStore() {
     auditLogs: store.getAuditLogs(),
     getAuditLogs: (limit?: number) => store.getAuditLogs(limit),
     getAuditLogsByEntity: (entityType: any, entityId: string) => store.getAuditLogsByEntity(entityType, entityId),
-    logActivity: (logData: any) => store.logActivity(logData),
+    logActivity: (...args: any[]) => (store.logActivity as Function)(...args),
     resetToDefault: () => store.resetToDefault(),
   };
 }

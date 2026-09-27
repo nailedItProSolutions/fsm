@@ -19,7 +19,9 @@ import {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const rawRedirect = searchParams.get('redirect') || '/dashboard';
+  // Security: only permit relative internal paths to prevent open-redirect attacks
+  const redirectUrl = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard';
   const { loginWithEmail, loginWithEmployeePin, loginAs } = useAuth();
   
   // Auth Mode: 'email' | 'pin'

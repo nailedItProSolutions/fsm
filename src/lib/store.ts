@@ -1510,14 +1510,32 @@ export class FSMStore {
 
     this.subscriptions.unshift(newSub);
     this.persist();
+    this.logActivity({
+      actionType: 'create',
+      entityType: 'subscription',
+      entityId: newSub.id,
+      entityTitle: `${newSub.clientName} – ${newSub.planName}`,
+      description: `Created recurring subscription for ${newSub.clientName}: ${newSub.planName} at $${newSub.amount}/mo`,
+      newState: newSub,
+    });
     return newSub;
   }
 
   public cancelSubscription(id: string) {
     const sub = this.subscriptions.find((s) => s.id === id);
     if (sub) {
+      const prevStatus = sub.status;
       sub.status = 'canceled';
       this.persist();
+      this.logActivity({
+        actionType: 'delete',
+        entityType: 'subscription',
+        entityId: id,
+        entityTitle: `${sub.clientName} – ${sub.planName}`,
+        description: `Cancelled subscription for ${sub.clientName}: ${sub.planName}`,
+        previousState: { status: prevStatus },
+        newState: { status: 'canceled' },
+      });
     }
   }
 

@@ -5,20 +5,23 @@ import { useAuth } from '@/lib/authContext';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AdminVaultView } from '@/components/vault/AdminVaultView';
 import { TechVaultView } from '@/components/vault/TechVaultView';
 import Link from 'next/link';
-import { ShieldAlert, ArrowLeft, Building2 } from 'lucide-react';
+import { ShieldAlert, Building2 } from 'lucide-react';
 
 function VaultContent() {
-  const { user, isAdmin, isTechnician, isClient } = useAuth();
+  const { isAdmin, isTechnician, isClient, role } = useAuth();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const roleParam = searchParams.get('role');
-  const showAdmin = roleParam === 'admin' || (!roleParam && isAdmin);
+  // Dispatchers share the admin (full vault) view
+  const isAdminOrDispatcher = isAdmin || role === 'dispatcher';
+  const showAdmin = roleParam === 'admin' || (!roleParam && isAdminOrDispatcher);
   const showTech = roleParam === 'technician' || (!roleParam && isTechnician);
-  const showClient = roleParam === 'client' || (!roleParam && isClient && !isAdmin && !isTechnician);
+  const showClient = roleParam === 'client' || (!roleParam && isClient && !isAdminOrDispatcher && !isTechnician);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#fdfbf7] flex flex-col antialiased">
@@ -44,7 +47,7 @@ function VaultContent() {
                   className="inline-flex items-center space-x-2 bg-[#c5a059] text-black font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-[#d4b068] transition shadow"
                 >
                   <Building2 className="w-4 h-4" />
-                  <span>Return to Landlord & Investor Portal</span>
+                  <span>Return to Landlord &amp; Investor Portal</span>
                 </Link>
               </div>
             </div>
@@ -54,8 +57,6 @@ function VaultContent() {
     </div>
   );
 }
-
-import { AuthGuard } from '@/components/auth/AuthGuard';
 
 export default function VaultPage() {
   return (
