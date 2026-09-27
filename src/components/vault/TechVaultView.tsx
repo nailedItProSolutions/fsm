@@ -22,7 +22,7 @@ import {
 
 export const TechVaultView: React.FC = () => {
   const { user } = useAuth();
-  const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId, dailyWorkLogs } = useFSMStore();
+  const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId } = useFSMStore();
 
   const currentTechId = user?.role === 'technician' ? user.uid : 'user-tech-1';
   const techDisplayName = user?.role === 'technician' ? user.displayName : 'Mike Rivera (Lead Field Tech)';
@@ -294,7 +294,7 @@ export const TechVaultView: React.FC = () => {
       {viewingPdfTimesheet && (
         <LockedTimesheetPdfModal
           timesheet={viewingPdfTimesheet}
-          logs={dailyWorkLogs.filter((l) => viewingPdfTimesheet.dailyLogIds.includes(l.id))}
+          logs={myDailyLogs.filter((l) => viewingPdfTimesheet.dailyLogIds.includes(l.id))}
           isOpen={Boolean(viewingPdfTimesheet)}
           onClose={() => setViewingPdfTimesheet(null)}
         />

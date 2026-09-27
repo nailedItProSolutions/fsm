@@ -28,6 +28,7 @@ export function useFSMStore() {
     getInvoiceById: (id: string) => store.getInvoiceById(id),
     getSubscriptionById: (id: string) => store.getSubscriptionById(id),
     getTechnicians: () => store.getTechnicians(),
+    technicians: store.getTechnicians(),
     getPropertiesByClientId: (clientId: string) => store.getPropertiesByClientId(clientId),
     getPropertyById: (id: string) => store.getPropertyById(id),
     getJobsByClientId: (clientId: string) => store.getJobsByClientId(clientId),

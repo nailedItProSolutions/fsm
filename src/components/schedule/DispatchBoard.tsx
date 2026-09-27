@@ -68,7 +68,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
 
   useEffect(() => {
     if (initialSmsJobId) {
-      const match = jobs.find((j) => j.id === initialSmsJobId || j.priority === 'emergency');
+      const match = jobs.find((j) => j.id === initialSmsJobId);
       if (match) setSmsPreviewJob(match);
     }
   }, [initialSmsJobId, jobs]);
