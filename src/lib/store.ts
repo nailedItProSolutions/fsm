@@ -1,5 +1,5 @@
-import { Client, Property, Job, Estimate, Invoice, UserProfile, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification } from '@/types';
-import { sortWorkLogsChronologically, aggregateWeeklyTimesheet, verifyWeeklyTimesheet, groupWorkLogsByCalendarWeek } from './ocrEngine';
+import { Client, Property, Job, Estimate, Invoice, UserProfile, UserRole, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification, TimesheetBonus, TimesheetDeduction, AuditLog, AuditActionType, AuditEntityType } from '@/types';
+import { sortWorkLogsChronologically, aggregateWeeklyTimesheet, verifyWeeklyTimesheet, updateTimesheetAudit, groupWorkLogsByCalendarWeek } from './ocrEngine';
 
 // Seed Initial Data
 export const INITIAL_USERS: UserProfile[] = [
@@ -9,6 +9,8 @@ export const INITIAL_USERS: UserProfile[] = [
     displayName: 'Sarah Jenkins (Admin)',
     role: 'admin',
     phone: '(512) 555-0100',
+    employeeId: 'ADMIN-01',
+    pin: '1001',
     active: true,
     createdAt: '2024-01-10T08:00:00Z',
   },
@@ -18,6 +20,8 @@ export const INITIAL_USERS: UserProfile[] = [
     displayName: 'Mike Rivera',
     role: 'technician',
     phone: '(512) 555-0101',
+    employeeId: 'TECH-101',
+    pin: '4592',
     active: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
@@ -27,6 +31,8 @@ export const INITIAL_USERS: UserProfile[] = [
     displayName: 'David Lopez',
     role: 'technician',
     phone: '(512) 555-0102',
+    employeeId: 'TECH-102',
+    pin: '1048',
     active: true,
     createdAt: '2024-02-01T08:00:00Z',
   },
@@ -771,6 +777,30 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
     totalHours: 32.0,
     hourlyRate: 35.0,
     totalGrossPay: 1120.0,
+    bonuses: [
+      {
+        id: 'bonus-101',
+        description: 'Emergency Weekend Water Leak Callout Bonus',
+        amount: 50.0,
+        propertyOwner: 'Apex Property Management',
+        propertyId: 'prop-1',
+      },
+    ],
+    totalBonuses: 50.0,
+    deductions: [
+      {
+        id: 'deduct-101',
+        description: 'Milwaukee M18 Tool Advance Repayment',
+        amount: 100.0,
+        amountPaid: 50.0,
+        remainingBalance: 50.0,
+      },
+    ],
+    totalDeductions: 50.0,
+    netPay: 1120.0, // 1120 gross + 50 bonus - 50 deduction = 1120 net
+    auditConfirmed: true,
+    auditConfirmedAt: '2024-10-21T10:00:00Z',
+    auditConfirmedBy: 'Sarah Jenkins (Admin)',
     status: 'verified_paid',
     locked: true,
     paymentVerification: {
@@ -799,6 +829,12 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
     totalHours: 16.0,
     hourlyRate: 35.0,
     totalGrossPay: 560.0,
+    bonuses: [],
+    totalBonuses: 0,
+    deductions: [],
+    totalDeductions: 0,
+    netPay: 560.0,
+    auditConfirmed: false,
     status: 'pending_review',
     locked: false,
     createdAt: '2024-10-20T18:00:00Z',
@@ -806,8 +842,66 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
   },
 ];
 
+export const INITIAL_AUDIT_LOGS: AuditLog[] = [
+  {
+    id: 'audit-seed-1',
+    employeeId: 'ADMIN-01',
+    employeeName: 'Sarah Jenkins (Admin)',
+    employeeRole: 'admin',
+    actionType: 'payment_verify',
+    entityType: 'timesheet',
+    entityId: 'timesheet-2024-W42-user-tech-1',
+    entityTitle: 'Mike Rivera - Week 42 Payroll',
+    summary: 'Attached verified Check #CHK-94821 and locked weekly timesheet',
+    previousState: { status: 'pending_review', locked: false },
+    newState: { status: 'verified_paid', locked: true, checkNumber: 'CHK-94821' },
+    timestamp: '2024-10-21T14:30:00Z',
+  },
+  {
+    id: 'audit-seed-2',
+    employeeId: 'TECH-101',
+    employeeName: 'Mike Rivera',
+    employeeRole: 'technician',
+    actionType: 'checklist_toggle',
+    entityType: 'job',
+    entityId: 'job-turnover-1',
+    entityTitle: 'JOB-1049: Standardized Make-Ready Protocol',
+    summary: 'Completed turnover checklist item: Re-key Exterior Deadbolts & Master Key Verification',
+    previousState: { checklistItemId: 't-2', done: false },
+    newState: { checklistItemId: 't-2', done: true },
+    timestamp: '2026-09-26T14:15:00Z',
+  },
+  {
+    id: 'audit-seed-3',
+    employeeId: 'ADMIN-01',
+    employeeName: 'Sarah Jenkins (Admin)',
+    employeeRole: 'admin',
+    actionType: 'status_change',
+    entityType: 'job',
+    entityId: 'job-1',
+    entityTitle: 'JOB-1042: Ruptured Copper Pipe Emergency',
+    summary: 'Job status transitioned from unscheduled to in_progress and assigned to Mike Rivera',
+    previousState: { status: 'unscheduled', assignedTechId: null },
+    newState: { status: 'in_progress', assignedTechId: 'user-tech-1' },
+    timestamp: '2026-09-26T09:30:00Z',
+  },
+  {
+    id: 'audit-seed-4',
+    employeeId: 'ADMIN-01',
+    employeeName: 'Sarah Jenkins (Admin)',
+    employeeRole: 'admin',
+    actionType: 'create',
+    entityType: 'client',
+    entityId: 'client-1',
+    entityTitle: 'Apex Property Management',
+    summary: 'Created new commercial client profile for Apex Property Management (David Chen)',
+    newState: { clientId: 'client-1', propertiesCount: 3 },
+    timestamp: '2024-01-12T10:00:00Z',
+  },
+];
+
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v8';
+const STORAGE_KEY = 'nailed_it_fsm_store_v10';
 
 export class FSMStore {
   private static instance: FSMStore;
@@ -820,6 +914,7 @@ export class FSMStore {
   private dailyWorkLogs: DailyWorkLog[] = INITIAL_DAILY_WORK_LOGS;
   private weeklyTimesheets: WeeklyTimesheet[] = INITIAL_WEEKLY_TIMESHEETS;
   private users: UserProfile[] = INITIAL_USERS;
+  private auditLogs: AuditLog[] = INITIAL_AUDIT_LOGS;
   private listeners: Array<() => void> = [];
 
   private constructor() {
@@ -837,6 +932,7 @@ export class FSMStore {
           this.dailyWorkLogs = parsed.dailyWorkLogs || INITIAL_DAILY_WORK_LOGS;
           this.weeklyTimesheets = parsed.weeklyTimesheets || INITIAL_WEEKLY_TIMESHEETS;
           this.users = parsed.users || INITIAL_USERS;
+          this.auditLogs = parsed.auditLogs || INITIAL_AUDIT_LOGS;
         }
       } catch (e) {
         console.error('Failed to load store from localStorage', e);
@@ -866,6 +962,7 @@ export class FSMStore {
             dailyWorkLogs: this.dailyWorkLogs,
             weeklyTimesheets: this.weeklyTimesheets,
             users: this.users,
+            auditLogs: this.auditLogs,
           })
         );
       } catch (e) {
@@ -880,6 +977,99 @@ export class FSMStore {
     return () => {
       this.listeners = this.listeners.filter((l) => l !== cb);
     };
+  }
+
+  // --- Global Audit Logging Engine ---
+  public logActivity(
+    actionTypeOrObj: AuditActionType | {
+      actionType: AuditActionType;
+      entityType: AuditEntityType;
+      entityId: string;
+      summary?: string;
+      description?: string;
+      previousState?: any;
+      newState?: any;
+      entityTitle?: string;
+    },
+    entityType?: AuditEntityType,
+    entityId?: string,
+    summary?: string,
+    previousState?: any,
+    newState?: any,
+    entityTitle?: string
+  ): AuditLog {
+    let actionType: AuditActionType;
+    let finalEntityType: AuditEntityType;
+    let finalEntityId: string;
+    let finalSummary: string;
+    let finalPrev: any;
+    let finalNext: any;
+    let finalTitle: string | undefined;
+
+    if (typeof actionTypeOrObj === 'object' && actionTypeOrObj !== null) {
+      actionType = actionTypeOrObj.actionType;
+      finalEntityType = actionTypeOrObj.entityType;
+      finalEntityId = actionTypeOrObj.entityId;
+      finalSummary = actionTypeOrObj.summary || actionTypeOrObj.description || '';
+      finalPrev = actionTypeOrObj.previousState;
+      finalNext = actionTypeOrObj.newState;
+      finalTitle = actionTypeOrObj.entityTitle;
+    } else {
+      actionType = actionTypeOrObj;
+      finalEntityType = entityType!;
+      finalEntityId = entityId!;
+      finalSummary = summary || '';
+      finalPrev = previousState;
+      finalNext = newState;
+      finalTitle = entityTitle;
+    }
+
+    let employeeId = 'ADMIN-01';
+    let employeeName = 'Sarah Jenkins (Admin)';
+    let employeeRole: UserRole = 'admin';
+
+    if (typeof window !== 'undefined') {
+      try {
+        const userJson = localStorage.getItem('nailed_it_auth_user');
+        if (userJson) {
+          const parsed = JSON.parse(userJson);
+          employeeId = parsed.employeeId || parsed.uid || employeeId;
+          employeeName = parsed.displayName || employeeName;
+          employeeRole = parsed.role || employeeRole;
+        }
+      } catch (e) {}
+    }
+
+    const logEntry: AuditLog = {
+      id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      employeeId,
+      employeeName,
+      employeeRole,
+      userName: employeeName,
+      userRole: employeeRole,
+      actionType,
+      entityType: finalEntityType,
+      entityId: finalEntityId,
+      entityTitle: finalTitle,
+      summary: finalSummary,
+      description: finalSummary,
+      previousState: finalPrev ? JSON.parse(JSON.stringify(finalPrev)) : undefined,
+      newState: finalNext ? JSON.parse(JSON.stringify(finalNext)) : undefined,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.auditLogs.unshift(logEntry);
+    this.persist();
+    return logEntry;
+  }
+
+  public getAuditLogs(limit?: number): AuditLog[] {
+    const sorted = [...this.auditLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
+  public getAuditLogsByEntity(entityType: AuditEntityType, entityId: string): AuditLog[] {
+    return this.getAuditLogs().filter((l) => l.entityType === entityType && l.entityId === entityId);
   }
 
   // --- Clients ---
@@ -921,6 +1111,15 @@ export class FSMStore {
 
     this.clients.unshift(newClient);
     this.persist();
+    this.logActivity(
+      'create',
+      'client',
+      newClient.id,
+      `Created client profile for ${newClient.companyName || `${newClient.firstName} ${newClient.lastName}`}`,
+      undefined,
+      newClient,
+      newClient.companyName || `${newClient.firstName} ${newClient.lastName}`
+    );
     return newClient;
   }
 
@@ -956,6 +1155,15 @@ export class FSMStore {
     }
 
     this.persist();
+    this.logActivity(
+      'create',
+      'property',
+      newProp.id,
+      `Added property ${newProp.street} (${newProp.label || 'Property'})`,
+      undefined,
+      newProp,
+      newProp.street
+    );
     return newProp;
   }
 
@@ -1001,6 +1209,15 @@ export class FSMStore {
     }
 
     this.persist();
+    this.logActivity(
+      'create',
+      'job',
+      newJob.id,
+      `Created job ${newJob.jobNumber}: ${newJob.title}`,
+      undefined,
+      newJob,
+      `${newJob.jobNumber}: ${newJob.title}`
+    );
     return newJob;
   }
 
@@ -1015,8 +1232,18 @@ export class FSMStore {
   public updateJob(jobId: string, updates: Partial<Job>) {
     const job = this.jobs.find((j) => j.id === jobId);
     if (job) {
+      const prev = { ...job };
       Object.assign(job, updates);
       this.persist();
+      this.logActivity(
+        'update',
+        'job',
+        jobId,
+        `Updated job details for ${job.jobNumber}`,
+        prev,
+        updates,
+        `${job.jobNumber}: ${job.title}`
+      );
     }
   }
 
@@ -1025,8 +1252,18 @@ export class FSMStore {
     if (job && job.checklist) {
       const item = job.checklist.find((c) => c.id === itemId);
       if (item) {
+        const prevDone = item.done;
         item.done = !item.done;
         this.persist();
+        this.logActivity(
+          'checklist_toggle',
+          'job',
+          jobId,
+          `Toggled checklist item "${item.text}" to ${item.done ? 'complete' : 'incomplete'}`,
+          { itemId, done: prevDone },
+          { itemId, done: item.done },
+          `${job.jobNumber}: ${job.title}`
+        );
       }
     }
   }
@@ -1040,6 +1277,15 @@ export class FSMStore {
         job.photosAfter = [...(job.photosAfter || []), photoUrl];
       }
       this.persist();
+      this.logActivity(
+        'photo_added',
+        'job',
+        jobId,
+        `Added ${type} work verification photo to ${job.jobNumber}`,
+        undefined,
+        { type, photoUrl },
+        `${job.jobNumber}: ${job.title}`
+      );
     }
   }
 
@@ -1058,6 +1304,15 @@ export class FSMStore {
         client.totalSpent = (client.totalSpent || 0) + (job.totalAmount || 0);
       }
       this.persist();
+      this.logActivity(
+        'status_change',
+        'job',
+        jobId,
+        `Status transitioned from "${prevStatus}" to "${status}" on ${job.jobNumber}`,
+        { status: prevStatus },
+        { status },
+        `${job.jobNumber}: ${job.title}`
+      );
     }
   }
 
@@ -1086,14 +1341,33 @@ export class FSMStore {
 
     this.estimates.unshift(newEst);
     this.persist();
+    this.logActivity(
+      'create',
+      'estimate',
+      newEst.id,
+      `Created estimate quote ${newEst.estimateNumber} ($${newEst.total.toFixed(2)}) for ${newEst.clientName}`,
+      undefined,
+      newEst,
+      newEst.estimateNumber
+    );
     return newEst;
   }
 
   public updateEstimateStatus(id: string, status: Estimate['status']) {
     const est = this.estimates.find((e) => e.id === id);
     if (est) {
+      const prevStatus = est.status;
       est.status = status;
       this.persist();
+      this.logActivity(
+        'status_change',
+        'estimate',
+        id,
+        `Estimate ${est.estimateNumber} status changed from "${prevStatus}" to "${status}"`,
+        { status: prevStatus },
+        { status },
+        est.estimateNumber
+      );
     }
   }
 
@@ -1168,12 +1442,22 @@ export class FSMStore {
     }
 
     this.persist();
+    this.logActivity(
+      'create',
+      'invoice',
+      newInv.id,
+      `Generated invoice ${newInv.invoiceNumber} for $${newInv.total.toFixed(2)} (${newInv.clientName})`,
+      undefined,
+      newInv,
+      newInv.invoiceNumber
+    );
     return newInv;
   }
 
   public markInvoicePaid(invoiceId: string, stripePaymentIntentId?: string) {
     const inv = this.invoices.find((i) => i.id === invoiceId);
     if (inv) {
+      const prevStatus = inv.status;
       inv.status = 'paid';
       inv.amountPaid = inv.total;
       inv.balanceDue = 0;
@@ -1189,6 +1473,15 @@ export class FSMStore {
       }
 
       this.persist();
+      this.logActivity(
+        'payment_received',
+        'invoice',
+        invoiceId,
+        `Payment confirmed for ${inv.invoiceNumber}: $${inv.total.toFixed(2)} paid in full`,
+        { status: prevStatus },
+        { status: 'paid', amountPaid: inv.total },
+        inv.invoiceNumber
+      );
     }
   }
 
@@ -1322,6 +1615,15 @@ export class FSMStore {
     }
 
     sub.lastDispatchedJobId = jobId;
+    this.logActivity({
+      entityType: 'job',
+      entityId: newJob.id,
+      entityTitle: newJob.title,
+      actionType: 'create',
+      description: `Auto-dispatched preventative maintenance job for ${sub.clientName} via Stripe subscription`,
+      previousState: null,
+      newState: newJob,
+    });
     this.persist();
 
     return { job: newJob, renewalInvoice: newInv };
@@ -1346,6 +1648,15 @@ export class FSMStore {
       createdAt: new Date().toISOString(),
     };
     this.dailyWorkLogs.push(newLog);
+    this.logActivity({
+      entityType: 'timesheet',
+      entityId: newLog.id,
+      entityTitle: `${newLog.technicianName} - ${newLog.date} (${newLog.totalHours} hrs)`,
+      actionType: 'ocr_upload',
+      description: `Uploaded and processed daily work log for ${newLog.technicianName} on ${newLog.date}`,
+      previousState: null,
+      newState: newLog,
+    });
     this.persist();
     return newLog;
   }
@@ -1381,11 +1692,54 @@ export class FSMStore {
     const timesheet = this.weeklyTimesheets.find((t) => t.id === timesheetId);
     if (!timesheet) return null;
 
+    const previousState = { ...timesheet };
     const updated = verifyWeeklyTimesheet(timesheet, verification);
     const idx = this.weeklyTimesheets.findIndex((t) => t.id === timesheetId);
     if (idx >= 0) {
       this.weeklyTimesheets[idx] = updated;
     }
+    this.logActivity({
+      entityType: 'timesheet',
+      entityId: updated.id,
+      entityTitle: `${updated.technicianName} - Week ${updated.weekNumber} (${updated.weekStartDate})`,
+      actionType: 'payment_verify',
+      description: `Verified payment of $${updated.netPay.toFixed(2)} via ${verification.paymentMethod}${verification.checkNumber ? ` (Ref: ${verification.checkNumber})` : ''}`,
+      previousState,
+      newState: updated,
+    });
+    this.persist();
+    return updated;
+  }
+
+  public updateWeeklyTimesheetAudit(
+    timesheetId: string,
+    updates: {
+      hourlyRate?: number;
+      bonuses?: TimesheetBonus[];
+      deductions?: TimesheetDeduction[];
+      auditConfirmed?: boolean;
+      auditConfirmedBy?: string;
+    }
+  ): WeeklyTimesheet | null {
+    const timesheet = this.weeklyTimesheets.find((t) => t.id === timesheetId);
+    if (!timesheet) return null;
+    if (timesheet.locked) return timesheet; // Cannot alter locked timesheet
+
+    const previousState = { ...timesheet };
+    const updated = updateTimesheetAudit(timesheet, updates);
+    const idx = this.weeklyTimesheets.findIndex((t) => t.id === timesheetId);
+    if (idx >= 0) {
+      this.weeklyTimesheets[idx] = updated;
+    }
+    this.logActivity({
+      entityType: 'timesheet',
+      entityId: updated.id,
+      entityTitle: `${updated.technicianName} - Week ${updated.weekNumber} (${updated.weekStartDate})`,
+      actionType: 'audit_confirm',
+      description: `Updated timesheet audit details: Net Pay $${updated.netPay.toFixed(2)} at $${updated.hourlyRate}/hr`,
+      previousState,
+      newState: updated,
+    });
     this.persist();
     return updated;
   }
@@ -1426,6 +1780,7 @@ export class FSMStore {
     this.dailyWorkLogs = INITIAL_DAILY_WORK_LOGS;
     this.weeklyTimesheets = INITIAL_WEEKLY_TIMESHEETS;
     this.users = INITIAL_USERS;
+    this.auditLogs = INITIAL_AUDIT_LOGS;
     this.persist();
   }
 }

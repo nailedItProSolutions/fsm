@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseHandwrittenTimesheetText, normalizeDate, computeHoursFromTimes, inferJobCategory } from '@/lib/ocrEngine';
+import { verifyServerAuth } from '@/lib/serverAuth';
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Enforce strict server authentication
+    const authResult = await verifyServerAuth(req);
+    if (!authResult.authenticated || !authResult.user) {
+      return NextResponse.json(
+        { error: authResult.error || 'Authentication required to access Timesheet OCR pipeline.' },
+        { status: authResult.status }
+      );
+    }
+
+    // Role check: Only admin, dispatcher, or technician can upload timesheets
+    if (!['admin', 'dispatcher', 'technician'].includes(authResult.user.role)) {
+      return NextResponse.json(
+        { error: 'Forbidden: Insufficient privileges to submit work logs.' },
+        { status: 403 }
+      );
+    }
+
     const contentType = req.headers.get('content-type') || '';
 
     let rawText = '';

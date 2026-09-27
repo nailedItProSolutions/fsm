@@ -8,8 +8,55 @@ export interface UserProfile {
   phone?: string;
   avatarUrl?: string;
   clientId?: string;
+  employeeId?: string; // e.g. "TECH-101", "ADMIN-01"
+  pin?: string;        // 4-6 digit secure PIN
   active: boolean;
   createdAt: string;
+}
+
+export type AuditActionType = 
+  | 'create' 
+  | 'update' 
+  | 'delete' 
+  | 'status_change' 
+  | 'photo_added' 
+  | 'photo_upload'
+  | 'checklist_toggle' 
+  | 'audit_confirm' 
+  | 'payment_verify' 
+  | 'ocr_upload'
+  | 'invoice_sent'
+  | 'payment_received';
+
+export type AuditEntityType = 
+  | 'job' 
+  | 'client' 
+  | 'property'
+  | 'estimate' 
+  | 'invoice' 
+  | 'subscription' 
+  | 'timesheet'
+  | 'work_log'
+  | 'system';
+
+export interface AuditLog {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeRole: UserRole;
+  userName?: string;
+  userRole?: UserRole;
+  actionType: AuditActionType;
+  entityType: AuditEntityType;
+  entityId: string;
+  entityTitle?: string;
+  summary: string;
+  description?: string;
+  previousState?: any;
+  newState?: any;
+  timestamp: string; // ISO 8601
+  ipAddress?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Address {
@@ -222,6 +269,22 @@ export interface PaymentVerification {
   verifiedAt: string;
 }
 
+export interface TimesheetBonus {
+  id: string;
+  description: string;       // "for what"
+  amount: number;            // "how much"
+  propertyOwner: string;     // "which property owner"
+  propertyId?: string;
+}
+
+export interface TimesheetDeduction {
+  id: string;
+  description: string;       // "what for"
+  amount: number;            // total assessed deduction
+  amountPaid: number;        // "how much paid" this period
+  remainingBalance: number;  // "any remaining balance"
+}
+
 export interface WeeklyTimesheet {
   id: string;
   technicianId: string;
@@ -232,8 +295,16 @@ export interface WeeklyTimesheet {
   weekEndDate: string;   // Sunday YYYY-MM-DD
   dailyLogIds: string[];
   totalHours: number;
-  hourlyRate: number;    // e.g. $35.00/hr
+  hourlyRate: number;    // e.g. $15, $19, $20, $24, $25, $35 or custom
   totalGrossPay: number; // e.g. $1,400.00
+  bonuses?: TimesheetBonus[];
+  totalBonuses?: number;
+  deductions?: TimesheetDeduction[];
+  totalDeductions?: number;
+  netPay: number;        // Bold Net Pay: totalGrossPay + totalBonuses - totalDeductionsPaid
+  auditConfirmed?: boolean;
+  auditConfirmedAt?: string;
+  auditConfirmedBy?: string;
   status: 'draft' | 'pending_review' | 'verified_paid';
   locked: boolean;
   paymentVerification?: PaymentVerification;
@@ -241,4 +312,5 @@ export interface WeeklyTimesheet {
   createdAt: string;
   updatedAt: string;
 }
+
 

@@ -1,0 +1,194 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // AUTHENTICATION & RBAC HELPER FUNCTIONS
+    // =========================================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'admin') ||
+        request.auth.token.admin == true
+      );
+    }
+
+    function isTechnician() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'technician' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'technician')
+      );
+    }
+
+    function isClient() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'client' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'client')
+      );
+    }
+
+    // =========================================================================
+    // USERS COLLECTION
+    // =========================================================================
+    match /users/{userId} {
+      // Admins have full access
+      allow read, write: if isAdmin();
+      // Users can read and edit their own non-role profile fields
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'admin', 'employeeId']);
+    }
+
+    // =========================================================================
+    // JOBS COLLECTION
+    // =========================================================================
+    match /jobs/{jobId} {
+      // Admins: Full read/write access
+      allow read, write: if isAdmin();
+
+      // Technicians: Read & update only jobs assigned to them
+      allow read: if isTechnician() && (
+        resource.data.assignedTechId == request.auth.uid
+      );
+      allow update: if isTechnician() && (
+        resource.data.assignedTechId == request.auth.uid &&
+        // Techs cannot reassign job ownership or modify pricing
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['clientId', 'totalAmount'])
+      );
+
+      // Clients / Property Owners: Read-only access to their own jobs
+      allow read: if isClient() && resource.data.clientId == request.auth.uid;
+
+      // No unauthenticated access, no client writes
+      allow create, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // CLIENTS COLLECTION
+    // =========================================================================
+    match /clients/{clientId} {
+      // Admins: Full read/write access
+      allow read, write: if isAdmin();
+
+      // Clients: Read-only access to their own profile
+      allow read: if isClient() && (
+        resource.data.id == request.auth.uid ||
+        clientId == request.auth.uid
+      );
+
+      // Technicians: Read-only for operational dispatch info
+      allow read: if isTechnician();
+
+      // Deny all other writes
+      allow create, update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // PROPERTIES COLLECTION
+    // =========================================================================
+    match /properties/{propertyId} {
+      allow read, write: if isAdmin();
+
+      // Clients: Read-only access to properties they own
+      allow read: if isClient() && resource.data.clientId == request.auth.uid;
+
+      // Technicians: Read-only for navigational and service access
+      allow read: if isTechnician();
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // INVOICES & ESTIMATES (FINANCIAL DATA)
+    // =========================================================================
+    match /invoices/{invoiceId} {
+      allow read, write: if isAdmin();
+      // Clients: Read-only access to their own invoices
+      allow read: if isClient() && resource.data.clientId == request.auth.uid;
+      // Technicians have zero access to billing and revenue
+      allow read, write: if false;
+    }
+
+    match /estimates/{estimateId} {
+      allow read, write: if isAdmin();
+      // Clients: Read-only access to their quotes
+      allow read: if isClient() && resource.data.clientId == request.auth.uid;
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // RECURRING SUBSCRIPTIONS
+    // =========================================================================
+    match /subscriptions/{subscriptionId} {
+      allow read, write: if isAdmin();
+      allow read: if isClient() && resource.data.clientId == request.auth.uid;
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // TECHNICIAN VAULT & TIMESHEETS
+    // =========================================================================
+    match /technician_vault/{logId} {
+      allow read, write: if isAdmin();
+      // Technicians: Read-only access to their own uploaded logs
+      allow read: if isTechnician() && resource.data.technicianId == request.auth.uid;
+      allow create: if isTechnician() && request.resource.data.technicianId == request.auth.uid;
+      // Clients have no access to technician files
+      allow read, write: if false;
+    }
+
+    match /daily_work_logs/{logId} {
+      allow read, write: if isAdmin();
+      allow read: if isTechnician() && resource.data.technicianId == request.auth.uid;
+      allow create: if isTechnician() && request.resource.data.technicianId == request.auth.uid;
+      allow read, write: if false;
+    }
+
+    match /weekly_timesheets/{timesheetId} {
+      allow read, write: if isAdmin();
+      // Technicians: Read-only access to their own weekly timesheets
+      allow read: if isTechnician() && resource.data.technicianId == request.auth.uid;
+      // Modifications and payouts locked down to Admins only
+      allow write: if isAdmin();
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // AUDIT LOGS (IMMUTABLE GLOBAL TRACKING)
+    // =========================================================================
+    match /audit_logs/{logId} {
+      // Admins: Read-only access to audit trail
+      allow read: if isAdmin();
+      // Authenticated users can write log entries, but CANNOT modify or delete them
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // IMMUTABLE: Nobody can alter or erase audit logs
+    }
+
+    // =========================================================================
+    // SETTINGS & COMPANY METRICS
+    // =========================================================================
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // STRICT FAILSAFE CATCH-ALL
+    // Never allow open reads/writes. Any unspecified path defaults to deny.
+    // =========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

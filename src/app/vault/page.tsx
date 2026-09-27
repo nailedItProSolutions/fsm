@@ -55,10 +55,14 @@ function VaultContent() {
   );
 }
 
+import { AuthGuard } from '@/components/auth/AuthGuard';
+
 export default function VaultPage() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-[#78716c]">Loading Technician Vault...</div>}>
-      <VaultContent />
+      <AuthGuard allowedRoles={['admin', 'dispatcher', 'technician']}>
+        <VaultContent />
+      </AuthGuard>
     </Suspense>
   );
 }

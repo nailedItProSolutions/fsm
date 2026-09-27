@@ -27,8 +27,9 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
   onClose,
   onVerify,
 }) => {
+  const effectiveNetPay = timesheet.netPay !== undefined ? timesheet.netPay : timesheet.totalGrossPay;
   const [checkNumber, setCheckNumber] = useState(`CHK-${Math.floor(10000 + Math.random() * 90000)}`);
-  const [amount, setAmount] = useState(timesheet.totalGrossPay);
+  const [amount, setAmount] = useState(effectiveNetPay);
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<'check' | 'direct_deposit' | 'ach' | 'zelle'>('check');
   const [checkImageUrl, setCheckImageUrl] = useState(
@@ -43,7 +44,7 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
     e.preventDefault();
     onVerify(timesheet.id, {
       checkNumber,
-      amount: parseFloat(amount.toString()) || timesheet.totalGrossPay,
+      amount: parseFloat(amount.toString()) || effectiveNetPay,
       paymentDate,
       paymentMethod,
       checkImageUrl,
@@ -97,19 +98,32 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {/* Timesheet Summary Stats */}
-          <div className="bg-[#161616] p-3.5 rounded-xl border border-[#262626] grid grid-cols-3 gap-2 text-center">
-            <div>
-              <div className="text-[10px] text-[#78716c] uppercase font-bold">Total Hours</div>
-              <div className="text-sm font-bold font-mono text-[#fdfbf7] mt-0.5">{timesheet.totalHours} hrs</div>
+          <div className="bg-[#161616] p-3.5 rounded-xl border border-[#262626] space-y-2">
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div>
+                <div className="text-[9px] text-[#78716c] uppercase font-bold">Total Hours</div>
+                <div className="text-xs font-bold font-mono text-[#fdfbf7] mt-0.5">{timesheet.totalHours.toFixed(1)} hrs</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-[#78716c] uppercase font-bold">Hourly Rate</div>
+                <div className="text-xs font-bold font-mono text-[#c5a059] mt-0.5">${timesheet.hourlyRate.toFixed(2)}/hr</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-[#78716c] uppercase font-bold">Gross Pay</div>
+                <div className="text-xs font-bold font-mono text-[#b8b0a5] mt-0.5">${timesheet.totalGrossPay.toFixed(2)}</div>
+              </div>
+              <div className="bg-emerald-950/40 rounded-lg p-1 border border-emerald-500/30">
+                <div className="text-[9px] text-emerald-300 uppercase font-black">Net Pay Due</div>
+                <div className="text-xs font-black font-mono text-emerald-400 mt-0.5">${effectiveNetPay.toFixed(2)}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-[10px] text-[#78716c] uppercase font-bold">Hourly Rate</div>
-              <div className="text-sm font-bold font-mono text-[#c5a059] mt-0.5">${timesheet.hourlyRate.toFixed(2)}/hr</div>
-            </div>
-            <div>
-              <div className="text-[10px] text-[#78716c] uppercase font-bold">Gross Pay Due</div>
-              <div className="text-sm font-bold font-mono text-emerald-400 mt-0.5">${timesheet.totalGrossPay.toFixed(2)}</div>
-            </div>
+
+            {((timesheet.totalBonuses || 0) > 0 || (timesheet.totalDeductions || 0) > 0) && (
+              <div className="text-[10px] text-center pt-1 border-t border-[#262626] flex justify-center space-x-3">
+                <span className="text-emerald-400 font-bold">+${(timesheet.totalBonuses || 0).toFixed(2)} bonuses</span>
+                <span className="text-red-400 font-bold">-${(timesheet.totalDeductions || 0).toFixed(2)} deductions</span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

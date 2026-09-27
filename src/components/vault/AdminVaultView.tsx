@@ -10,6 +10,7 @@ import {
 } from '@/lib/ocrEngine';
 import { PaymentVerificationModal } from './PaymentVerificationModal';
 import { LockedTimesheetPdfModal } from './LockedTimesheetPdfModal';
+import { TimesheetAuditModal } from './TimesheetAuditModal';
 import { 
   Upload, 
   Search, 
@@ -30,7 +31,8 @@ import {
   DollarSign,
   ArrowUpDown,
   RefreshCw,
-  FolderOpen
+  FolderOpen,
+  Edit3
 } from 'lucide-react';
 
 export const AdminVaultView: React.FC = () => {
@@ -41,6 +43,7 @@ export const AdminVaultView: React.FC = () => {
     getTechnicians, 
     addDailyWorkLog, 
     verifyWeeklyTimesheetPayment,
+    updateWeeklyTimesheetAudit,
     generateMissingWeeklyTimesheets
   } = useFSMStore();
 
@@ -48,6 +51,7 @@ export const AdminVaultView: React.FC = () => {
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'scans' | 'weekly'>('scans');
+  const [auditingTimesheet, setAuditingTimesheet] = useState<WeeklyTimesheet | null>(null);
 
   // Filtering States
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -575,8 +579,10 @@ export const AdminVaultView: React.FC = () => {
                   <th className="px-5 py-3.5">Timesheet ID</th>
                   <th className="px-5 py-3.5">Technician</th>
                   <th className="px-5 py-3.5">Cycle Window</th>
-                  <th className="px-5 py-3.5 text-right">Total Hours</th>
+                  <th className="px-5 py-3.5 text-right">Hours & Rate</th>
                   <th className="px-5 py-3.5 text-right">Gross Pay</th>
+                  <th className="px-5 py-3.5 text-right">Adjustments</th>
+                  <th className="px-5 py-3.5 text-right">Audited Net Pay</th>
                   <th className="px-5 py-3.5">Status & Tamper Lock</th>
                   <th className="px-5 py-3.5 text-right">Payroll Actions</th>
                 </tr>
@@ -584,6 +590,9 @@ export const AdminVaultView: React.FC = () => {
               <tbody className="divide-y divide-[#1e1e1e]">
                 {weeklyTimesheets.map((sheet) => {
                   const isLocked = sheet.locked;
+                  const effectiveNet = sheet.netPay !== undefined ? sheet.netPay : sheet.totalGrossPay;
+                  const bonusSum = sheet.totalBonuses || sheet.bonuses?.reduce((s, b) => s + (b.amount || 0), 0) || 0;
+                  const deductSum = sheet.totalDeductions || sheet.deductions?.reduce((s, d) => s + (d.amountPaid || 0), 0) || 0;
 
                   return (
                     <tr key={sheet.id} className="hover:bg-[#161616] transition">
@@ -596,11 +605,28 @@ export const AdminVaultView: React.FC = () => {
                       <td className="px-5 py-4 text-[#b8b0a5]">
                         {sheet.weekStartDate} — {sheet.weekEndDate}
                       </td>
-                      <td className="px-5 py-4 text-right font-mono font-bold text-[#fdfbf7]">
-                        {sheet.totalHours.toFixed(1)} hrs
+                      <td className="px-5 py-4 text-right">
+                        <div className="font-mono font-bold text-[#fdfbf7]">{sheet.totalHours.toFixed(1)} hrs</div>
+                        <div className="text-[10px] font-mono text-[#c5a059]">${sheet.hourlyRate.toFixed(2)}/hr</div>
                       </td>
-                      <td className="px-5 py-4 text-right font-mono font-bold text-emerald-400">
+                      <td className="px-5 py-4 text-right font-mono font-medium text-[#b8b0a5]">
                         ${sheet.totalGrossPay.toFixed(2)}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {bonusSum > 0 || deductSum > 0 ? (
+                          <div className="space-y-0.5 text-[10px] font-mono">
+                            {bonusSum > 0 && <span className="text-emerald-400 block font-bold">+${bonusSum.toFixed(2)}</span>}
+                            {deductSum > 0 && <span className="text-red-400 block font-bold">-${deductSum.toFixed(2)}</span>}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[#78716c] font-mono">—</span>
+                        )}
+                      </td>
+                      {/* BOLD NET PAY IN TABLE */}
+                      <td className="px-5 py-4 text-right">
+                        <span className="font-mono font-black text-sm text-emerald-400">
+                          ${effectiveNet.toFixed(2)}
+                        </span>
                       </td>
                       <td className="px-5 py-4">
                         {isLocked ? (
@@ -616,20 +642,52 @@ export const AdminVaultView: React.FC = () => {
                             )}
                           </div>
                         ) : (
-                          <span className="bg-[#FF8A00]/20 text-[#FF8A00] border border-[#FF8A00]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase inline-flex items-center gap-1 w-max">
-                            <Clock className="w-3 h-3" />
-                            <span>PENDING ADMIN CHECK</span>
-                          </span>
+                          <div className="flex flex-col">
+                            {sheet.auditConfirmed ? (
+                              <span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase inline-flex items-center gap-1 w-max">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>AUDITED • READY TO LOCK</span>
+                              </span>
+                            ) : (
+                              <span className="bg-[#FF8A00]/20 text-[#FF8A00] border border-[#FF8A00]/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase inline-flex items-center gap-1 w-max">
+                                <Clock className="w-3 h-3" />
+                                <span>AWAITING FIRST AUDIT</span>
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right space-x-2">
-                        <button
-                          onClick={() => setViewingPdfTimesheet(sheet)}
-                          className="bg-[#242424] hover:bg-[#2d2d2d] text-[#fdfbf7] text-xs font-bold px-3 py-1.5 rounded-lg border border-[#333333] transition inline-flex items-center space-x-1"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-[#c5a059]" />
-                          <span>View PDF</span>
-                        </button>
+                      <td className="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
+                        {!sheet.auditConfirmed && !isLocked ? (
+                          <button
+                            onClick={() => setAuditingTimesheet(sheet)}
+                            className="bg-gradient-to-r from-[#c5a059] to-[#d4af37] hover:brightness-110 text-black text-xs font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Audit & View</span>
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setViewingPdfTimesheet(sheet)}
+                              className="bg-[#242424] hover:bg-[#2d2d2d] text-[#fdfbf7] text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[#333333] transition inline-flex items-center space-x-1"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#c5a059]" />
+                              <span>View PDF</span>
+                            </button>
+
+                            {!isLocked && (
+                              <button
+                                onClick={() => setAuditingTimesheet(sheet)}
+                                className="bg-[#1c1c1c] hover:bg-[#262626] text-[#c5a059] text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[#c5a059]/30 transition inline-flex items-center space-x-1"
+                                title="Edit hourly rate, added bonuses, or deductions"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-[#FF8A00]" />
+                                <span>Adjust</span>
+                              </button>
+                            )}
+                          </>
+                        )}
 
                         {!isLocked && (
                           <button
@@ -647,7 +705,7 @@ export const AdminVaultView: React.FC = () => {
 
                 {weeklyTimesheets.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-[#78716c]">
+                    <td colSpan={9} className="px-6 py-8 text-center text-[#78716c]">
                       No weekly timesheets recorded yet. Click "Aggregate Missing Weeks" to compile daily logs.
                     </td>
                   </tr>
@@ -658,10 +716,30 @@ export const AdminVaultView: React.FC = () => {
         </div>
       )}
 
+      {/* Timesheet Audit & Confirmation Modal (Hourly Rate Presets, Bonuses, Deductions, Bold Net Pay) */}
+      {auditingTimesheet && (
+        <TimesheetAuditModal
+          timesheet={auditingTimesheet}
+          isOpen={Boolean(auditingTimesheet)}
+          onClose={() => setAuditingTimesheet(null)}
+          onConfirmAudit={(timesheetId, updates) => {
+            const updated = updateWeeklyTimesheetAudit(timesheetId, updates);
+            setAuditingTimesheet(null);
+            // Immediately open official timesheet document with verified net pay
+            if (updated) {
+              setViewingPdfTimesheet(updated);
+            } else {
+              const ref = weeklyTimesheets.find((t) => t.id === timesheetId);
+              if (ref) setViewingPdfTimesheet(ref);
+            }
+          }}
+        />
+      )}
+
       {/* Payment Verification Modal */}
       {verifyingTimesheet && (
         <PaymentVerificationModal
-          timesheet={verifyingTimesheet}
+          timesheet={weeklyTimesheets.find((t) => t.id === verifyingTimesheet.id) || verifyingTimesheet}
           isOpen={Boolean(verifyingTimesheet)}
           onClose={() => setVerifyingTimesheet(null)}
           onVerify={(timesheetId, verification) => {
@@ -674,10 +752,15 @@ export const AdminVaultView: React.FC = () => {
       {/* Locked PDF Modal */}
       {viewingPdfTimesheet && (
         <LockedTimesheetPdfModal
-          timesheet={viewingPdfTimesheet}
+          timesheet={weeklyTimesheets.find((t) => t.id === viewingPdfTimesheet.id) || viewingPdfTimesheet}
           logs={dailyWorkLogs.filter((l) => viewingPdfTimesheet.dailyLogIds.includes(l.id))}
           isOpen={Boolean(viewingPdfTimesheet)}
           onClose={() => setViewingPdfTimesheet(null)}
+          onEditAudit={() => {
+            const current = weeklyTimesheets.find((t) => t.id === viewingPdfTimesheet.id) || viewingPdfTimesheet;
+            setViewingPdfTimesheet(null);
+            setAuditingTimesheet(current);
+          }}
         />
       )}
     </div>

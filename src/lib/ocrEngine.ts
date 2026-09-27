@@ -1,4 +1,11 @@
-import type { DailyWorkLog, JobTradeCategory, WeeklyTimesheet, PaymentVerification } from '@/types';
+import type { 
+  DailyWorkLog, 
+  JobTradeCategory, 
+  WeeklyTimesheet, 
+  PaymentVerification,
+  TimesheetBonus,
+  TimesheetDeduction 
+} from '@/types';
 
 /**
  * Normalizes varied handwritten date formats to strict ISO YYYY-MM-DD
@@ -353,14 +360,43 @@ export function getWeekKeyFromDate(dateStr: string): string {
 }
 
 /**
+ * Standard preset hourly rates available over the past year:
+ * $15, $19, $20, $24, $25, $35
+ */
+export const STANDARD_HOURLY_RATES = [15, 19, 20, 24, 25, 35] as const;
+
+/**
+ * Calculates net pay from gross pay, added bonuses, and deductions paid.
+ * Net Pay = Base Gross Pay + Total Bonuses - Total Deductions Paid
+ */
+export function calculateNetPay(
+  totalGrossPay: number,
+  bonuses: TimesheetBonus[] = [],
+  deductions: TimesheetDeduction[] = []
+): {
+  totalBonuses: number;
+  totalDeductions: number;
+  netPay: number;
+} {
+  const totalBonuses = Math.round(bonuses.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) * 100) / 100;
+  const totalDeductions = Math.round(deductions.reduce((sum, d) => sum + (Number(d.amountPaid) || 0), 0) * 100) / 100;
+  const netPay = Math.round((totalGrossPay + totalBonuses - totalDeductions) * 100) / 100;
+  return { totalBonuses, totalDeductions, netPay };
+}
+
+/**
  * Aggregates daily logs into a Tamper-Proof Weekly Timesheet
  */
 export function aggregateWeeklyTimesheet(
   weekLogs: DailyWorkLog[],
   technicianId: string,
   technicianName: string,
-  hourlyRate: number = 35.0
+  hourlyRate: number = 35.0,
+  bonuses: TimesheetBonus[] = [],
+  deductions: TimesheetDeduction[] = []
 ): WeeklyTimesheet {
+  const calc = calculateNetPay(0, bonuses, deductions);
+
   if (weekLogs.length === 0) {
     const today = new Date().toISOString().split('T')[0];
     const range = getWeekRangeFromDate(today);
@@ -376,6 +412,12 @@ export function aggregateWeeklyTimesheet(
       totalHours: 0,
       hourlyRate,
       totalGrossPay: 0,
+      bonuses,
+      totalBonuses: calc.totalBonuses,
+      deductions,
+      totalDeductions: calc.totalDeductions,
+      netPay: calc.netPay,
+      auditConfirmed: false,
       status: 'draft',
       locked: false,
       createdAt: new Date().toISOString(),
@@ -388,6 +430,7 @@ export function aggregateWeeklyTimesheet(
   const range = getWeekRangeFromDate(sorted[0].date);
   const totalHours = Math.round(sorted.reduce((acc, log) => acc + (log.totalHours || 0), 0) * 10) / 10;
   const totalGrossPay = Math.round(totalHours * hourlyRate * 100) / 100;
+  const paySummary = calculateNetPay(totalGrossPay, bonuses, deductions);
 
   return {
     id: `timesheet-${range.year}-W${range.weekNumber}-${technicianId}`,
@@ -401,9 +444,50 @@ export function aggregateWeeklyTimesheet(
     totalHours,
     hourlyRate,
     totalGrossPay,
+    bonuses,
+    totalBonuses: paySummary.totalBonuses,
+    deductions,
+    totalDeductions: paySummary.totalDeductions,
+    netPay: paySummary.netPay,
+    auditConfirmed: false,
     status: 'pending_review',
     locked: false,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Updates timesheet rate, bonuses, deductions, and confirms audit
+ */
+export function updateTimesheetAudit(
+  timesheet: WeeklyTimesheet,
+  updates: {
+    hourlyRate?: number;
+    bonuses?: TimesheetBonus[];
+    deductions?: TimesheetDeduction[];
+    auditConfirmed?: boolean;
+    auditConfirmedBy?: string;
+  }
+): WeeklyTimesheet {
+  const newRate = updates.hourlyRate !== undefined ? updates.hourlyRate : timesheet.hourlyRate;
+  const newGrossPay = Math.round(timesheet.totalHours * newRate * 100) / 100;
+  const newBonuses = updates.bonuses !== undefined ? updates.bonuses : (timesheet.bonuses || []);
+  const newDeductions = updates.deductions !== undefined ? updates.deductions : (timesheet.deductions || []);
+  const calc = calculateNetPay(newGrossPay, newBonuses, newDeductions);
+
+  return {
+    ...timesheet,
+    hourlyRate: newRate,
+    totalGrossPay: newGrossPay,
+    bonuses: newBonuses,
+    totalBonuses: calc.totalBonuses,
+    deductions: newDeductions,
+    totalDeductions: calc.totalDeductions,
+    netPay: calc.netPay,
+    auditConfirmed: updates.auditConfirmed !== undefined ? updates.auditConfirmed : true,
+    auditConfirmedAt: updates.auditConfirmed ? new Date().toISOString() : timesheet.auditConfirmedAt,
+    auditConfirmedBy: updates.auditConfirmedBy || timesheet.auditConfirmedBy || 'Sarah Jenkins (Admin)',
     updatedAt: new Date().toISOString(),
   };
 }

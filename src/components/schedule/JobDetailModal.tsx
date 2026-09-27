@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ShieldCheck
 } from 'lucide-react';
+import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -182,6 +183,17 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Activity History & Audit Trail */}
+          <div className="pt-3 border-t border-[#262626]">
+            <ActivityHistoryFeed
+              entityType="job"
+              entityId={job.id}
+              title="Job Audit Trail & Change Log"
+              compact={true}
+              maxItems={10}
+            />
+          </div>
 
           {/* Value & Notes */}
           <div className="flex justify-between items-center pt-2 border-t border-[#222222]">

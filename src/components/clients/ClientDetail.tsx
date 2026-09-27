@@ -25,14 +25,16 @@ import {
   Repeat,
   ShieldCheck,
   Sparkles,
-  Check
+  Check,
+  Activity
 } from 'lucide-react';
 import { DynamicSubscriptionCalculator } from '@/components/pricing/DynamicSubscriptionCalculator';
+import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
 interface ClientDetailProps {
   client: Client;
   onBack?: () => void;
-  initialTab?: 'properties' | 'history' | 'billing' | 'subscriptions' | 'notes';
+  initialTab?: 'properties' | 'history' | 'billing' | 'subscriptions' | 'notes' | 'audit';
 }
 
 export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, initialTab }) => {
@@ -46,7 +48,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
     triggerSubscriptionRenewal
   } = useFSMStore();
 
-  const [activeTab, setActiveTab] = useState<'properties' | 'history' | 'billing' | 'subscriptions' | 'notes'>(initialTab || 'properties');
+  const [activeTab, setActiveTab] = useState<'properties' | 'history' | 'billing' | 'subscriptions' | 'notes' | 'audit'>(initialTab || 'properties');
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [showNewSubModal, setShowNewSubModal] = useState(false);
   const [selectedPropIdForSub, setSelectedPropIdForSub] = useState('');
@@ -248,7 +250,19 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Client Notes & Dispatch Preferences</span>
+            <span>Client Notes</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('audit')}
+            className={`pb-3 border-b-2 flex items-center space-x-2 transition ${
+              activeTab === 'audit'
+                ? 'border-[#c5a059] text-[#c5a059]'
+                : 'border-transparent text-[#b8b0a5] hover:text-[#fdfbf7]'
+            }`}
+          >
+            <Activity className="w-4 h-4 text-[#c5a059]" />
+            <span>Activity History</span>
           </button>
         </nav>
       </div>
@@ -756,6 +770,17 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
           <div className="text-[11px] text-[#78716c]">
             Client Profile Created: {new Date(client.createdAt).toLocaleDateString()} • Last Updated: {new Date(client.updatedAt).toLocaleDateString()}
           </div>
+        </div>
+      )}
+
+      {/* Audit History Tab */}
+      {activeTab === 'audit' && (
+        <div className="bg-[#111111] border border-[#222222] rounded-xl p-6 shadow-sm">
+          <ActivityHistoryFeed
+            entityType="client"
+            entityId={client.id}
+            title={`${client.isCompany ? client.companyName : client.firstName + ' ' + client.lastName} - Activity History`}
+          />
         </div>
       )}
 

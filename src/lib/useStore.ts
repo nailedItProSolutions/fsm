@@ -56,8 +56,13 @@ export function useFSMStore() {
     addDailyWorkLog: (logData: any) => store.addDailyWorkLog(logData),
     getWeeklyTimesheetsByTechId: (techId: string) => store.getWeeklyTimesheetsByTechId(techId),
     addWeeklyTimesheet: (timesheet: any) => store.addWeeklyTimesheet(timesheet),
+    updateWeeklyTimesheetAudit: (timesheetId: string, updates: any) => store.updateWeeklyTimesheetAudit(timesheetId, updates),
     verifyWeeklyTimesheetPayment: (timesheetId: string, verification: any) => store.verifyWeeklyTimesheetPayment(timesheetId, verification),
     generateMissingWeeklyTimesheets: () => store.generateMissingWeeklyTimesheets(),
+    auditLogs: store.getAuditLogs(),
+    getAuditLogs: (limit?: number) => store.getAuditLogs(limit),
+    getAuditLogsByEntity: (entityType: any, entityId: string) => store.getAuditLogsByEntity(entityType, entityId),
+    logActivity: (logData: any) => store.logActivity(logData),
     resetToDefault: () => store.resetToDefault(),
   };
 }

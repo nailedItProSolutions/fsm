@@ -12,9 +12,12 @@ import {
   groupWorkLogsByCalendarWeek,
   aggregateWeeklyTimesheet,
   verifyWeeklyTimesheet,
+  STANDARD_HOURLY_RATES,
+  calculateNetPay,
+  updateTimesheetAudit,
   SAMPLE_HANDWRITTEN_TIMESHEETS,
 } from '../ocrEngine.ts';
-import type { DailyWorkLog, WeeklyTimesheet } from '@/types';
+import type { DailyWorkLog, WeeklyTimesheet, TimesheetBonus, TimesheetDeduction } from '@/types';
 
 let passed = 0;
 let failed = 0;
@@ -188,6 +191,89 @@ assert(verifiedTimesheet.locked === true, 'Weekly timesheet is permanently LOCKE
 assert(verifiedTimesheet.paymentVerification?.checkNumber === 'CHK-94821', 'Check number CHK-94821 permanently attached');
 assert(verifiedTimesheet.paymentVerification?.verifiedBy === 'Sarah Jenkins (Admin)', 'Verified by admin Sarah Jenkins');
 assert(Boolean(verifiedTimesheet.paymentVerification?.verifiedAt), 'Timestamp recorded for payment lock');
+
+console.log('\n--- 5. Editable Hourly Pay Presets, Bonuses, Deductions & Bold Net Pay Audit ---');
+// 5.1 Hourly Rate Presets
+assert(STANDARD_HOURLY_RATES.includes(15), 'Includes $15/hr preset option');
+assert(STANDARD_HOURLY_RATES.includes(19), 'Includes $19/hr preset option');
+assert(STANDARD_HOURLY_RATES.includes(20), 'Includes $20/hr preset option');
+assert(STANDARD_HOURLY_RATES.includes(24), 'Includes $24/hr preset option');
+assert(STANDARD_HOURLY_RATES.includes(25), 'Includes $25/hr preset option');
+assert(STANDARD_HOURLY_RATES.includes(35), 'Includes $35/hr preset option');
+assert(STANDARD_HOURLY_RATES.length === 6, 'Contains all 6 specified preset options');
+
+// 5.2 Net Pay Calculation Helper
+const bonusSample: TimesheetBonus[] = [
+  {
+    id: 'b-1',
+    description: 'Emergency HVAC Weekend Callout',
+    amount: 150.0,
+    propertyOwner: 'Apex Property Management',
+  },
+  {
+    id: 'b-2',
+    description: 'On-time turnover completion incentive',
+    amount: 50.0,
+    propertyOwner: 'Sarah Jenkins',
+  },
+];
+
+const deductSample: TimesheetDeduction[] = [
+  {
+    id: 'd-1',
+    description: 'Milwaukee Fuel Drill Advance',
+    amount: 120.0,
+    amountPaid: 60.0,
+    remainingBalance: 60.0,
+  },
+];
+
+const calcResult = calculateNetPay(1000.0, bonusSample, deductSample);
+assert(calcResult.totalBonuses === 200.0, 'Calculates exact total bonuses: $200.00');
+assert(calcResult.totalDeductions === 60.0, 'Calculates exact deductions paid: $60.00');
+assert(calcResult.netPay === 1140.0, 'Calculates exact Bold Net Pay: $1,140.00 ($1,000 + $200 - $60)');
+
+// 5.3 Audit Flow on Unlocked Timesheet: Rate adjustment, bonuses, deductions
+// Take a draft/pending timesheet with 20.0 total hours initially at $35.0/hr
+const baseTimesheet: WeeklyTimesheet = {
+  id: 'timesheet-2024-W40-user-tech-1',
+  technicianId: 'user-tech-1',
+  technicianName: 'Mike Rivera',
+  weekNumber: 40,
+  year: 2024,
+  weekStartDate: '2024-09-30',
+  weekEndDate: '2024-10-06',
+  dailyLogIds: ['log-test-1', 'log-test-2'],
+  totalHours: 20.0,
+  hourlyRate: 35.0,
+  totalGrossPay: 700.0,
+  status: 'pending_review',
+  locked: false,
+  createdAt: '2024-10-06T18:00:00Z',
+  updatedAt: '2024-10-06T18:00:00Z',
+  netPay: 700.0,
+};
+
+// Admin adjusts rate to $24/hr (one of the preset rates), adds bonus with property owner, adds deduction
+const auditedTimesheet = updateTimesheetAudit(baseTimesheet, {
+  hourlyRate: 24.0,
+  bonuses: bonusSample,
+  deductions: deductSample,
+  auditConfirmed: true,
+  auditConfirmedBy: 'Sarah Jenkins (Admin)',
+});
+
+// Verify updated values:
+// Hours: 20.0, Hourly Rate: $24.00 -> Gross Pay = $480.00
+assert(auditedTimesheet.hourlyRate === 24.0, 'Updated hourly rate to $24.00/hr preset');
+assert(auditedTimesheet.totalGrossPay === 480.0, 'Recalculates gross pay: $480.00 (20.0 hrs × $24/hr)');
+assert(auditedTimesheet.totalBonuses === 200.0, 'Attaches total bonuses: $200.00');
+assert(auditedTimesheet.bonuses?.[0].propertyOwner === 'Apex Property Management', 'Preserves bonus property owner');
+assert(auditedTimesheet.totalDeductions === 60.0, 'Attaches total deductions paid: $60.00');
+assert(auditedTimesheet.deductions?.[0].remainingBalance === 60.0, 'Preserves deduction remaining balance');
+assert(auditedTimesheet.netPay === 620.0, 'Calculates and renders Bold Net Pay: $620.00 ($480 + $200 - $60)');
+assert(auditedTimesheet.auditConfirmed === true, 'Sets auditConfirmed flag to true');
+assert(Boolean(auditedTimesheet.auditConfirmedAt), 'Records audit confirmation timestamp');
 
 console.log(`\n========================================`);
 console.log(`Total Tests: ${passed + failed}`);

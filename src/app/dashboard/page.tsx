@@ -18,6 +18,7 @@ import {
   TrendingUp,
   FileText
 } from 'lucide-react';
+import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
 export default function ExecutiveDashboard() {
   const { user } = useAuth();
@@ -251,6 +252,15 @@ export default function ExecutiveDashboard() {
             <span>Open Client Manager</span>
           </Link>
         </div>
+      </div>
+
+      {/* Global Activity History & Audit Feed */}
+      <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 shadow-xl">
+        <ActivityHistoryFeed
+          title="Global Operational Audit Trail & Event Stream"
+          compact={false}
+          maxItems={20}
+        />
       </div>
     </div>
   );

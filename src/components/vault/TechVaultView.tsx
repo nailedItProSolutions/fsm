@@ -35,7 +35,10 @@ export const TechVaultView: React.FC = () => {
   // Compute Totals
   const totalHoursLogged = myDailyLogs.reduce((acc, log) => acc + (log.totalHours || 0), 0);
   const paidTimesheets = myWeeklyTimesheets.filter((t) => t.status === 'verified_paid');
-  const totalVerifiedEarnings = paidTimesheets.reduce((acc, t) => acc + (t.totalGrossPay || 0), 0);
+  const totalVerifiedEarnings = paidTimesheets.reduce(
+    (acc, t) => acc + (t.netPay !== undefined ? t.netPay : (t.totalGrossPay || 0)),
+    0
+  );
   const pendingTimesheets = myWeeklyTimesheets.filter((t) => t.status !== 'verified_paid');
   const pendingHours = pendingTimesheets.reduce((acc, t) => acc + (t.totalHours || 0), 0);
 
@@ -228,8 +231,17 @@ export const TechVaultView: React.FC = () => {
 
                     <div className="flex items-center space-x-3">
                       <div className="text-right">
-                        <div className="text-sm font-bold font-mono text-[#fdfbf7]">{sheet.totalHours.toFixed(1)} hrs</div>
-                        <div className="text-base font-bold font-mono text-emerald-400">${sheet.totalGrossPay.toFixed(2)}</div>
+                        <div className="text-xs font-mono text-[#b8b0a5]">
+                          {sheet.totalHours.toFixed(1)} hrs @ ${sheet.hourlyRate.toFixed(2)}/hr
+                        </div>
+                        <div className="text-base font-black font-mono text-emerald-400">
+                          Net: ${(sheet.netPay !== undefined ? sheet.netPay : sheet.totalGrossPay).toFixed(2)}
+                        </div>
+                        {((sheet.totalBonuses || 0) > 0 || (sheet.totalDeductions || 0) > 0) && (
+                          <div className="text-[10px] font-mono text-[#78716c]">
+                            +${(sheet.totalBonuses || 0).toFixed(0)} bon / -${(sheet.totalDeductions || 0).toFixed(0)} ded
+                          </div>
+                        )}
                       </div>
 
                       <button
