@@ -50,6 +50,14 @@ export function useFSMStore() {
     createSubscription: (subData: any) => store.createSubscription(subData),
     cancelSubscription: (subId: string) => store.cancelSubscription(subId),
     triggerSubscriptionRenewal: (subId: string) => store.triggerSubscriptionRenewal(subId),
+    dailyWorkLogs: store.getDailyWorkLogs(),
+    weeklyTimesheets: store.getWeeklyTimesheets(),
+    getDailyWorkLogsByTechId: (techId: string) => store.getDailyWorkLogsByTechId(techId),
+    addDailyWorkLog: (logData: any) => store.addDailyWorkLog(logData),
+    getWeeklyTimesheetsByTechId: (techId: string) => store.getWeeklyTimesheetsByTechId(techId),
+    addWeeklyTimesheet: (timesheet: any) => store.addWeeklyTimesheet(timesheet),
+    verifyWeeklyTimesheetPayment: (timesheetId: string, verification: any) => store.verifyWeeklyTimesheetPayment(timesheetId, verification),
+    generateMissingWeeklyTimesheets: () => store.generateMissingWeeklyTimesheets(),
     resetToDefault: () => store.resetToDefault(),
   };
 }

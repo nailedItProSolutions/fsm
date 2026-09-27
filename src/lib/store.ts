@@ -1,4 +1,5 @@
-import { Client, Property, Job, Estimate, Invoice, UserProfile, Subscription } from '@/types';
+import { Client, Property, Job, Estimate, Invoice, UserProfile, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification } from '@/types';
+import { sortWorkLogsChronologically, aggregateWeeklyTimesheet, verifyWeeklyTimesheet, groupWorkLogsByCalendarWeek } from './ocrEngine';
 
 // Seed Initial Data
 export const INITIAL_USERS: UserProfile[] = [
@@ -653,8 +654,160 @@ export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
   }
 ];
 
+// Phase 4: Initial Scanned Daily Work Logs & Weekly Timesheets
+export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
+  {
+    id: 'log-101',
+    technicianId: 'user-tech-1',
+    technicianName: 'Mike Rivera',
+    date: '2024-10-14',
+    startTime: '08:00 AM',
+    stopTime: '04:30 PM',
+    totalHours: 8.5,
+    propertyLocation: '4512 Oakwood Ave, Building A',
+    propertyId: 'prop-1',
+    taskDetails: 'Replaced ruptured copper P-trap under master bathroom vanity. Soldered brass ball valve, pressure tested to 60 PSI.',
+    jobCategory: 'Plumbing',
+    confidenceScore: 0.98,
+    source: 'ocr_scan',
+    weeklyTimesheetId: 'timesheet-2024-W42-user-tech-1',
+    createdAt: '2024-10-14T17:00:00Z',
+  },
+  {
+    id: 'log-102',
+    technicianId: 'user-tech-1',
+    technicianName: 'Mike Rivera',
+    date: '2024-10-15',
+    startTime: '08:30 AM',
+    stopTime: '04:30 PM',
+    totalHours: 8.0,
+    propertyLocation: '1208 Westlake Dr, Unit 2',
+    propertyId: 'prop-3',
+    taskDetails: 'Repaired hallway ceiling drywall following AC overflow leak. Installed 1/2-in drywall patch and taped 45-min hot mud.',
+    jobCategory: 'Drywall',
+    confidenceScore: 0.96,
+    source: 'ocr_scan',
+    weeklyTimesheetId: 'timesheet-2024-W42-user-tech-1',
+    createdAt: '2024-10-15T17:00:00Z',
+  },
+  {
+    id: 'log-103',
+    technicianId: 'user-tech-2',
+    technicianName: 'David Lopez',
+    date: '2024-10-15',
+    startTime: '08:00 AM',
+    stopTime: '04:00 PM',
+    totalHours: 8.0,
+    propertyLocation: '4514 Oakwood Ave, Building B',
+    propertyId: 'prop-2',
+    taskDetails: 'Seasonal preventative maintenance on 3-ton heat pump. Cleaned condenser coils, replaced 20x25 MERV 11 filter and cleared drain.',
+    jobCategory: 'HVAC',
+    confidenceScore: 0.95,
+    source: 'ocr_scan',
+    createdAt: '2024-10-15T16:30:00Z',
+  },
+  {
+    id: 'log-104',
+    technicianId: 'user-tech-1',
+    technicianName: 'Mike Rivera',
+    date: '2024-10-16',
+    startTime: '09:00 AM',
+    stopTime: '05:00 PM',
+    totalHours: 8.0,
+    propertyLocation: '742 Evergreen Terrace',
+    propertyId: 'prop-4',
+    taskDetails: 'Kitchen island circuit diagnosis. Replaced tripped 20A GFCI receptacle and re-balanced panel breaker load.',
+    jobCategory: 'Electrical',
+    confidenceScore: 0.97,
+    source: 'ocr_scan',
+    weeklyTimesheetId: 'timesheet-2024-W42-user-tech-1',
+    createdAt: '2024-10-16T17:30:00Z',
+  },
+  {
+    id: 'log-105',
+    technicianId: 'user-tech-2',
+    technicianName: 'David Lopez',
+    date: '2024-10-17',
+    startTime: '08:00 AM',
+    stopTime: '04:00 PM',
+    totalHours: 8.0,
+    propertyLocation: '4512 Oakwood Ave, Building A',
+    propertyId: 'prop-1',
+    taskDetails: 'Exterior cedar siding repair and replacement of rotted south-facing window casing trim. Primed and sealed with exterior silicone.',
+    jobCategory: 'Carpentry',
+    confidenceScore: 0.94,
+    source: 'ocr_scan',
+    createdAt: '2024-10-17T16:45:00Z',
+  },
+  {
+    id: 'log-106',
+    technicianId: 'user-tech-1',
+    technicianName: 'Mike Rivera',
+    date: '2024-10-18',
+    startTime: '08:30 AM',
+    stopTime: '04:00 PM',
+    totalHours: 7.5,
+    propertyLocation: '883 Westgate Dr',
+    propertyId: 'prop-5',
+    taskDetails: 'Tenant turnover punch-list: smoke detector battery replacements, door lockbox installation, interior touch-up and debris sweep.',
+    jobCategory: 'Turnover',
+    confidenceScore: 0.99,
+    source: 'ocr_scan',
+    weeklyTimesheetId: 'timesheet-2024-W42-user-tech-1',
+    createdAt: '2024-10-18T16:30:00Z',
+  },
+];
+
+export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
+  {
+    id: 'timesheet-2024-W42-user-tech-1',
+    technicianId: 'user-tech-1',
+    technicianName: 'Mike Rivera',
+    weekNumber: 42,
+    year: 2024,
+    weekStartDate: '2024-10-14',
+    weekEndDate: '2024-10-20',
+    dailyLogIds: ['log-101', 'log-102', 'log-104', 'log-106'],
+    totalHours: 32.0,
+    hourlyRate: 35.0,
+    totalGrossPay: 1120.0,
+    status: 'verified_paid',
+    locked: true,
+    paymentVerification: {
+      id: 'pay-verif-1001',
+      checkNumber: 'CHK-94821',
+      amount: 1120.0,
+      paymentDate: '2024-10-21',
+      paymentMethod: 'check',
+      checkImageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
+      notes: 'Floyd County First National Bank Payroll Check #CHK-94821 issued to Mike Rivera. Cleared on 10/22/2024.',
+      verifiedBy: 'Sarah Jenkins (Admin)',
+      verifiedAt: '2024-10-21T14:30:00Z',
+    },
+    createdAt: '2024-10-20T18:00:00Z',
+    updatedAt: '2024-10-21T14:30:00Z',
+  },
+  {
+    id: 'timesheet-2024-W42-user-tech-2',
+    technicianId: 'user-tech-2',
+    technicianName: 'David Lopez',
+    weekNumber: 42,
+    year: 2024,
+    weekStartDate: '2024-10-14',
+    weekEndDate: '2024-10-20',
+    dailyLogIds: ['log-103', 'log-105'],
+    totalHours: 16.0,
+    hourlyRate: 35.0,
+    totalGrossPay: 560.0,
+    status: 'pending_review',
+    locked: false,
+    createdAt: '2024-10-20T18:00:00Z',
+    updatedAt: '2024-10-20T18:00:00Z',
+  },
+];
+
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v7';
+const STORAGE_KEY = 'nailed_it_fsm_store_v8';
 
 export class FSMStore {
   private static instance: FSMStore;
@@ -664,6 +817,8 @@ export class FSMStore {
   private invoices: Invoice[] = INITIAL_INVOICES;
   private estimates: Estimate[] = INITIAL_ESTIMATES;
   private subscriptions: Subscription[] = INITIAL_SUBSCRIPTIONS;
+  private dailyWorkLogs: DailyWorkLog[] = INITIAL_DAILY_WORK_LOGS;
+  private weeklyTimesheets: WeeklyTimesheet[] = INITIAL_WEEKLY_TIMESHEETS;
   private users: UserProfile[] = INITIAL_USERS;
   private listeners: Array<() => void> = [];
 
@@ -679,6 +834,8 @@ export class FSMStore {
           this.invoices = parsed.invoices || INITIAL_INVOICES;
           this.estimates = parsed.estimates || INITIAL_ESTIMATES;
           this.subscriptions = parsed.subscriptions || INITIAL_SUBSCRIPTIONS;
+          this.dailyWorkLogs = parsed.dailyWorkLogs || INITIAL_DAILY_WORK_LOGS;
+          this.weeklyTimesheets = parsed.weeklyTimesheets || INITIAL_WEEKLY_TIMESHEETS;
           this.users = parsed.users || INITIAL_USERS;
         }
       } catch (e) {
@@ -706,6 +863,8 @@ export class FSMStore {
             invoices: this.invoices,
             estimates: this.estimates,
             subscriptions: this.subscriptions,
+            dailyWorkLogs: this.dailyWorkLogs,
+            weeklyTimesheets: this.weeklyTimesheets,
             users: this.users,
           })
         );
@@ -1168,6 +1327,94 @@ export class FSMStore {
     return { job: newJob, renewalInvoice: newInv };
   }
 
+  // --- Phase 4: AI-Powered Daily Work Logs & OCR Vault ---
+  public getDailyWorkLogs(): DailyWorkLog[] {
+    return sortWorkLogsChronologically(this.dailyWorkLogs, 'asc');
+  }
+
+  public getDailyWorkLogsByTechId(techId: string): DailyWorkLog[] {
+    return sortWorkLogsChronologically(
+      this.dailyWorkLogs.filter((l) => l.technicianId === techId),
+      'asc'
+    );
+  }
+
+  public addDailyWorkLog(logData: Omit<DailyWorkLog, 'id' | 'createdAt'>): DailyWorkLog {
+    const newLog: DailyWorkLog = {
+      ...logData,
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+    };
+    this.dailyWorkLogs.push(newLog);
+    this.persist();
+    return newLog;
+  }
+
+  // --- Phase 4: Weekly Timesheets & Payment Verification ---
+  public getWeeklyTimesheets(): WeeklyTimesheet[] {
+    return [...this.weeklyTimesheets].sort((a, b) => b.weekNumber - a.weekNumber);
+  }
+
+  public getWeeklyTimesheetsByTechId(techId: string): WeeklyTimesheet[] {
+    return this.weeklyTimesheets
+      .filter((t) => t.technicianId === techId)
+      .sort((a, b) => b.weekNumber - a.weekNumber);
+  }
+
+  public addWeeklyTimesheet(timesheet: WeeklyTimesheet): WeeklyTimesheet {
+    const existingIdx = this.weeklyTimesheets.findIndex((t) => t.id === timesheet.id);
+    if (existingIdx >= 0) {
+      if (!this.weeklyTimesheets[existingIdx].locked) {
+        this.weeklyTimesheets[existingIdx] = timesheet;
+      }
+    } else {
+      this.weeklyTimesheets.unshift(timesheet);
+    }
+    this.persist();
+    return timesheet;
+  }
+
+  public verifyWeeklyTimesheetPayment(
+    timesheetId: string,
+    verification: Omit<PaymentVerification, 'id' | 'verifiedAt'>
+  ): WeeklyTimesheet | null {
+    const timesheet = this.weeklyTimesheets.find((t) => t.id === timesheetId);
+    if (!timesheet) return null;
+
+    const updated = verifyWeeklyTimesheet(timesheet, verification);
+    const idx = this.weeklyTimesheets.findIndex((t) => t.id === timesheetId);
+    if (idx >= 0) {
+      this.weeklyTimesheets[idx] = updated;
+    }
+    this.persist();
+    return updated;
+  }
+
+  public generateMissingWeeklyTimesheets(): WeeklyTimesheet[] {
+    const generated: WeeklyTimesheet[] = [];
+    const techUsers = this.getTechnicians();
+
+    for (const tech of techUsers) {
+      const techLogs = this.getDailyWorkLogsByTechId(tech.uid);
+      const weekGroups = groupWorkLogsByCalendarWeek(techLogs);
+
+      weekGroups.forEach((logs, weekKey) => {
+        const expectedId = `timesheet-${weekKey}-${tech.uid}`;
+        const existing = this.weeklyTimesheets.find((t) => t.id === expectedId);
+        if (!existing) {
+          const newSheet = aggregateWeeklyTimesheet(logs, tech.uid, tech.displayName, 35.0);
+          this.weeklyTimesheets.push(newSheet);
+          generated.push(newSheet);
+        }
+      });
+    }
+
+    if (generated.length > 0) {
+      this.persist();
+    }
+    return generated;
+  }
+
   // Reset demo data helper
   public resetToDefault() {
     this.clients = INITIAL_CLIENTS;
@@ -1176,6 +1423,8 @@ export class FSMStore {
     this.invoices = INITIAL_INVOICES;
     this.estimates = INITIAL_ESTIMATES;
     this.subscriptions = INITIAL_SUBSCRIPTIONS;
+    this.dailyWorkLogs = INITIAL_DAILY_WORK_LOGS;
+    this.weeklyTimesheets = INITIAL_WEEKLY_TIMESHEETS;
     this.users = INITIAL_USERS;
     this.persist();
   }

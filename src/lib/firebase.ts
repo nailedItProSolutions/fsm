@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-api-key",
@@ -15,5 +16,7 @@ const firebaseConfig = {
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = typeof window !== 'undefined' ? getAuth(app) : ({} as any);
 const db = typeof window !== 'undefined' ? getFirestore(app) : ({} as any);
+const storage = typeof window !== 'undefined' ? getStorage(app) : ({} as any);
 
-export { app, auth, db };
+export { app, auth, db, storage };
+

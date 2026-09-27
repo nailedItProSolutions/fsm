@@ -186,3 +186,59 @@ export interface Subscription {
   monthlyAddOnsTotal?: number;
   oneTimeAddOnsTotal?: number;
 }
+
+// Phase 4: AI-Powered Technician Vault & Timesheet OCR Types
+export type JobTradeCategory = 'Plumbing' | 'Electrical' | 'Drywall' | 'HVAC' | 'Carpentry' | 'Handyman' | 'Turnover';
+
+export interface DailyWorkLog {
+  id: string;
+  technicianId: string;
+  technicianName: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // e.g. "08:00 AM"
+  stopTime: string;  // e.g. "04:30 PM"
+  totalHours: number; // e.g. 8.5
+  propertyLocation: string; // e.g. "4512 Oakwood Ave, Building A"
+  propertyId?: string;
+  taskDetails: string;
+  jobCategory: JobTradeCategory;
+  scannedImageUrl?: string;
+  rawOcrText?: string;
+  confidenceScore: number; // 0.0 to 1.0 (e.g. 0.96)
+  createdAt: string;
+  source: 'ocr_scan' | 'manual_entry';
+  weeklyTimesheetId?: string;
+}
+
+export interface PaymentVerification {
+  id: string;
+  checkNumber?: string;
+  amount: number;
+  paymentDate: string; // YYYY-MM-DD
+  paymentMethod: 'check' | 'direct_deposit' | 'ach' | 'zelle';
+  checkImageUrl?: string;
+  notes?: string;
+  verifiedBy: string; // e.g. "Sarah Jenkins (Admin)"
+  verifiedAt: string;
+}
+
+export interface WeeklyTimesheet {
+  id: string;
+  technicianId: string;
+  technicianName: string;
+  weekNumber: number;
+  year: number;
+  weekStartDate: string; // Monday YYYY-MM-DD
+  weekEndDate: string;   // Sunday YYYY-MM-DD
+  dailyLogIds: string[];
+  totalHours: number;
+  hourlyRate: number;    // e.g. $35.00/hr
+  totalGrossPay: number; // e.g. $1,400.00
+  status: 'draft' | 'pending_review' | 'verified_paid';
+  locked: boolean;
+  paymentVerification?: PaymentVerification;
+  generatedPdfUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
