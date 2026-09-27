@@ -23,8 +23,24 @@ import {
   Calendar,
   Image as ImageIcon,
   Check,
-  Play
+  Play,
+  Lock,
+  ShieldAlert,
+  ShieldCheck,
+  Building2,
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
+
+export const STANDARDIZED_TURNOVER_ITEMS = [
+  'HVAC Filter Replacement & Blower Vent Inspection',
+  'Re-key Exterior Entry Deadbolts & Verify Master Key',
+  'Drywall Patch & Paint Inspection (Walls, Baseboards & Ceiling)',
+  'Smoke & Carbon Monoxide Detector Functional Testing',
+  'Plumbing Supply Stop, P-Trap & Toilet Flapper Leak Inspection',
+  'Appliance Cleanliness & Refrigerator Coil Check',
+  'Window Locks & Weatherstripping Integrity Verification',
+];
 
 const SAMPLE_FIELD_PHOTOS = [
   { label: 'Ceiling Drywall Patch Before', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80' },
@@ -33,6 +49,9 @@ const SAMPLE_FIELD_PHOTOS = [
   { label: 'Clean Re-caulked Shower Pan After', url: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=600&q=80' },
   { label: 'Clogged Gutter Debris Before', url: 'https://images.unsplash.com/photo-1517581177682-a085bb7ffb15?auto=format&fit=crop&w=600&q=80' },
   { label: 'Clear Flowing Downspout After', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80' },
+  { label: 'Turnover Fresh Paint & Spackle Cleaned (After)', url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80' },
+  { label: 'Turnover Re-keyed Deadbolt & Key Tag (After)', url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80' },
+  { label: 'Turnover Brand New HVAC Air Filter (After)', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80' },
 ];
 
 export const TechnicianMobilePortal: React.FC = () => {
@@ -58,6 +77,16 @@ export const TechnicianMobilePortal: React.FC = () => {
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [completionNotes, setCompletionNotes] = useState<Record<string, string>>({});
   const [photoPickerModalJobId, setPhotoPickerModalJobId] = useState<{ jobId: string; type: 'before' | 'after' } | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const jobParam = params.get('job');
+      if (jobParam) setExpandedJobId(jobParam);
+      const techParam = params.get('tech');
+      if (techParam) setSelectedTechId(techParam);
+    }
+  }, []);
 
   const activeTech = technicians.find((t) => t.uid === selectedTechId) || technicians[0];
   const techJobs = jobs.filter((j) => j.assignedTechId === selectedTechId);
@@ -87,6 +116,17 @@ export const TechnicianMobilePortal: React.FC = () => {
     if (!photoPickerModalJobId) return;
     addJobPhoto(photoPickerModalJobId.jobId, photoPickerModalJobId.type, photoUrl);
     setPhotoPickerModalJobId(null);
+  };
+
+  const handleApplyTurnoverChecklist = (jobId: string) => {
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job) return;
+    const newItems = STANDARDIZED_TURNOVER_ITEMS.map((text, idx) => ({
+      id: `to-${Date.now()}-${idx}`,
+      text,
+      done: false,
+    }));
+    updateJob(jobId, { checklist: newItems });
   };
 
   return (
@@ -183,6 +223,17 @@ export const TechnicianMobilePortal: React.FC = () => {
             const checklistDoneCount = job.checklist?.filter((c) => c.done).length || 0;
             const checklistTotal = job.checklist?.length || 0;
 
+            const isTurnoverJob =
+              job.title.toLowerCase().includes('turnover') ||
+              job.description.toLowerCase().includes('turnover') ||
+              job.notes?.toLowerCase().includes('turnover') ||
+              (job as any).isTurnover;
+
+            const allChecklistDone =
+              checklistTotal > 0 && (job.checklist?.every((c) => c.done) ?? false);
+            const hasAfterPhoto = (job.photosAfter?.length || 0) >= 1;
+            const isCompletionGated = isTurnoverJob && (!allChecklistDone || !hasAfterPhoto);
+
             return (
               <div
                 key={job.id}
@@ -203,6 +254,12 @@ export const TechnicianMobilePortal: React.FC = () => {
                     <span className="font-mono text-[#b8b0a5] font-semibold text-[11px]">
                       {job.jobNumber}
                     </span>
+                    {isTurnoverJob && (
+                      <span className="bg-purple-950/80 text-purple-300 border border-purple-700/60 font-mono font-bold text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-purple-400" />
+                        Turnover Protocol
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -301,14 +358,20 @@ export const TechnicianMobilePortal: React.FC = () => {
                   )}
 
                   {/* Work Order Checklist */}
-                  {job.checklist && job.checklist.length > 0 && (
+                  {job.checklist && job.checklist.length > 0 ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-bold text-[#b8b0a5] flex items-center gap-1.5">
                           <CheckSquare className="w-3.5 h-3.5 text-[#c5a059]" />
-                          Tasks Checklist ({checklistDoneCount}/{checklistTotal})
+                          {isTurnoverJob ? 'Turnover Punch-List' : 'Tasks Checklist'} ({checklistDoneCount}/{checklistTotal})
                         </span>
-                        <span className="text-[10px] text-[#78716c]">Tap to complete</span>
+                        {isTurnoverJob ? (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-700/60">
+                            Standard Protocol Active
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-[#78716c]">Tap to complete</span>
+                        )}
                       </div>
 
                       <div className="space-y-1.5 bg-[#161616] p-2.5 rounded-xl border border-[#242424]">
@@ -338,8 +401,33 @@ export const TechnicianMobilePortal: React.FC = () => {
                           </button>
                         ))}
                       </div>
+
+                      {isTurnoverJob && job.checklist.length < STANDARDIZED_TURNOVER_ITEMS.length && (
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleApplyTurnoverChecklist(job.id)}
+                            className="text-[11px] font-semibold text-purple-300 hover:text-purple-200 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-700/60 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-400" />
+                            Apply 7-Point Turnover Checklist Protocol
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ) : isTurnoverJob ? (
+                    <div className="bg-[#18181b] p-3 rounded-xl border border-purple-800/60 text-center space-y-2">
+                      <p className="text-xs text-purple-200 font-bold">Standardized Turnover Checklist Required</p>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyTurnoverChecklist(job.id)}
+                        className="text-xs font-bold text-white bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg shadow transition flex items-center justify-center mx-auto space-x-1"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Load 7-Point Turnover Checklist</span>
+                      </button>
+                    </div>
+                  ) : null}
 
                   {/* Before & After Job Photos */}
                   <div className="space-y-2">
@@ -348,6 +436,11 @@ export const TechnicianMobilePortal: React.FC = () => {
                         <Camera className="w-3.5 h-3.5 text-[#FF8A00]" />
                         Before / After Photos
                       </span>
+                      {isTurnoverJob && (
+                        <span className="text-[10px] text-amber-400 font-semibold">
+                          Min 1 &apos;After&apos; photo required to close
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -446,13 +539,110 @@ export const TechnicianMobilePortal: React.FC = () => {
                     )}
 
                     {job.status === 'in_progress' && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
+                        {/* Turnover Quality Gate Status Box */}
+                        {isTurnoverJob && (
+                          <div
+                            className={`p-3.5 rounded-xl border transition ${
+                              isCompletionGated
+                                ? 'bg-amber-950/40 border-amber-600/60 text-amber-200 shadow-md'
+                                : 'bg-emerald-950/40 border-emerald-600/60 text-emerald-200 shadow-md'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {isCompletionGated ? (
+                                  <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+                                ) : (
+                                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                                )}
+                                <div>
+                                  <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                                    Turnover Quality Gate {isCompletionGated ? '— Sign-Off Locked' : '— Ready'}
+                                  </h4>
+                                  <p className="text-[11px] text-[#b8b0a5] mt-0.5">
+                                    {isCompletionGated
+                                      ? 'Turnover protocol requires 100% checklist tasks + 1 "After" photo.'
+                                      : 'All turnover quality criteria met. Work order unlocked for completion.'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <span
+                                className={`text-[10px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${
+                                  isCompletionGated
+                                    ? 'bg-amber-900/80 text-amber-300 border border-amber-700'
+                                    : 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
+                                }`}
+                              >
+                                {isCompletionGated ? 'Gated Lock' : 'Certified'}
+                              </span>
+                            </div>
+
+                            {/* Gate Status Grid */}
+                            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                              <div
+                                className={`p-2 rounded-lg border flex items-center space-x-2 ${
+                                  allChecklistDone
+                                    ? 'bg-emerald-950/70 border-emerald-700/80 text-emerald-300 font-semibold'
+                                    : 'bg-[#18181b] border-[#333333] text-amber-300'
+                                }`}
+                              >
+                                {allChecklistDone ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                                )}
+                                <span className="text-[11px]">
+                                  {allChecklistDone
+                                    ? `✓ All Tasks (${checklistDoneCount}/${checklistTotal})`
+                                    : `Tasks: ${checklistDoneCount}/${checklistTotal} Done`}
+                                </span>
+                              </div>
+
+                              <div
+                                className={`p-2 rounded-lg border flex items-center space-x-2 ${
+                                  hasAfterPhoto
+                                    ? 'bg-emerald-950/70 border-emerald-700/80 text-emerald-300 font-semibold'
+                                    : 'bg-[#18181b] border-[#333333] text-amber-300'
+                                }`}
+                              >
+                                {hasAfterPhoto ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                ) : (
+                                  <Camera className="w-4 h-4 text-amber-400 shrink-0" />
+                                )}
+                                <span className="text-[11px]">
+                                  {hasAfterPhoto
+                                    ? `✓ ${job.photosAfter?.length} 'After' Photo(s)`
+                                    : 'Missing 1+ After Photo'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <button
+                          type="button"
+                          disabled={isCompletionGated}
                           onClick={() => handleCompleteJob(job.id)}
-                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
+                          className={`w-full font-bold text-xs py-3.5 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 ${
+                            isCompletionGated
+                              ? 'bg-[#202020] text-[#777777] border border-[#333333] cursor-not-allowed opacity-80'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-emerald-950/50 ring-2 ring-emerald-500/40'
+                          }`}
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>✓ Complete Work Order & Sign Off</span>
+                          {isCompletionGated ? (
+                            <>
+                              <Lock className="w-4 h-4 text-amber-400" />
+                              <span>Complete Job Locked (Turnover Incomplete)</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>✓ Complete Work Order & Sign Off</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     )}

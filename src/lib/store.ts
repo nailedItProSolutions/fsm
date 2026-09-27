@@ -229,6 +229,74 @@ export const INITIAL_JOBS: Job[] = [
     createdAt: '2024-03-20T10:00:00Z',
   },
   {
+    id: 'job-turnover-1',
+    jobNumber: 'JOB-1049',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-1',
+    propertyAddress: '4512 Oakwood Ave (Unit 104), Austin, TX',
+    assignedTechId: 'user-tech-1',
+    assignedTechName: 'Mike Rivera',
+    title: 'Apartment Turnover: Standardized Make-Ready Protocol',
+    description: 'Full unit turn between tenants. Execute 7-point standardized turnover checklist and document after completion photo.',
+    status: 'in_progress',
+    priority: 'high',
+    scheduledDate: new Date().toISOString().split('T')[0],
+    timeWindowStart: '14:00',
+    timeWindowEnd: '17:00',
+    checklist: [
+      { id: 't-1', text: 'HVAC Filter Replacement & Blower Vent Inspection', done: true },
+      { id: 't-2', text: 'Re-key Exterior Entry Deadbolts & Verify Master Key', done: true },
+      { id: 't-3', text: 'Drywall Patch & Paint Inspection (Walls, Baseboards & Ceiling)', done: false },
+      { id: 't-4', text: 'Smoke & Carbon Monoxide Detector Functional Testing', done: false },
+      { id: 't-5', text: 'Plumbing Supply Stop, P-Trap & Toilet Flapper Leak Inspection', done: false },
+      { id: 't-6', text: 'Appliance Cleanliness & Refrigerator Coil Check', done: false },
+      { id: 't-7', text: 'Window Locks & Weatherstripping Integrity Verification', done: false },
+    ],
+    photosBefore: [
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80',
+    ],
+    photosAfter: [],
+    notes: 'Key in lockbox 4592. Apex Property Management requires full turnover checklist and after photo verification.',
+    totalAmount: 450.00,
+    createdAt: '2026-09-26T12:00:00Z',
+  },
+  {
+    id: 'job-turnover-2',
+    jobNumber: 'JOB-1050',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-3',
+    propertyAddress: '1208 Westlake Dr (Unit 3), Austin, TX',
+    assignedTechId: 'user-tech-1',
+    assignedTechName: 'Mike Rivera',
+    title: 'Turnover Service: Move-In Ready QA Audit',
+    description: 'Final turnover verification. All 7 standard turnover punch-list tasks completed and verified with photographic evidence.',
+    status: 'in_progress',
+    priority: 'medium',
+    scheduledDate: new Date().toISOString().split('T')[0],
+    timeWindowStart: '15:30',
+    timeWindowEnd: '18:00',
+    checklist: [
+      { id: 't-21', text: 'HVAC Filter Replacement & Blower Vent Inspection', done: true },
+      { id: 't-22', text: 'Re-key Exterior Entry Deadbolts & Verify Master Key', done: true },
+      { id: 't-23', text: 'Drywall Patch & Paint Inspection (Walls, Baseboards & Ceiling)', done: true },
+      { id: 't-24', text: 'Smoke & Carbon Monoxide Detector Functional Testing', done: true },
+      { id: 't-25', text: 'Plumbing Supply Stop, P-Trap & Toilet Flapper Leak Inspection', done: true },
+      { id: 't-26', text: 'Appliance Cleanliness & Refrigerator Coil Check', done: true },
+      { id: 't-27', text: 'Window Locks & Weatherstripping Integrity Verification', done: true },
+    ],
+    photosBefore: [
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80',
+    ],
+    photosAfter: [
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80',
+    ],
+    notes: 'All items checked and After photo attached. Ready for final certified completion.',
+    totalAmount: 495.00,
+    createdAt: '2026-09-26T13:00:00Z',
+  },
+  {
     id: 'job-2',
     jobNumber: 'JOB-1042',
     clientId: 'client-2',
@@ -547,7 +615,7 @@ export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
 ];
 
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v3';
+const STORAGE_KEY = 'nailed_it_fsm_store_v5';
 
 export class FSMStore {
   private static instance: FSMStore;
