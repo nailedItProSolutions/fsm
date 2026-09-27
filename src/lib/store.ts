@@ -29,6 +29,16 @@ export const INITIAL_USERS: UserProfile[] = [
     active: true,
     createdAt: '2024-02-01T08:00:00Z',
   },
+  {
+    uid: 'user-client-1',
+    email: 'david@apexpm.com',
+    displayName: 'David Chen (Landlord / Investor)',
+    role: 'client',
+    phone: '(512) 883-9921',
+    clientId: 'client-1',
+    active: true,
+    createdAt: '2024-01-12T10:00:00Z',
+  },
 ];
 
 export const INITIAL_PROPERTIES: Property[] = [
@@ -43,7 +53,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     zip: '78751',
     gateCode: '#4592',
     accessInstructions: 'Key lockbox on north utility door. Code 4592.',
-    serviceHistoryJobIds: ['job-1', 'job-4'],
+    serviceHistoryJobIds: ['job-1', 'job-4', 'job-pm-1'],
     createdAt: '2024-01-12T10:00:00Z',
   },
   {
@@ -71,7 +81,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     zip: '78746',
     gateCode: '8821',
     accessInstructions: 'Ring doorbell twice. Tenant has friendly Golden Retriever.',
-    serviceHistoryJobIds: [],
+    serviceHistoryJobIds: ['job-5'],
     createdAt: '2024-02-14T11:00:00Z',
   },
   {
@@ -293,12 +303,51 @@ export const INITIAL_JOBS: Job[] = [
       { id: 'c12', text: 'Clear gutter troughs & bag debris', done: true },
       { id: 'c13', text: 'Water-test downspout drainage to curb', done: true },
     ],
-    photosBefore: [],
-    photosAfter: [],
+    photosBefore: [
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+    ],
+    photosAfter: [
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+    ],
+    invoiceId: 'inv-3001',
     completedAt: '2024-03-18T11:15:00Z',
-    notes: 'All downspouts flowing freely now.',
+    notes: 'All downspouts flowing freely now. Full debris disposal certified.',
     totalAmount: 320.00,
     createdAt: '2024-03-15T09:00:00Z',
+  },
+  {
+    id: 'job-5',
+    jobNumber: 'JOB-1036',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-3',
+    propertyAddress: '1208 Westlake Dr (Unit 2), Austin, TX',
+    assignedTechId: 'user-tech-1',
+    assignedTechName: 'Mike Rivera',
+    title: 'Tenant Turnover Punch-List & Interior Re-paint',
+    description: 'Complete apartment turnover preparation. Re-painted living area with eggshell satin, cleaned coils, replaced safety hardware.',
+    status: 'completed',
+    priority: 'medium',
+    scheduledDate: '2024-03-10',
+    timeWindowStart: '08:00',
+    timeWindowEnd: '14:00',
+    checklist: [
+      { id: 'c14', text: 'Full wall spackle & paint touchup in living room', done: true },
+      { id: 'c15', text: 'Inspect and clean refrigerator condenser coils', done: true },
+      { id: 'c16', text: 'Test GFCI outlets in kitchen and bathrooms', done: true },
+      { id: 'c17', text: 'Install fresh batteries in smoke and CO detectors', done: true },
+    ],
+    photosBefore: [
+      'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80',
+    ],
+    photosAfter: [
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+    ],
+    completedAt: '2024-03-10T13:45:00Z',
+    invoiceId: 'inv-3003',
+    notes: 'Turnover completed ahead of schedule. Unit is move-in ready for new tenant.',
+    totalAmount: 520.00,
+    createdAt: '2024-03-08T09:00:00Z',
   },
   {
     id: 'job-pm-1',
@@ -373,6 +422,29 @@ export const INITIAL_INVOICES: Invoice[] = [
     status: 'sent',
     dueDate: '2024-04-20',
     createdAt: '2024-03-20T11:00:00Z',
+  },
+  {
+    id: 'inv-3003',
+    invoiceNumber: 'INV-3003',
+    jobId: 'job-5',
+    jobNumber: 'JOB-1036',
+    clientId: 'client-1',
+    clientName: 'Apex Property Management',
+    propertyId: 'prop-3',
+    propertyAddress: '1208 Westlake Dr, Austin, TX',
+    items: [
+      { id: 'ii-5', description: 'Turnover Prep & Wall Re-finishing (Labor)', quantity: 4.5, unitPrice: 85, total: 382.50 },
+      { id: 'ii-6', description: 'Paint, primer, GFCI receptacles & 9V batteries', quantity: 1, unitPrice: 137.50, total: 137.50 },
+    ],
+    subtotal: 520.00,
+    tax: 42.90,
+    total: 562.90,
+    amountPaid: 562.90,
+    balanceDue: 0,
+    status: 'paid',
+    dueDate: '2024-04-10',
+    paidAt: '2024-03-11T10:15:00Z',
+    createdAt: '2024-03-10T14:00:00Z',
   }
 ];
 
@@ -475,7 +547,7 @@ export const INITIAL_SUBSCRIPTIONS: Subscription[] = [
 ];
 
 // In-Memory / LocalStorage State Store Helper
-const STORAGE_KEY = 'nailed_it_fsm_store_v2';
+const STORAGE_KEY = 'nailed_it_fsm_store_v3';
 
 export class FSMStore {
   private static instance: FSMStore;

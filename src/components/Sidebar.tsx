@@ -13,7 +13,8 @@ import {
   Smartphone, 
   MapPin,
   Sparkles,
-  PhoneCall
+  PhoneCall,
+  Building2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -56,6 +57,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       href: '/dashboard/invoices',
       icon: CreditCard,
       roles: ['admin', 'dispatcher'],
+    },
+    {
+      label: 'Landlord & Investor Portal',
+      href: '/dashboard/investor',
+      icon: Building2,
+      roles: ['admin', 'dispatcher', 'client'],
+      badge: 'Portal',
     },
     {
       label: 'Field Technician Portal',

@@ -7,6 +7,7 @@ export interface UserProfile {
   role: UserRole;
   phone?: string;
   avatarUrl?: string;
+  clientId?: string;
   active: boolean;
   createdAt: string;
 }

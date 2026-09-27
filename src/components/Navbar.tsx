@@ -11,7 +11,8 @@ import {
   Bell,
   Menu,
   Phone,
-  MapPin
+  MapPin,
+  Building2
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -19,7 +20,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
-  const { user, loginAs, isAdmin, isTechnician } = useAuth();
+  const { user, loginAs, isAdmin, isTechnician, isClient } = useAuth();
 
   return (
     <header className="bg-[#111111] border-b border-[#222222] text-[#fdfbf7] sticky top-0 z-40 shadow-lg">
@@ -91,6 +92,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             >
               <Wrench className="w-3.5 h-3.5" />
               <span>Field Tech</span>
+            </button>
+            <button
+              onClick={() => loginAs('client')}
+              className={`px-2.5 py-1 rounded font-semibold transition flex items-center space-x-1 ${
+                isClient 
+                  ? 'bg-purple-600 text-white shadow-md font-bold' 
+                  : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Investor / Landlord</span>
             </button>
           </div>
 
