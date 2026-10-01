@@ -193,7 +193,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                     Live SMS Sent
                   </span>
                 </div>
-                <p className="text-xs text-red-200/80">Twilio Programmable SMS Gateway • Automated Field Alert</p>
+                <p className="text-xs text-red-200/80">Carrier Email-to-SMS Gateway • Automated Field Alert</p>
               </div>
             </div>
             <button
@@ -209,16 +209,21 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
           </div>
 
           <div className="p-6 space-y-5">
-            {/* Twilio Carrier Delivery Telemetry Bar */}
+            {/* Email-to-SMS Telemetry Bar */}
             <div className="bg-[#181010] border border-red-900/50 rounded-xl p-3 flex items-center justify-between text-xs">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="font-mono text-emerald-400 font-bold">HTTP 200 OK</span>
+                <span className="font-mono text-emerald-400 font-bold">SMTP 250 OK</span>
                 <span className="text-[#a8a095]">|</span>
-                <span className="text-[#c8c0b5] font-mono text-[11px]">SID: SM{job.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16).padEnd(16, '0')}</span>
+                <span className="text-[#c8c0b5] font-mono text-[11px]">
+                  {(() => {
+                    const phone = emergencySmsPayload.techPhone.replace(/[^0-9]/g, '');
+                    return `${phone}@vtext.com`;
+                  })()}
+                </span>
               </div>
               <span className="text-[11px] text-red-400 font-bold bg-red-950/60 px-2 py-0.5 rounded border border-red-800/40">
-                Carrier: Verizon FirstNet
+                Routing: Verizon
               </span>
             </div>
 
@@ -438,7 +443,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                     )}
                   </div>
                   <p className="text-[11px] text-[#a8a095] mt-0.5 leading-relaxed">
-                    Flags job with bright red highlighting on Dispatch Board and dispatches instant SMS alert to assigned technician via Twilio.
+                    Flags job with bright red highlighting on Dispatch Board and dispatches instant SMS alert to assigned technician via Carrier Email-to-SMS.
                   </p>
                 </div>
               </div>

@@ -230,7 +230,7 @@ export const INITIAL_JOBS: Job[] = [
       'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80',
     ],
     photosAfter: [],
-    notes: '24/7 Emergency response dispatched via Twilio SMS to Mike Rivera. Water main key is on utility wall.',
+    notes: '24/7 Emergency response dispatched via Carrier Email-to-SMS to Mike Rivera. Water main key is on utility wall.',
     totalAmount: 850.00,
     createdAt: '2026-09-26T08:15:00Z',
   },

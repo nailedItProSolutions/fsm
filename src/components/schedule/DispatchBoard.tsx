@@ -226,7 +226,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                 className="px-3.5 py-2 rounded-xl bg-red-900/70 hover:bg-red-800 border border-red-500 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-md hover:scale-[1.02]"
               >
                 <Smartphone className="w-4 h-4 text-red-300 animate-bounce" />
-                <span>Twilio SMS Alert</span>
+                <span>Email-to-SMS Alert</span>
               </button>
               <button
                 onClick={() => setSelectedJob(emergencyJobs[0])}
@@ -372,7 +372,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                               <div className="pt-1.5 border-t border-red-900/60 flex items-center justify-between">
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping inline-block" />
-                                  <span>Twilio Dispatched</span>
+                                  <span>Gateway Dispatched</span>
                                 </span>
                                 <button
                                   type="button"
@@ -611,7 +611,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
         onClose={() => setSelectedJob(null)}
       />
 
-      {/* Twilio SMS Simulation Modal */}
+      {/* Email-to-SMS Simulation Modal */}
       {smsPreviewJob && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#100c0c] text-[#fdfbf7] rounded-3xl shadow-2xl max-w-lg w-full border-2 border-red-500 shadow-red-950/80 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
@@ -627,10 +627,10 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                       24/7 Emergency Dispatch Alert
                     </h3>
                     <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-600 text-white animate-pulse">
-                      Twilio Verified
+                      Gateway Verified
                     </span>
                   </div>
-                  <p className="text-xs text-red-200/80">Carrier Delivery Gateway & SMS Dispatch Telemetry</p>
+                  <p className="text-xs text-red-200/80">Carrier Email-to-SMS Gateway Telemetry</p>
                 </div>
               </div>
               <button
@@ -642,16 +642,22 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
             </div>
 
             <div className="p-6 space-y-5">
-              {/* Twilio Carrier Delivery Telemetry Bar */}
+              {/* Email-to-SMS Telemetry Bar */}
               <div className="bg-[#181010] border border-red-900/50 rounded-xl p-3 flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-mono text-emerald-400 font-bold">HTTP 200 OK</span>
+                  <span className="font-mono text-emerald-400 font-bold">SMTP 250 OK</span>
                   <span className="text-[#a8a095]">|</span>
-                  <span className="text-[#c8c0b5] font-mono text-[11px]">SID: SM{smsPreviewJob.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16).padEnd(16, '0')}</span>
+                  <span className="text-[#c8c0b5] font-mono text-[11px]">
+                    {(() => {
+                      const tech = technicians.find(t => t.uid === smsPreviewJob.assignedTechId);
+                      const phone = tech?.phone?.replace(/[^0-9]/g, '') || '17068448193';
+                      return `${phone}@vtext.com`;
+                    })()}
+                  </span>
                 </div>
                 <span className="text-[11px] text-red-400 font-bold bg-red-950/60 px-2 py-0.5 rounded border border-red-800/40">
-                  Carrier: Verizon FirstNet
+                  Routing: Verizon
                 </span>
               </div>
 
@@ -728,7 +734,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                 <div className="text-right text-[10px] text-[#78716c] flex items-center justify-end space-x-1">
                   <Check className="w-3 h-3 text-emerald-400" />
                   <span className="text-emerald-400 font-bold">Delivered</span>
-                  <span>• Twilio Handshake Confirmed</span>
+                  <span>• SMTP Handshake Confirmed</span>
                 </div>
               </div>
 
