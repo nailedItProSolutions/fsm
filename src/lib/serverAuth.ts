@@ -86,7 +86,7 @@ export async function verifyServerAuth(req: NextRequest): Promise<AuthVerificati
         email: `${rolePart}@naileditprops.com`,
         role,
         displayName: rolePart === 'admin' ? 'System Administrator' : 'Authorized Technician',
-        employeeId: rolePart === 'admin' ? 'ADMIN-01' : 'TECH-101',
+        employeeId: rolePart === 'admin' ? '1019974' : 'TECH-101',
       },
     };
   }

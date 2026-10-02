@@ -147,15 +147,15 @@ function LoginForm() {
             <div className="grid grid-cols-2 gap-2 text-left">
               <button
                 type="button"
-                onClick={() => handleFillCredentials('ADMIN-01', '1001', 'admin@nailedit.com')}
+                onClick={() => handleFillCredentials('1019974', '8572', 'admin@nailedit.com')}
                 className="p-2 rounded-lg bg-[#1f1f1f] hover:bg-[#282828] border border-[#333333] transition"
               >
                 <div className="text-[11px] font-bold text-[#c5a059] flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3 text-[#c5a059]" />
-                  <span>Admin: Sarah J.</span>
+                  <span>Admin: Brianna C.</span>
                 </div>
                 <div className="text-[10px] text-[#78716c] font-mono mt-0.5">
-                  ID: ADMIN-01 • PIN: 1001
+                  ID: 1019974 • PIN: 8572
                 </div>
               </button>
 
@@ -244,7 +244,7 @@ function LoginForm() {
                     required
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="e.g. TECH-101 or ADMIN-01"
+                    placeholder="e.g. TECH-101 or 1019974"
                     className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg pl-9 pr-4 py-2.5 text-[#fdfbf7] font-mono uppercase placeholder-[#78716c] focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>

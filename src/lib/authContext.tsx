@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           email,
           displayName: email.split('@')[0],
           role: isTech ? 'technician' : 'admin',
-          employeeId: isTech ? `TECH-${Math.floor(100 + Math.random() * 900)}` : 'ADMIN-01',
+          employeeId: isTech ? `TECH-${Math.floor(100 + Math.random() * 900)}` : '1019974',
           pin: '1234',
           active: true,
           createdAt: new Date().toISOString(),

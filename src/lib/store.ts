@@ -6,11 +6,11 @@ export const INITIAL_USERS: UserProfile[] = [
   {
     uid: 'user-admin-1',
     email: 'admin@nailedit.com',
-    displayName: 'Sarah Jenkins (Admin)',
+    displayName: 'Brianna Cronan - HR Mgr',
     role: 'admin',
     phone: '(512) 555-0100',
-    employeeId: 'ADMIN-01',
-    pin: '1001',
+    employeeId: '1019974',
+    pin: '8572',
     active: true,
     createdAt: '2024-01-10T08:00:00Z',
   },
@@ -802,7 +802,7 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
     netPay: 1120.0, // 1120 gross + 50 bonus - 50 deduction = 1120 net
     auditConfirmed: true,
     auditConfirmedAt: '2024-10-21T10:00:00Z',
-    auditConfirmedBy: 'Sarah Jenkins (Admin)',
+    auditConfirmedBy: 'Brianna Cronan - HR Mgr',
     status: 'verified_paid',
     locked: true,
     paymentVerification: {
@@ -813,7 +813,7 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
       paymentMethod: 'check',
       checkImageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
       notes: 'Floyd County First National Bank Payroll Check #CHK-94821 issued to Mike Rivera. Cleared on 10/22/2024.',
-      verifiedBy: 'Sarah Jenkins (Admin)',
+      verifiedBy: 'Brianna Cronan - HR Mgr',
       verifiedAt: '2024-10-21T14:30:00Z',
     },
     createdAt: '2024-10-20T18:00:00Z',
@@ -847,8 +847,8 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
 export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'audit-seed-1',
-    employeeId: 'ADMIN-01',
-    employeeName: 'Sarah Jenkins (Admin)',
+    employeeId: '1019974',
+    employeeName: 'Brianna Cronan - HR Mgr',
     employeeRole: 'admin',
     actionType: 'payment_verify',
     entityType: 'timesheet',
@@ -875,8 +875,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'audit-seed-3',
-    employeeId: 'ADMIN-01',
-    employeeName: 'Sarah Jenkins (Admin)',
+    employeeId: '1019974',
+    employeeName: 'Brianna Cronan - HR Mgr',
     employeeRole: 'admin',
     actionType: 'status_change',
     entityType: 'job',
@@ -889,8 +889,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'audit-seed-4',
-    employeeId: 'ADMIN-01',
-    employeeName: 'Sarah Jenkins (Admin)',
+    employeeId: '1019974',
+    employeeName: 'Brianna Cronan - HR Mgr',
     employeeRole: 'admin',
     actionType: 'create',
     entityType: 'client',
@@ -1026,8 +1026,8 @@ export class FSMStore {
       finalTitle = entityTitle;
     }
 
-    let employeeId = 'ADMIN-01';
-    let employeeName = 'Sarah Jenkins (Admin)';
+    let employeeId = '1019974';
+    let employeeName = 'Brianna Cronan - HR Mgr';
     let employeeRole: UserRole = 'admin';
 
     if (typeof window !== 'undefined') {
