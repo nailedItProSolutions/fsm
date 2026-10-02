@@ -59,7 +59,7 @@ You must respond ONLY with valid JSON matching this structure:
 No markdown formatting, just the raw JSON object.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
