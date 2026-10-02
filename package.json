@@ -11,6 +11,7 @@
     "purge:execute": "npx ts-node scripts/purge_test_data.ts --confirm-purge"
   },
   "dependencies": {
+    "@google/genai": "^2.26.0",
     "@stripe/stripe-js": "^4.6.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

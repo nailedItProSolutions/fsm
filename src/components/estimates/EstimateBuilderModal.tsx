@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { DynamicRepairEstimator } from './DynamicRepairEstimator';
+import { GeminiAIEstimator } from './GeminiAIEstimator';
 
 interface EstimateBuilderModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   });
   const [taxRate, setTaxRate] = useState(0.07); // 7% Floyd County GA
   const [showRomeCalculator, setShowRomeCalculator] = useState(false);
+  const [showAIEstimator, setShowAIEstimator] = useState(false);
   const [marketComparisonData, setMarketComparisonData] = useState<any | null>(null);
   const [items, setItems] = useState<EstimateItem[]>([
     { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
@@ -235,34 +237,51 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
           </div>
 
           {/* Rome, GA Market Pegged Calculator Trigger Card */}
-          <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          {/* Automated Estimate Tools */}
+          <div className="bg-[#161616] border border-[#262626] p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-[#fdfbf7] flex items-center gap-1.5">
-                  <Calculator className="w-3.5 h-3.5 text-[#c5a059]" />
-                  <span>Rome, GA Dynamic Repair Pricing Calculator</span>
-                </span>
-                <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
-                  5-10% Below Median
-                </span>
+                <Calculator className="w-4 h-4 text-[#c5a059]" />
+                <span className="text-xs font-bold text-[#fdfbf7] uppercase tracking-wider">Automated Pricing Tools</span>
               </div>
               <p className="text-[11px] text-[#b8b0a5] mt-0.5">
-                Automatically generate standardized labor & materials pegged below local Floyd County rates
+                Generate estimates using Rome GA pegging or Gemini AI Good/Better/Best logic.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowRomeCalculator(!showRomeCalculator)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
-                showRomeCalculator
-                  ? 'bg-[#c5a059] text-black font-extrabold shadow-md'
-                  : 'bg-[#222222] hover:bg-[#2c2c2c] text-[#c5a059] border border-[#c5a059]/40'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{showRomeCalculator ? 'Hide Pegging Tool' : 'Launch Rome Calculator'}</span>
-            </button>
+            <div className="flex space-x-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRomeCalculator(!showRomeCalculator);
+                  setShowAIEstimator(false);
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
+                  showRomeCalculator
+                    ? 'bg-[#c5a059] text-black font-extrabold shadow-md'
+                    : 'bg-[#222222] hover:bg-[#2c2c2c] text-[#c5a059] border border-[#c5a059]/40'
+                }`}
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span>{showRomeCalculator ? 'Hide Pegging Tool' : 'Rome Pegging'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAIEstimator(!showAIEstimator);
+                  setShowRomeCalculator(false);
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
+                  showAIEstimator
+                    ? 'bg-purple-600 text-white font-extrabold shadow-md'
+                    : 'bg-[#222222] hover:bg-[#2c2c2c] text-purple-400 border border-purple-500/40'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{showAIEstimator ? 'Hide AI Engine' : 'Gemini AI Options'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Inline Dynamic Repair Estimator */}
@@ -277,16 +296,44 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
             />
           )}
 
-          {/* Market Comparison Status Pill if set */}
+          {/* Inline Gemini AI Estimator */}
+          {showAIEstimator && (
+            <GeminiAIEstimator
+              propertyAddress={selectedProperty?.address || ''}
+              onSelectOption={(newItems, title) => {
+                setItems(newItems);
+                setMarketComparisonData({
+                  tradeLabel: title,
+                  customerDollarSavings: 0,
+                  percentBelowMedian: 0,
+                  isGeminiOption: true
+                });
+                setShowAIEstimator(false);
+              }}
+            />
+          )}
+
+          {/* Market Comparison / AI Status Pill if set */}
           {marketComparisonData && (
-            <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-3 flex justify-between items-center text-xs">
-              <span className="text-emerald-300 font-semibold flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Estimate pegged to Rome, GA median for {marketComparisonData.tradeLabel}</span>
+            <div className={`border rounded-xl p-3 flex justify-between items-center text-xs ${marketComparisonData.isGeminiOption ? 'bg-purple-950/40 border-purple-500/50' : 'bg-emerald-950/40 border-emerald-500/50'}`}>
+              <span className={`font-semibold flex items-center gap-1.5 ${marketComparisonData.isGeminiOption ? 'text-purple-300' : 'text-emerald-300'}`}>
+                {marketComparisonData.isGeminiOption ? (
+                  <>
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span>Applied Gemini AI Option: {marketComparisonData.tradeLabel}</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Estimate pegged to Rome, GA median for {marketComparisonData.tradeLabel}</span>
+                  </>
+                )}
               </span>
-              <span className="font-mono text-emerald-400 font-bold">
-                Customer Saves ${marketComparisonData.customerDollarSavings.toFixed(2)} ({marketComparisonData.percentBelowMedian}% below local median)
-              </span>
+              {!marketComparisonData.isGeminiOption && (
+                <span className="font-mono text-emerald-400 font-bold">
+                  Customer Saves ${marketComparisonData.customerDollarSavings?.toFixed(2)} ({marketComparisonData.percentBelowMedian}% below local median)
+                </span>
+              )}
             </div>
           )}
 
