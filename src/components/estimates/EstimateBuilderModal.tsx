@@ -18,7 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { DynamicRepairEstimator } from './DynamicRepairEstimator';
-import { GeminiAIEstimator } from './GeminiAIEstimator';
+import { StandardTaskCatalog } from './StandardTaskCatalog';
 
 interface EstimateBuilderModalProps {
   isOpen: boolean;
@@ -42,7 +42,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   });
   const [taxRate, setTaxRate] = useState(0.07); // 7% Floyd County GA
   const [showRomeCalculator, setShowRomeCalculator] = useState(false);
-  const [showAIEstimator, setShowAIEstimator] = useState(false);
+  const [showTaskCatalog, setShowTaskCatalog] = useState(false);
   const [marketComparisonData, setMarketComparisonData] = useState<any | null>(null);
   const [items, setItems] = useState<EstimateItem[]>([
     { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
@@ -102,6 +102,20 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         unitPrice: type === 'labor' ? 85 : 50,
         total: type === 'labor' ? 85 : 50,
       },
+    ]);
+  };
+
+  const handleSelectStandardTask = (task: any, rate: number) => {
+    setItems([
+      ...items,
+      {
+        id: `item-${Date.now()}-${Math.random()}`,
+        type: 'labor',
+        description: task.description,
+        quantity: task.estimatedHours,
+        unitPrice: rate,
+        total: task.estimatedHours * rate,
+      }
     ]);
   };
 
@@ -245,7 +259,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                 <span className="text-xs font-bold text-[#fdfbf7] uppercase tracking-wider">Automated Pricing Tools</span>
               </div>
               <p className="text-[11px] text-[#b8b0a5] mt-0.5">
-                Generate estimates using Rome GA pegging or Gemini AI Good/Better/Best logic.
+                Generate estimates using Rome GA pegging or standard predetermined task list.
               </p>
             </div>
 
@@ -254,7 +268,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                 type="button"
                 onClick={() => {
                   setShowRomeCalculator(!showRomeCalculator);
-                  setShowAIEstimator(false);
+                  setShowTaskCatalog(false);
                 }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
                   showRomeCalculator
@@ -269,17 +283,17 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setShowAIEstimator(!showAIEstimator);
+                  setShowTaskCatalog(!showTaskCatalog);
                   setShowRomeCalculator(false);
                 }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
-                  showAIEstimator
-                    ? 'bg-purple-600 text-white font-extrabold shadow-md'
-                    : 'bg-[#222222] hover:bg-[#2c2c2c] text-purple-400 border border-purple-500/40'
+                  showTaskCatalog
+                    ? 'bg-emerald-600 text-white font-extrabold shadow-md'
+                    : 'bg-[#222222] hover:bg-[#2c2c2c] text-emerald-400 border border-emerald-500/40'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{showAIEstimator ? 'Hide AI Engine' : 'Gemini AI Options'}</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>{showTaskCatalog ? 'Hide Catalog' : 'Standard Tasks'}</span>
               </button>
             </div>
           </div>
@@ -296,20 +310,10 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
             />
           )}
 
-          {/* Inline Gemini AI Estimator */}
-          {showAIEstimator && (
-            <GeminiAIEstimator
-              propertyAddress={selectedProperty ? `${selectedProperty.street}, ${selectedProperty.city}, ${selectedProperty.state} ${selectedProperty.zip}` : ''}
-              onSelectOption={(newItems, title) => {
-                setItems(newItems);
-                setMarketComparisonData({
-                  tradeLabel: title,
-                  customerDollarSavings: 0,
-                  percentBelowMedian: 0,
-                  isGeminiOption: true
-                });
-                setShowAIEstimator(false);
-              }}
+          {/* Standard Task Catalog */}
+          {showTaskCatalog && (
+            <StandardTaskCatalog 
+              onSelectTask={handleSelectStandardTask}
             />
           )}
 
