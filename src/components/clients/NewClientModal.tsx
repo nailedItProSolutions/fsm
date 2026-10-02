@@ -166,7 +166,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="e.g. Apex Property Management LLC"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
           )}
@@ -183,7 +183,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="John"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
             <div>
@@ -196,7 +196,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Doe"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
           </div>
@@ -213,7 +213,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="client@example.com"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
             <div>
@@ -226,7 +226,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(512) 555-0199"
-                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
           </div>
@@ -246,7 +246,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={billStreet}
                     onChange={(e) => setBillStreet(e.target.value)}
                     placeholder="Street Address"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div>
@@ -255,7 +255,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={billUnit}
                     onChange={(e) => setBillUnit(e.target.value)}
                     placeholder="Apt / Suite"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
@@ -266,7 +266,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={billCity}
                   onChange={(e) => setBillCity(e.target.value)}
                   placeholder="City"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <input
                   type="text"
@@ -274,7 +274,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={billState}
                   onChange={(e) => setBillState(e.target.value)}
                   placeholder="State"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <input
                   type="text"
@@ -282,7 +282,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={billZip}
                   onChange={(e) => setBillZip(e.target.value)}
                   placeholder="Zip Code"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={propLabel}
                   onChange={(e) => setPropLabel(e.target.value)}
                   placeholder="e.g. Primary Home, Building A, Rental Duplex"
-                  className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-slate-900 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
@@ -330,7 +330,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                         value={propStreet}
                         onChange={(e) => setPropStreet(e.target.value)}
                         placeholder="Service Street Address"
-                        className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
                     <div>
@@ -339,7 +339,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                         value={propUnit}
                         onChange={(e) => setPropUnit(e.target.value)}
                         placeholder="Unit #"
-                        className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
                   </div>
@@ -350,7 +350,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                       value={propCity}
                       onChange={(e) => setPropCity(e.target.value)}
                       placeholder="City"
-                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                     <input
                       type="text"
@@ -358,7 +358,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                       value={propState}
                       onChange={(e) => setPropState(e.target.value)}
                       placeholder="State"
-                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                     <input
                       type="text"
@@ -366,7 +366,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                       value={propZip}
                       onChange={(e) => setPropZip(e.target.value)}
                       placeholder="Zip Code"
-                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                 </>
@@ -383,7 +383,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={gateCode}
                     onChange={(e) => setGateCode(e.target.value)}
                     placeholder="#1234 or Key under mat"
-                    className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-slate-900 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div>
@@ -395,7 +395,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={accessInstructions}
                     onChange={(e) => setAccessInstructions(e.target.value)}
                     placeholder="Side gate unlocked, watch for dog"
-                    className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-slate-900 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
@@ -413,7 +413,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Special customer preferences, billing requirements, preferred contact time..."
-              className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
