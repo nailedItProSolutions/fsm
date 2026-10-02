@@ -10,6 +10,7 @@ export interface UserProfile {
   clientId?: string;
   employeeId?: string; // e.g. "TECH-101", "ADMIN-01"
   pin?: string;        // 4-6 digit secure PIN
+  telegramChatId?: string; // Used for completely free Telegram push dispatching
   active: boolean;
   createdAt: string;
 }

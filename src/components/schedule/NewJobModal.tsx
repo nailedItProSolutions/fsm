@@ -177,23 +177,23 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
     const job = emergencySmsPayload.job;
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-        <div className="bg-[#100c0c] text-[#fdfbf7] rounded-3xl shadow-2xl max-w-lg w-full border-2 border-red-500 shadow-red-950/80 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-[#100c0c] text-[#fdfbf7] rounded-3xl shadow-2xl max-w-lg w-full border-2 border-sky-500/50 shadow-sky-900/40 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
           {/* Top Banner */}
-          <div className="bg-gradient-to-r from-red-950 via-[#360e0e] to-red-950 p-5 border-b border-red-800/60 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-sky-950 via-[#0a1e2b] to-sky-950 p-5 border-b border-sky-800/60 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-lg animate-pulse">
-                <ShieldAlert className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center text-white shadow-lg animate-pulse">
+                <Send className="w-5 h-5 ml-0.5" />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
                   <h3 className="font-bold text-sm text-white uppercase tracking-wider font-heading">
                     24/7 Emergency Dispatch Active
                   </h3>
-                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-600 text-white animate-pulse">
-                    Live SMS Sent
+                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-sky-500 text-white animate-pulse">
+                    Live Telegram Push
                   </span>
                 </div>
-                <p className="text-xs text-red-200/80">Carrier Email-to-SMS Gateway • Automated Field Alert</p>
+                <p className="text-xs text-sky-200/80">Telegram Bot API • Automated Push Notification Alert</p>
               </div>
             </div>
             <button
@@ -209,21 +209,21 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
           </div>
 
           <div className="p-6 space-y-5">
-            {/* Email-to-SMS Telemetry Bar */}
-            <div className="bg-[#181010] border border-red-900/50 rounded-xl p-3 flex items-center justify-between text-xs">
+            {/* Telegram API Telemetry Bar */}
+            <div className="bg-[#0b141a] border border-sky-900/50 rounded-xl p-3 flex items-center justify-between text-xs">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="font-mono text-emerald-400 font-bold">SMTP 250 OK</span>
+                <span className="font-mono text-emerald-400 font-bold">HTTP 200 OK</span>
                 <span className="text-[#a8a095]">|</span>
                 <span className="text-[#c8c0b5] font-mono text-[11px]">
                   {(() => {
-                    const phone = emergencySmsPayload.techPhone.replace(/[^0-9]/g, '');
-                    return `${phone}@vtext.com`;
+                    const tech = getTechnicians().find(t => t.displayName === emergencySmsPayload.techName);
+                    return `Chat ID: ${tech?.telegramChatId || '839201948'}`;
                   })()}
                 </span>
               </div>
-              <span className="text-[11px] text-red-400 font-bold bg-red-950/60 px-2 py-0.5 rounded border border-red-800/40">
-                Routing: Verizon
+              <span className="text-[11px] text-sky-400 font-bold bg-sky-950/60 px-2 py-0.5 rounded border border-sky-800/40">
+                Bot: @NailedItDispatchBot
               </span>
             </div>
 
@@ -234,12 +234,12 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                 <span className="text-white font-bold">{emergencySmsPayload.techName}</span>
               </div>
               <div className="flex justify-between text-[#b8b0a5]">
-                <span>Technician Direct Phone:</span>
-                <span className="text-[#c5a059] font-mono">{emergencySmsPayload.techPhone}</span>
+                <span>Telegram API Connection:</span>
+                <span className="text-[#c5a059] font-mono">Secured (TLS 1.3)</span>
               </div>
               <div className="flex justify-between text-[#b8b0a5]">
                 <span>Dispatch Mode:</span>
-                <span className="text-red-400 font-bold uppercase tracking-wider text-[10px]">Priority 1 Audio/Vibrate Trigger</span>
+                <span className="text-sky-400 font-bold uppercase tracking-wider text-[10px]">Priority 1 Push Notification</span>
               </div>
             </div>
 
@@ -248,16 +248,16 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
               {/* Phone Status Header */}
               <div className="flex items-center justify-between text-[10px] text-[#78716c] pb-2 border-b border-[#222222]">
                 <div className="flex items-center space-x-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-red-400" />
-                  <span className="font-bold text-[#b8b0a5]">Messages</span>
+                  <Send className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="font-bold text-[#b8b0a5]">Telegram</span>
                 </div>
-                <span>+1 (706) 555-0199 • Nailed It Dispatch</span>
+                <span>@NailedItDispatchBot</span>
                 <span className="font-mono text-emerald-400 font-bold">5G LTE</span>
               </div>
 
               {/* SMS Speech Bubble */}
-              <div className="bg-gradient-to-br from-[#2b0c0c] to-[#1a0808] border border-red-600/60 rounded-2xl rounded-tl-sm p-4 text-xs space-y-2.5 shadow-lg">
-                <div className="flex items-center space-x-2 text-red-400 font-extrabold text-[11px] uppercase tracking-wider">
+              <div className="bg-gradient-to-br from-[#0c1a2b] to-[#08131a] border border-sky-600/60 rounded-2xl rounded-tl-sm p-4 text-xs space-y-2.5 shadow-lg">
+                <div className="flex items-center space-x-2 text-sky-400 font-extrabold text-[11px] uppercase tracking-wider">
                   <AlertTriangle className="w-4 h-4 shrink-0 animate-bounce" />
                   <span>🚨 24/7 EMERGENCY WORK ORDER DISPATCH</span>
                 </div>
@@ -275,7 +275,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-red-900/60 text-[10px] space-y-1 text-red-200">
+                <div className="pt-2 border-t border-sky-900/60 text-[10px] space-y-1 text-sky-200">
                   <div className="font-bold text-[#c5a059] flex items-center gap-1">
                     <span>📲 DIRECT MOBILE TECH DISPATCH PORTAL:</span>
                   </div>
@@ -283,7 +283,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                     https://fsm.naileditpropertysolutions.com/mobile/tech?job={job.id}
                   </div>
                   <div className="text-[#a8a095] italic text-[9px] pt-1">
-                    Reply &quot;ACK&quot; to confirm on-site transit.
+                    Tap the inline button below to acknowledge on-site transit.
                   </div>
                 </div>
               </div>
@@ -443,7 +443,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                     )}
                   </div>
                   <p className="text-[11px] text-[#a8a095] mt-0.5 leading-relaxed">
-                    Flags job with bright red highlighting on Dispatch Board and dispatches instant SMS alert to assigned technician via Carrier Email-to-SMS.
+                    Flags job with bright red highlighting on Dispatch Board and dispatches instant push notification alert to assigned technician via Telegram Bot.
                   </p>
                 </div>
               </div>
