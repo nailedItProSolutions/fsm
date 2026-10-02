@@ -18,7 +18,7 @@ import {
   Wrench,
   TrendingUp,
   Clock,
-  ArrowRight
+  ArrowRight, Printer
 } from 'lucide-react';
 
 export const EstimatesList: React.FC = () => {

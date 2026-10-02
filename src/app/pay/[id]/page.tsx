@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useFSMStore } from '@/lib/useStore';
 import { 
   CreditCard, 
@@ -19,10 +19,19 @@ import {
 
 export default function CustomerInvoicePaymentPortal() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { getInvoiceById, markInvoicePaid } = useFSMStore();
 
   const invoiceId = params.id as string;
   const invoice = getInvoiceById(invoiceId);
+
+  useEffect(() => {
+    if (searchParams.get('print') === 'true') {
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  }, [searchParams]);
 
   // Stripe Card State
   const [cardName, setCardName] = useState('');

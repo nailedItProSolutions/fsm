@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useFSMStore } from '@/lib/useStore';
 import { 
   CheckCircle2, 
@@ -19,6 +19,7 @@ import { ValueProofComparison } from '@/components/estimates/ValueProofCompariso
 
 export default function CustomerEstimateApprovalPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { getEstimateById, updateEstimateStatus } = useFSMStore();
 
   const estimateId = params.id as string;
@@ -28,6 +29,14 @@ export default function CustomerEstimateApprovalPage() {
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [approvedSuccess, setApprovedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('print') === 'true') {
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  }, [searchParams]);
 
   if (!estimate) {
     return (
