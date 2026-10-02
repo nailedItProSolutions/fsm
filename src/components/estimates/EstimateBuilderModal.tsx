@@ -299,7 +299,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
           {/* Inline Gemini AI Estimator */}
           {showAIEstimator && (
             <GeminiAIEstimator
-              propertyAddress={selectedProperty?.address || ''}
+              propertyAddress={selectedProperty ? `${selectedProperty.street}, ${selectedProperty.city}, ${selectedProperty.state} ${selectedProperty.zip}` : ''}
               onSelectOption={(newItems, title) => {
                 setItems(newItems);
                 setMarketComparisonData({
