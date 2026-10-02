@@ -54,3 +54,38 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: #c5a059;
 }
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  * {
+    border-color: #ccc !important;
+    color: black !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+  .print-hide {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  /* Remove background colors and shadows */
+  .bg-\[\#111111\], .bg-\[\#0a0a0a\], .bg-\[\#181818\], .bg-\[\#161616\], .bg-\[\#1e1e1e\], .bg-black {
+    background-color: transparent !important;
+  }
+  /* Fix text that might be white */
+  .text-\[\#fdfbf7\], .text-white, .text-\[\#b8b0a5\], .text-\[\#78716c\] {
+    color: #111 !important;
+  }
+  /* Ensure grid layout stays intact */
+  .grid {
+    display: grid !important;
+  }
+  .flex {
+    display: flex !important;
+  }
+}
+

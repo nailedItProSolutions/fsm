@@ -75,9 +75,18 @@ export default function CustomerInvoicePaymentPortal() {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Top Header Card */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/5 blur-[90px] pointer-events-none rounded-full" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/5 blur-[90px] pointer-events-none rounded-full print-hide" />
 
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-[#222222]">
+          {/* Print Action */}
+          <button 
+            onClick={() => window.print()}
+            className="print-hide absolute top-6 right-6 p-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#333] rounded-lg text-[#b8b0a5] hover:text-[#fdfbf7] transition"
+            title="Print Invoice"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-[#222222] mt-4 sm:mt-0 pr-12">
             <div>
               <img
                 src="/logo.png"
@@ -173,7 +182,7 @@ export default function CustomerInvoicePaymentPortal() {
 
         {/* Stripe Payment Form or Paid Receipt */}
         {!isAlreadyPaid ? (
-          <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8 shadow-2xl print-hide">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-[#c5a059]">
                 <Lock className="w-4 h-4 text-[#FF8A00]" />
@@ -289,7 +298,7 @@ export default function CustomerInvoicePaymentPortal() {
             </form>
           </div>
         ) : (
-          <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-8 text-center shadow-2xl space-y-4">
+          <div className="bg-emerald-950/40 border border-emerald-500/50 rounded-2xl p-8 text-center shadow-2xl space-y-4 print-hide">
             <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto" />
             <h2 className="text-2xl font-bold font-heading text-white">Payment Received!</h2>
             <p className="text-xs text-emerald-200 max-w-md mx-auto leading-relaxed">
