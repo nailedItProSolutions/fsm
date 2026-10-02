@@ -22,7 +22,7 @@ function LoginForm() {
   const rawRedirect = searchParams.get('redirect') || '/dashboard';
   // Security: only permit relative internal paths to prevent open-redirect attacks
   const redirectUrl = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard';
-  const { loginWithEmail, loginWithEmployeePin, loginAs } = useAuth();
+  const { loginWithEmail, loginWithEmployeePin, loginWithGoogle, loginAs } = useAuth();
   
   // Auth Mode: 'email' | 'pin'
   const [authMode, setAuthMode] = useState<'email' | 'pin'>('email');
@@ -72,6 +72,18 @@ function LoginForm() {
     } catch (err: any) {
       setError(err?.message || 'Authentication error.');
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+    const ok = await loginWithGoogle();
+    if (ok) {
+      router.push(redirectUrl);
+    } else {
+      setError('Google Sign-In failed or was cancelled.');
       setLoading(false);
     }
   };
@@ -279,7 +291,25 @@ function LoginForm() {
             </form>
           )}
 
-          <div className="pt-2 border-t border-[#222222] text-center text-[10px] text-[#78716c] space-y-1">
+          <div className="relative flex py-4 items-center">
+            <div className="flex-grow border-t border-[#333]"></div>
+            <span className="flex-shrink-0 mx-4 text-[#78716c] text-xs font-bold uppercase">Or Single Sign-On</span>
+            <div className="flex-grow border-t border-[#333]"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full bg-white hover:bg-gray-100 text-black font-bold text-xs py-3 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" />
+            </svg>
+            <span>Sign in with Google (Company Workspace)</span>
+          </button>
+
+          <div className="pt-4 border-t border-[#222222] text-center text-[10px] text-[#78716c] space-y-1 mt-4">
             <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-mono">
               <Lock className="w-3 h-3" />
               <span>Strict Authentication Wall Active</span>

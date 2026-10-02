@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserRole } from '@/types';
 import { INITIAL_USERS } from './store';
+import { auth } from './firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -11,6 +13,7 @@ interface AuthContextType {
   loginAs: (role: UserRole) => void;
   loginWithEmail: (email: string, pass: string) => Promise<boolean>;
   loginWithEmployeePin: (employeeId: string, pin: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
   logout: () => void;
   isAdmin: boolean;
   isTechnician: boolean;
@@ -24,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   loginAs: () => {},
   loginWithEmail: async () => false,
   loginWithEmployeePin: async () => false,
+  loginWithGoogle: async () => false,
   logout: () => {},
   isAdmin: false,
   isTechnician: false,
@@ -120,6 +124,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return false;
   };
 
+  const loginWithGoogle = async (): Promise<boolean> => {
+    try {
+      const provider = new GoogleAuthProvider();
+      // Optional: Force account selection if they have multiple Google accounts
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      const result = await signInWithPopup(auth, provider);
+      const fbUser = result.user;
+      
+      // Check if they match an existing seed user, or provision a new profile
+      const email = fbUser.email || '';
+      let matched = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (!matched) {
+        // Provision a new technician/admin profile based on email domain or just default to technician
+        const isTech = email.includes('tech') || !email.includes('admin');
+        matched = {
+          uid: fbUser.uid,
+          email,
+          displayName: fbUser.displayName || email.split('@')[0],
+          role: isTech ? 'technician' : 'admin',
+          employeeId: isTech ? `TECH-${Math.floor(100 + Math.random() * 900)}` : '1019974',
+          pin: '1234',
+          active: true,
+          createdAt: new Date().toISOString(),
+        };
+      }
+      
+      setUser(matched);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('nailed_it_auth_user', JSON.stringify(matched));
+        document.cookie = `nailed_it_auth_token=${matched.uid}; path=/; max-age=86400; SameSite=Lax`;
+      }
+      return true;
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      return false;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     if (typeof window !== 'undefined') {
@@ -142,6 +186,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loginAs,
         loginWithEmail,
         loginWithEmployeePin,
+        loginWithGoogle,
         logout,
         isAdmin,
         isTechnician,
