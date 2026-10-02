@@ -216,7 +216,7 @@ export const EstimatesList: React.FC = () => {
 
                 {/* Total */}
                 <td className="px-6 py-4 text-right font-mono font-bold text-sm text-[#fdfbf7]">
-                  ${est.total.toFixed(2)}
+                  ${Number(est.total).toFixed(2)}
                 </td>
 
                 {/* Actions */}

@@ -124,7 +124,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const subtotal = items.reduce((acc, item) => acc + (item.total || 0), 0);
+  const subtotal = items.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = subtotal + taxAmount;
 
@@ -441,13 +441,13 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
             {/* Calculations Footer */}
             <div className="bg-[#181818] border-t border-[#262626] p-4 space-y-1.5 text-right">
               <div className="text-xs text-[#b8b0a5]">
-                Subtotal: <span className="font-mono text-[#fdfbf7] font-bold ml-2">${subtotal.toFixed(2)}</span>
+                Subtotal: <span className="font-mono text-[#fdfbf7] font-bold ml-2">${Number(subtotal).toFixed(2)}</span>
               </div>
               <div className="text-xs text-[#b8b0a5]">
-                Floyd County Sales Tax ({(taxRate * 100).toFixed(0)}%): <span className="font-mono text-[#fdfbf7] font-bold ml-2">${taxAmount.toFixed(2)}</span>
+                Floyd County Sales Tax ({Number(taxRate * 100).toFixed(0)}%): <span className="font-mono text-[#fdfbf7] font-bold ml-2">${Number(taxAmount).toFixed(2)}</span>
               </div>
               <div className="text-sm font-bold text-[#c5a059] pt-2 border-t border-[#262626]">
-                Grand Total: <span className="font-mono text-base ml-2">${total.toFixed(2)}</span>
+                Grand Total: <span className="font-mono text-base ml-2">${Number(total).toFixed(2)}</span>
               </div>
             </div>
           </div>

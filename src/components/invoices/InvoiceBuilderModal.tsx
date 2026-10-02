@@ -378,7 +378,7 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                   </div>
 
                   <div className="col-span-3 sm:col-span-1 text-right font-mono text-xs font-bold text-[#fdfbf7]">
-                    ${item.total.toFixed(2)}
+                    ${Number(item.total).toFixed(2)}
                   </div>
 
                   <div className="col-span-1 text-right">
@@ -400,15 +400,15 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
           <div className="bg-[#181818] border border-[#262626] rounded-xl p-4 flex flex-col items-end space-y-1.5 text-xs">
             <div className="flex justify-between w-64 text-[#b8b0a5]">
               <span>Subtotal:</span>
-              <span className="font-mono text-[#fdfbf7] font-semibold">${subtotal.toFixed(2)}</span>
+              <span className="font-mono text-[#fdfbf7] font-semibold">${Number(subtotal).toFixed(2)}</span>
             </div>
             <div className="flex justify-between w-64 text-[#b8b0a5]">
               <span>Floyd County Tax (7%):</span>
-              <span className="font-mono text-[#fdfbf7] font-semibold">${tax.toFixed(2)}</span>
+              <span className="font-mono text-[#fdfbf7] font-semibold">${Number(tax).toFixed(2)}</span>
             </div>
             <div className="flex justify-between w-64 pt-2 border-t border-[#333333] text-sm font-bold text-[#c5a059]">
               <span>Total Balance Due:</span>
-              <span className="font-mono text-base font-black text-[#fdfbf7]">${total.toFixed(2)}</span>
+              <span className="font-mono text-base font-black text-[#fdfbf7]">${Number(total).toFixed(2)}</span>
             </div>
           </div>
 

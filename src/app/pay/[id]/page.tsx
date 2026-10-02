@@ -137,7 +137,7 @@ export default function CustomerInvoicePaymentPortal() {
                   </span>
                 ) : (
                   <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xs font-bold px-3 py-1 rounded-full uppercase">
-                    Balance Due: ${invoice.balanceDue.toFixed(2)}
+                    Balance Due: ${Number(invoice.balanceDue).toFixed(2)}
                   </span>
                 )}
               </div>
@@ -165,23 +165,23 @@ export default function CustomerInvoicePaymentPortal() {
                     <tr key={item.id} className="hover:bg-[#1a1a1a]">
                       <td className="p-3.5 font-semibold text-[#fdfbf7]">{item.description}</td>
                       <td className="p-3.5 text-center text-[#b8b0a5]">{item.quantity}</td>
-                      <td className="p-3.5 text-right font-mono text-[#b8b0a5]">${item.unitPrice.toFixed(2)}</td>
-                      <td className="p-3.5 text-right font-mono font-bold text-[#fdfbf7]">${item.total.toFixed(2)}</td>
+                      <td className="p-3.5 text-right font-mono text-[#b8b0a5]">${Number(item.unitPrice).toFixed(2)}</td>
+                      <td className="p-3.5 text-right font-mono font-bold text-[#fdfbf7]">${Number(item.total).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-[#181818] border-t border-[#262626]">
                   <tr>
                     <td colSpan={3} className="p-3 text-right font-semibold text-[#b8b0a5]">Subtotal:</td>
-                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${invoice.subtotal.toFixed(2)}</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(invoice.subtotal).toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td colSpan={3} className="p-3 text-right font-semibold text-[#b8b0a5]">Floyd County Sales Tax (7%):</td>
-                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${invoice.tax.toFixed(2)}</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(invoice.tax).toFixed(2)}</td>
                   </tr>
                   <tr className="bg-[#1c1c1c] text-[#c5a059] font-bold text-sm">
                     <td colSpan={3} className="p-4 text-right">Total Amount Due:</td>
-                    <td className="p-4 text-right font-mono text-base font-black">${invoice.total.toFixed(2)}</td>
+                    <td className="p-4 text-right font-mono text-base font-black">${Number(invoice.total).toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -207,7 +207,7 @@ export default function CustomerInvoicePaymentPortal() {
             </div>
 
             <h2 className="text-xl font-bold font-heading text-[#fdfbf7] mb-1">
-              Pay ${invoice.balanceDue.toFixed(2)} Securely
+              Pay ${Number(invoice.balanceDue).toFixed(2)} Securely
             </h2>
             <p className="text-xs text-[#b8b0a5] mb-6">
               Payment will be processed instantly and an electronic receipt sent to your email on file.
@@ -301,7 +301,7 @@ export default function CustomerInvoicePaymentPortal() {
                 <span>
                   {isProcessing
                     ? 'Processing Payment with Stripe...'
-                    : `Authorize Payment of $${invoice.balanceDue.toFixed(2)}`}
+                    : `Authorize Payment of $${Number(invoice.balanceDue).toFixed(2)}`}
                 </span>
               </button>
             </form>
@@ -311,7 +311,7 @@ export default function CustomerInvoicePaymentPortal() {
             <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto" />
             <h2 className="text-2xl font-bold font-heading text-white">Payment Received!</h2>
             <p className="text-xs text-emerald-200 max-w-md mx-auto leading-relaxed">
-              Your payment of <span className="font-bold text-white font-mono">${invoice.total.toFixed(2)}</span> has been successfully processed. Thank you for doing business with Nailed It Property Solutions!
+              Your payment of <span className="font-bold text-white font-mono">${Number(invoice.total).toFixed(2)}</span> has been successfully processed. Thank you for doing business with Nailed It Property Solutions!
             </p>
             <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-4 max-w-md mx-auto text-xs text-left space-y-1 font-mono">
               <div className="flex justify-between text-[#b8b0a5]">

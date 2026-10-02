@@ -264,7 +264,7 @@ export const InvoicesList: React.FC = () => {
                       </td>
 
                       <td className="p-4 text-right font-mono font-bold text-sm text-[#fdfbf7]">
-                        ${invoice.total.toFixed(2)}
+                        ${Number(invoice.total).toFixed(2)}
                       </td>
 
                       <td className="p-4 text-center">
@@ -378,7 +378,7 @@ export const InvoicesList: React.FC = () => {
                 <div className="text-right">
                   <div className="text-[#b8b0a5]">Amount Due:</div>
                   <div className="text-base font-bold font-mono text-[#c5a059]">
-                    ${selectedInvoiceForStripe.balanceDue.toFixed(2)}
+                    ${Number(selectedInvoiceForStripe.balanceDue).toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -451,7 +451,7 @@ export const InvoicesList: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4 text-emerald-300" /> Payment Confirmed!
                   </span>
                 ) : (
-                  <span>Charge ${selectedInvoiceForStripe.balanceDue.toFixed(2)} USD</span>
+                  <span>Charge ${Number(selectedInvoiceForStripe.balanceDue).toFixed(2)} USD</span>
                 )}
               </button>
             </form>
@@ -575,10 +575,10 @@ export const InvoicesList: React.FC = () => {
                         <td className="p-3 font-medium text-gray-800">{item.description}</td>
                         <td className="p-3 text-center text-gray-600">{item.quantity}</td>
                         <td className="p-3 text-right font-mono text-gray-600">
-                          ${item.unitPrice.toFixed(2)}
+                          ${Number(item.unitPrice).toFixed(2)}
                         </td>
                         <td className="p-3 text-right font-mono font-bold text-gray-900">
-                          ${item.total.toFixed(2)}
+                          ${Number(item.total).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -591,24 +591,24 @@ export const InvoicesList: React.FC = () => {
                 <div className="w-72 space-y-2 text-xs">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal:</span>
-                    <span className="font-mono font-semibold">${selectedInvoiceForPrint.subtotal.toFixed(2)}</span>
+                    <span className="font-mono font-semibold">${Number(selectedInvoiceForPrint.subtotal).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Floyd County Sales Tax (7%):</span>
-                    <span className="font-mono font-semibold">${selectedInvoiceForPrint.tax.toFixed(2)}</span>
+                    <span className="font-mono font-semibold">${Number(selectedInvoiceForPrint.tax).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-900 font-black text-sm pt-2 border-t border-gray-300">
                     <span>Total:</span>
-                    <span className="font-mono">${selectedInvoiceForPrint.total.toFixed(2)}</span>
+                    <span className="font-mono">${Number(selectedInvoiceForPrint.total).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-emerald-700 font-bold pt-1">
                     <span>Amount Paid:</span>
-                    <span className="font-mono">-${selectedInvoiceForPrint.amountPaid.toFixed(2)}</span>
+                    <span className="font-mono">-${Number(selectedInvoiceForPrint.amountPaid).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between bg-gray-100 p-2.5 rounded text-gray-900 font-black text-sm">
                     <span>Balance Due:</span>
                     <span className="font-mono text-base text-[#c5a059]">
-                      ${selectedInvoiceForPrint.balanceDue.toFixed(2)}
+                      ${Number(selectedInvoiceForPrint.balanceDue).toFixed(2)}
                     </span>
                   </div>
                 </div>

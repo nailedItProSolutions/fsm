@@ -164,25 +164,25 @@ export default function CustomerEstimateApprovalPage() {
                         </span>
                       </td>
                       <td className="p-3.5 text-center text-[#b8b0a5]">{item.quantity}</td>
-                      <td className="p-3.5 text-right font-mono text-[#b8b0a5]">${item.unitPrice.toFixed(2)}</td>
-                      <td className="p-3.5 text-right font-mono font-bold text-[#fdfbf7]">${item.total.toFixed(2)}</td>
+                      <td className="p-3.5 text-right font-mono text-[#b8b0a5]">${Number(item.unitPrice).toFixed(2)}</td>
+                      <td className="p-3.5 text-right font-mono font-bold text-[#fdfbf7]">${Number(item.total).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-[#181818] border-t border-[#262626]">
                   <tr>
                     <td colSpan={4} className="p-3 text-right font-semibold text-[#b8b0a5]">Subtotal:</td>
-                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${estimate.subtotal.toFixed(2)}</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(estimate.subtotal).toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td colSpan={4} className="p-3 text-right font-semibold text-[#b8b0a5]">
-                      Floyd County Sales Tax ({(estimate.taxRate * 100).toFixed(0)}%):
+                      Floyd County Sales Tax ({Number(estimate.taxRate * 100).toFixed(0)}%):
                     </td>
-                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${estimate.taxAmount.toFixed(2)}</td>
+                    <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(estimate.taxAmount).toFixed(2)}</td>
                   </tr>
                   <tr className="bg-[#1c1c1c] text-[#c5a059] font-bold text-sm">
                     <td colSpan={4} className="p-4 text-right">Total Quote Amount:</td>
-                    <td className="p-4 text-right font-mono text-base font-black">${estimate.total.toFixed(2)}</td>
+                    <td className="p-4 text-right font-mono text-base font-black">${Number(estimate.total).toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>
