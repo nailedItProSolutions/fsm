@@ -1083,24 +1083,24 @@ export class FSMStore {
     return this.clients.find((c) => c.id === id);
   }
 
-    public archiveClient(id: string): void {
-    const clientIndex = this.clients.findIndex(c => c.id === id);
-    if (clientIndex !== -1) {
-      this.clients[clientIndex].isArchived = true;
-      this.logActivity('status_change', 'Client', id, 'Client archived');
-      this.notifySubscribers();
-    }
+  public archiveClient(id: string): void {
+    const client = this.clients.find((c) => c.id === id);
+    if (!client) return;
+    client.isArchived = true;
+    client.updatedAt = new Date().toISOString();
+    this.logActivity('status_change', 'client', id, 'Client archived');
+    this.persist();
   }
 
   public unarchiveClient(id: string): void {
-    const clientIndex = this.clients.findIndex(c => c.id === id);
-    if (clientIndex !== -1) {
-      this.clients[clientIndex].isArchived = false;
-      this.logActivity('status_change', 'Client', id, 'Client unarchived');
-      this.notifySubscribers();
-    }
+    const client = this.clients.find((c) => c.id === id);
+    if (!client) return;
+    client.isArchived = false;
+    client.updatedAt = new Date().toISOString();
+    this.logActivity('status_change', 'client', id, 'Client restored from archive');
+    this.persist();
   }
-  
+
 public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'totalSpent' | 'activeJobsCount' | 'propertyIds'>, initialProperty?: Omit<Property, 'id' | 'clientId' | 'createdAt' | 'serviceHistoryJobIds'>): Client {
     const clientId = `client-${Date.now()}`;
     const now = new Date().toISOString();
