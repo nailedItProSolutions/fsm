@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/authContext';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { 
   Users, 
   CalendarDays, 
@@ -22,7 +22,7 @@ import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
 export default function ExecutiveDashboard() {
   const { user } = useAuth();
-  const { clients, properties, jobs, invoices } = useFSMStore();
+  const { clients, properties, jobs, invoices } = useActiveFSMData();
 
   const totalRevenue = clients.reduce((acc, c) => acc + (c.totalSpent || 0), 0);
   const activeJobs = jobs.filter((j) => j.status === 'in_progress' || j.status === 'scheduled');

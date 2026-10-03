@@ -22,16 +22,21 @@ import {
 } from 'lucide-react';
 
 export const ClientList: React.FC = () => {
-  const { clients, properties, jobs } = useFSMStore();
+  const { clients, properties, jobs, archiveClient, unarchiveClient } = useFSMStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'company' | 'residential'>('all');
+  const [filterArchived, setFilterArchived] = useState<'active' | 'archived'>('active');
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
   const [activeClientForProp, setActiveClientForProp] = useState<Client | null>(null);
 
   // Filter clients based on query and type
   const filteredClients = useMemo(() => {
     return clients.filter((c) => {
+      // Archive filter
+      if (filterArchived === 'active' && c.isArchived) return false;
+      if (filterArchived === 'archived' && !c.isArchived) return false;
+
       const matchesType = 
         filterType === 'all' 
           ? true 
@@ -52,12 +57,17 @@ export const ClientList: React.FC = () => {
 
       return name.includes(q) || comp.includes(q) || email.includes(q) || phone.includes(q) || address.includes(q);
     });
-  }, [clients, searchQuery, filterType]);
+  }, [clients, searchQuery, filterType, filterArchived]);
 
-  // Total properties count
-  const totalProperties = properties.length;
-  const totalActiveJobs = jobs.filter(j => j.status === 'in_progress' || j.status === 'scheduled').length;
-  const totalRevenue = clients.reduce((acc, c) => acc + (c.totalSpent || 0), 0);
+  // Total properties count and stats (exclude archived for active totals)
+  const activeClientsOnly = clients.filter(c => !c.isArchived);
+  const archivedClientIds = new Set(clients.filter(c => c.isArchived).map(c => c.id));
+  const activeProps = properties.filter(p => !archivedClientIds.has(p.clientId));
+  const activeClientJobs = jobs.filter(j => !archivedClientIds.has(j.clientId));
+
+  const totalProperties = activeProps.length;
+  const totalActiveJobs = activeClientJobs.filter(j => j.status === 'in_progress' || j.status === 'scheduled').length;
+  const totalRevenue = activeClientsOnly.reduce((acc, c) => acc + (c.totalSpent || 0), 0);
 
   return (
     <div className="space-y-6 text-[#fdfbf7]">
@@ -121,6 +131,25 @@ export const ClientList: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="inline-flex rounded-lg border border-[#2a2a2a] p-1 bg-[#181818] text-xs shrink-0">
+            <button
+              onClick={() => setFilterArchived('active')}
+              className={`px-3 py-1 rounded font-semibold transition ${
+                filterArchived === 'active' ? 'bg-[#c5a059] text-black font-bold' : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setFilterArchived('archived')}
+              className={`px-3 py-1 rounded font-semibold transition ${
+                filterArchived === 'archived' ? 'bg-[#c5a059] text-black font-bold' : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
+              }`}
+            >
+              Archived
+            </button>
+          </div>
+
           <div className="inline-flex rounded-lg border border-[#2a2a2a] p-1 bg-[#181818] text-xs">
             <button
               onClick={() => setFilterType('all')}
@@ -128,7 +157,7 @@ export const ClientList: React.FC = () => {
                 filterType === 'all' ? 'bg-[#c5a059] text-black font-bold' : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
               }`}
             >
-              All ({clients.length})
+              All
             </button>
             <button
               onClick={() => setFilterType('company')}
@@ -282,6 +311,20 @@ export const ClientList: React.FC = () => {
                       >
                         + Book Job
                       </Link>
+                      <button
+                        onClick={() => {
+                          if (client.isArchived) {
+                            unarchiveClient(client.id);
+                          } else {
+                            if (window.confirm('Archive this client? Their history will be preserved but they will be hidden from main views.')) {
+                              archiveClient(client.id);
+                            }
+                          }
+                        }}
+                        className={`inline-block border font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow ${client.isArchived ? 'bg-[#1a1a1a] hover:bg-[#252525] text-emerald-400 border-emerald-900/50' : 'bg-[#1a1a1a] hover:bg-red-950/40 text-red-400 border-[#333333] hover:border-red-900/50'}`}
+                      >
+                        {client.isArchived ? 'Unarchive' : 'Archive'}
+                      </button>
                     </td>
                   </tr>
                 );

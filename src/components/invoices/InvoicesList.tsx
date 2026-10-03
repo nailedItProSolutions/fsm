@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { Invoice } from '@/types';
 import { InvoiceBuilderModal } from './InvoiceBuilderModal';
 import { 
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export const InvoicesList: React.FC = () => {
-  const { invoices, markInvoicePaid } = useFSMStore();
+  const { invoices, markInvoicePaid } = useActiveFSMData();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'sent' | 'paid' | 'overdue'>('all');

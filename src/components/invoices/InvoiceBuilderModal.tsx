@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { InvoiceItem, Job } from '@/types';
 import { X, Plus, Trash2, Receipt, Calculator, Calendar, FileText } from 'lucide-react';
 
@@ -16,7 +16,7 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   onClose,
   initialJobId,
 }) => {
-  const { clients, properties, jobs, addInvoice } = useFSMStore();
+  const { clients, properties, jobs, addInvoice } = useActiveFSMData();
 
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { JobPriority, JobStatus } from '@/types';
 import { 
   X, 
@@ -44,7 +44,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
   initialIsEmergency = false,
   onSuccess,
 }) => {
-  const { clients, properties, getTechnicians, addJob } = useFSMStore();
+  const { clients, properties, getTechnicians, addJob } = useActiveFSMData();
   const technicians = getTechnicians();
 
   const [clientId, setClientId] = useState(preselectedClientId || '');

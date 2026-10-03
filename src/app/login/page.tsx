@@ -151,42 +151,6 @@ function LoginForm() {
             </button>
           </div>
 
-          {/* Quick Credential Pre-fill Assistance for Testing */}
-          <div className="bg-[#161616] p-3 rounded-xl border border-[#262626] space-y-2">
-            <span className="text-[10px] uppercase font-bold text-[#78716c] block text-center">
-              Active Authorized Personnel Credentials:
-            </span>
-            <div className="grid grid-cols-2 gap-2 text-left">
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('1019974', '8572', 'admin@nailedit.com')}
-                className="p-2 rounded-lg bg-[#1f1f1f] hover:bg-[#282828] border border-[#333333] transition"
-              >
-                <div className="text-[11px] font-bold text-[#c5a059] flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-[#c5a059]" />
-                  <span>Admin: Brianna C.</span>
-                </div>
-                <div className="text-[10px] text-[#78716c] font-mono mt-0.5">
-                  ID: 1019974 • PIN: 8572
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('TECH-101', '4592', 'mike@nailedit.com')}
-                className="p-2 rounded-lg bg-[#1f1f1f] hover:bg-[#282828] border border-[#333333] transition"
-              >
-                <div className="text-[11px] font-bold text-[#FF8A00] flex items-center gap-1">
-                  <Wrench className="w-3 h-3 text-[#FF8A00]" />
-                  <span>Lead Tech: Mike R.</span>
-                </div>
-                <div className="text-[10px] text-[#78716c] font-mono mt-0.5">
-                  ID: TECH-101 • PIN: 4592
-                </div>
-              </button>
-            </div>
-          </div>
-
           {error && (
             <div className="p-3 bg-red-950/60 border border-red-800 rounded-lg text-xs text-red-200 flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />

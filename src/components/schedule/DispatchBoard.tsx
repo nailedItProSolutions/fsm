@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { Job, JobStatus } from '@/types';
 import { NewJobModal } from './NewJobModal';
 import { JobDetailModal } from './JobDetailModal';
@@ -42,7 +42,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
   initialSmsJobId,
   initialEmergency = false,
 }) => {
-  const { jobs, properties, getTechnicians } = useFSMStore();
+  const { jobs, properties, getTechnicians } = useActiveFSMData();
   const technicians = getTechnicians();
 
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('day');

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { DailyWorkLog, WeeklyTimesheet } from '@/types';
 import { LockedTimesheetPdfModal } from './LockedTimesheetPdfModal';
 import { 
@@ -22,7 +22,7 @@ import {
 
 export const TechVaultView: React.FC = () => {
   const { user } = useAuth();
-  const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId } = useFSMStore();
+  const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId } = useActiveFSMData();
 
   const currentTechId = user?.role === 'technician' ? user.uid : 'user-tech-1';
   const techDisplayName = user?.role === 'technician' ? user.displayName : 'Mike Rivera (Lead Field Tech)';

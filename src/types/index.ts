@@ -88,6 +88,7 @@ export interface Client {
   phone: string;
   billingAddress: Address;
   propertyIds: string[];
+  isArchived?: boolean;
   notes?: string;
   totalSpent: number;
   activeJobsCount: number;

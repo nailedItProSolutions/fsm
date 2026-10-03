@@ -36,7 +36,9 @@ export function useFSMStore() {
     getInvoicesByClientId: (clientId: string) => store.getInvoicesByClientId(clientId),
     getEstimatesByClientId: (clientId: string) => store.getEstimatesByClientId(clientId),
     getSubscriptionsByClientId: (clientId: string) => store.getSubscriptionsByClientId(clientId),
-    addClient: (clientData: any, initialProperty?: any) => store.addClient(clientData, initialProperty),
+    archiveClient: (id: string) => void;
+  unarchiveClient: (id: string) => void;
+  addClient: (clientData: any, initialProperty?: any) => store.addClient(clientData, initialProperty),
     addProperty: (propertyData: any) => store.addProperty(propertyData),
     addJob: (jobData: any) => store.addJob(jobData),
     updateJob: (jobId: string, updates: any) => store.updateJob(jobId, updates),
@@ -65,5 +67,22 @@ export function useFSMStore() {
     getAuditLogsByEntity: (entityType: any, entityId: string) => store.getAuditLogsByEntity(entityType, entityId),
     logActivity: (...args: any[]) => (store.logActivity as Function)(...args),
     resetToDefault: () => store.resetToDefault(),
+  };
+}archiveClient: (id: string) => store.archiveClient(id),
+    unarchiveClient: (id: string) => store.unarchiveClient(id),
+    
+
+
+export function useActiveFSMData() {
+  const store = useFSMStore();
+  const archivedClientIds = new Set(store.clients.filter(c => c.isArchived).map(c => c.id));
+  
+  return {
+    ...store,
+    clients: store.clients.filter(c => !c.isArchived),
+    properties: store.properties.filter(p => !archivedClientIds.has(p.clientId)),
+    jobs: store.jobs.filter(j => !archivedClientIds.has(j.clientId)),
+    invoices: store.invoices.filter(i => !archivedClientIds.has(i.clientId)),
+    estimates: store.estimates.filter(e => !archivedClientIds.has(e.clientId)),
   };
 }

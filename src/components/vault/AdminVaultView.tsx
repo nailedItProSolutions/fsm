@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { DailyWorkLog, WeeklyTimesheet, JobTradeCategory, PaymentVerification } from '@/types';
 import { 
   parseHandwrittenTimesheetText, 
@@ -45,7 +45,7 @@ export const AdminVaultView: React.FC = () => {
     verifyWeeklyTimesheetPayment,
     updateWeeklyTimesheetAudit,
     generateMissingWeeklyTimesheets
-  } = useFSMStore();
+  } = useActiveFSMData();
 
   const technicians = getTechnicians();
 

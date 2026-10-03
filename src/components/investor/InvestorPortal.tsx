@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/lib/authContext';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { Property, Job, Invoice } from '@/types';
 import {
   Building2,
@@ -44,7 +44,7 @@ export const InvestorPortal: React.FC = () => {
     getPropertiesByClientId,
     getJobsByClientId,
     getInvoicesByClientId,
-  } = useFSMStore();
+  } = useActiveFSMData();
 
   // Active client scoping: if logged in as client, strictly scope to user.clientId or client-1
   // If admin/dispatcher, allow simulating/switching any investor

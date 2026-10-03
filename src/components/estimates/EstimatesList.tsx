@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { Estimate } from '@/types';
 import { EstimateBuilderModal } from './EstimateBuilderModal';
 import { 
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const EstimatesList: React.FC = () => {
-  const { estimates, updateEstimateStatus, convertEstimateToJob } = useFSMStore();
+  const { estimates, updateEstimateStatus, convertEstimateToJob } = useActiveFSMData();
 
   const [filterStatus, setFilterStatus] = useState<Estimate['status'] | 'all'>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { EstimateItem } from '@/types';
 import { 
   X, 
@@ -31,7 +31,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { clients, properties, addEstimate } = useFSMStore();
+  const { clients, properties, addEstimate } = useActiveFSMData();
 
   const [clientId, setClientId] = useState('');
   const [propertyId, setPropertyId] = useState('');
