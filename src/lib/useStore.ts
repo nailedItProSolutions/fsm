@@ -36,8 +36,8 @@ export function useFSMStore() {
     getInvoicesByClientId: (clientId: string) => store.getInvoicesByClientId(clientId),
     getEstimatesByClientId: (clientId: string) => store.getEstimatesByClientId(clientId),
     getSubscriptionsByClientId: (clientId: string) => store.getSubscriptionsByClientId(clientId),
-    archiveClient: (id: string) => void;
-  unarchiveClient: (id: string) => void;
+    archiveClient: (id: string) => store.archiveClient(id),
+    unarchiveClient: (id: string) => store.unarchiveClient(id),
   addClient: (clientData: any, initialProperty?: any) => store.addClient(clientData, initialProperty),
     addProperty: (propertyData: any) => store.addProperty(propertyData),
     addJob: (jobData: any) => store.addJob(jobData),
@@ -68,9 +68,7 @@ export function useFSMStore() {
     logActivity: (...args: any[]) => (store.logActivity as Function)(...args),
     resetToDefault: () => store.resetToDefault(),
   };
-}archiveClient: (id: string) => store.archiveClient(id),
-    unarchiveClient: (id: string) => store.unarchiveClient(id),
-    
+}
 
 
 export function useActiveFSMData() {
