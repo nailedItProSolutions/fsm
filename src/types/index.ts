@@ -209,6 +209,7 @@ export interface WorkAgreementItem {
 
 export interface WorkAgreement {
   id: string;
+  contractId?: string;
   agreementNumber: string;
   estimateId: string;
   estimateNumber: string;

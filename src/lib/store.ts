@@ -1643,8 +1643,13 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     const defaultTerms = `1. SCOPE OF SERVICE: Nailed It Property Solutions agrees to furnish all qualified labor, necessary tools, and materials specified above in accordance with standard residential and commercial trade practices in Rome, GA (Floyd County).\n2. PAYMENT & COMPLETION: Client agrees to pay the final balance due upon certified substantial completion and walk-through inspection.\n3. CHANGE ORDER POLICY: Any unforeseen structural defects, concealed plumbing/electrical hazards, or client-requested additions discovered during execution will be documented with photos and approved in writing prior to proceeding.\n4. WORKMANSHIP GUARANTEE: All installation labor is backed by Nailed It Property Solutions' 1-Year Workmanship Warranty.`;
 
+    const contractYear = new Date().getFullYear();
+    const contractRandom = Math.floor(10000 + Math.random() * 90000);
+    const contractId = `CTR-${contractYear}-${contractRandom}`;
+
     const agreement: WorkAgreement = {
       id: agreementId,
+      contractId,
       agreementNumber,
       estimateId: est.id,
       estimateNumber: est.estimateNumber,
@@ -1712,11 +1717,26 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       'agreement_created',
       'estimate',
       est.id,
-      `Company Work Agreement ${agreementNumber} created (Job ${newJob.jobNumber}). Updated Total: $${updatedTotal.toFixed(2)} (${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} variance from estimate). Reason: ${agreement.varianceReason}.`
+      `Company Work Agreement ${agreementNumber} (Contract ID: ${contractId}) created (Job ${newJob.jobNumber}). Updated Total: $${updatedTotal.toFixed(2)} (${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} variance from estimate). Reason: ${agreement.varianceReason}.`
     );
 
     this.persist();
     return agreement;
+  }
+
+  public signWorkAgreementClient(agreementId: string, clientSignatureName: string): WorkAgreement | null {
+    const agr = this.workAgreements.find((a) => a.id === agreementId);
+    if (!agr) return null;
+    agr.clientSignatureName = clientSignatureName.trim();
+    agr.clientSignedAt = new Date().toISOString();
+    this.persist();
+    this.logActivity(
+      'update',
+      'estimate',
+      agr.estimateId,
+      `Client signed Work Agreement ${agr.agreementNumber} (${agr.contractId || agr.id}) digitally: ${clientSignatureName.trim()}`
+    );
+    return agr;
   }
 
 

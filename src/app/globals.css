@@ -87,5 +87,17 @@ h1, h2, h3, h4, h5, h6 {
   .flex {
     display: flex !important;
   }
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 }
 

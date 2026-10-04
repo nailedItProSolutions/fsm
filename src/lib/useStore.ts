@@ -57,6 +57,7 @@ export function useFSMStore() {
     getWorkAgreements: () => store.getWorkAgreements(),
     getWorkAgreementById: (id: string) => store.getWorkAgreementById(id),
     getWorkAgreementByEstimateId: (estimateId: string) => store.getWorkAgreementByEstimateId(estimateId),
+    signWorkAgreementClient: (agreementId: string, clientSignatureName: string) => store.signWorkAgreementClient(agreementId, clientSignatureName),
     addInvoice: (invoiceData: any) => store.addInvoice(invoiceData),
     markInvoicePaid: (invoiceId: string, stripePaymentIntentId?: string) => store.markInvoicePaid(invoiceId, stripePaymentIntentId),
     createSubscription: (subData: any) => store.createSubscription(subData),
