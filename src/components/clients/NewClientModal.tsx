@@ -88,22 +88,22 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-2xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
         {/*  */}
-        <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+        <div className="bg-[#181818] border-b border-[#262626] text-[#fdfbf7] p-5 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold text-base">
+            <div className="w-8 h-8 rounded-lg bg-[#c5a059] flex items-center justify-center text-black font-bold text-base">
               +
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Add New Client</h3>
-              <p className="text-xs text-slate-400">Create client profile and initial property</p>
+              <h3 className="font-bold text-base text-[#fdfbf7]">Add New Client</h3>
+              <p className="text-xs text-[#78716c]">Create client profile and initial property</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+            className="text-[#78716c] hover:text-[#fdfbf7] p-1 rounded-lg hover:bg-[#222222] transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -112,7 +112,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
           {/*  */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-2">
               Client Account Type
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -121,16 +121,16 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 onClick={() => { setIsCompany(false); setPropLabel('Primary Residence'); }}
                 className={`p-3 rounded-xl border text-left flex items-center space-x-3 transition ${
                   !isCompany 
-                    ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' 
-                    : 'border-slate-200 hover:bg-slate-50'
+                    ? 'border-[#c5a059] bg-[#c5a059]/10 ring-2 ring-[#c5a059]/20' 
+                    : 'border-[#2a2a2a] hover:bg-[#1a1a1a]'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${!isCompany ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2 rounded-lg ${!isCompany ? 'bg-[#c5a059] text-black' : 'bg-[#222222] text-[#b8b0a5]'}`}>
                   <User className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-xs text-slate-900">Residential Homeowner</div>
-                  <div className="text-[11px] text-slate-500">Individual property owner</div>
+                  <div className="font-bold text-xs text-[#fdfbf7]">Residential Homeowner</div>
+                  <div className="text-[11px] text-[#78716c]">Individual property owner</div>
                 </div>
               </button>
 
@@ -139,16 +139,16 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 onClick={() => { setIsCompany(true); setPropLabel('Commercial / Portfolio Unit #1'); }}
                 className={`p-3 rounded-xl border text-left flex items-center space-x-3 transition ${
                   isCompany 
-                    ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20' 
-                    : 'border-slate-200 hover:bg-slate-50'
+                    ? 'border-[#c5a059] bg-[#c5a059]/10 ring-2 ring-[#c5a059]/20' 
+                    : 'border-[#2a2a2a] hover:bg-[#1a1a1a]'
                 }`}
               >
-                <div className={`p-2 rounded-lg ${isCompany ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2 rounded-lg ${isCompany ? 'bg-[#c5a059] text-black' : 'bg-[#222222] text-[#b8b0a5]'}`}>
                   <Building2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-xs text-slate-900">Property Manager / Landlord</div>
-                  <div className="text-[11px] text-slate-500">Multiple properties / company</div>
+                  <div className="font-bold text-xs text-[#fdfbf7]">Property Manager / Landlord</div>
+                  <div className="text-[11px] text-[#78716c]">Multiple properties / company</div>
                 </div>
               </button>
             </div>
@@ -157,7 +157,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
           {/*  */}
           {isCompany && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-[#b8b0a5] mb-1">
                 Company / Organization Name *
               </label>
               <input
@@ -166,7 +166,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="e.g. Apex Property Management LLC"
-                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
               />
             </div>
           )}
@@ -174,7 +174,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
           {/*  */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-[#b8b0a5] mb-1">
                 First Name *
               </label>
               <input
@@ -183,11 +183,11 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="John"
-                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-[#b8b0a5] mb-1">
                 Last Name *
               </label>
               <input
@@ -196,7 +196,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Doe"
-                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
               />
             </div>
           </div>
@@ -204,7 +204,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
           {/*  */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-[#b8b0a5] mb-1">
                 Email Address *
               </label>
               <input
@@ -213,11 +213,11 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="client@example.com"
-                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-bold text-[#b8b0a5] mb-1">
                 Phone Number *
               </label>
               <input
@@ -226,15 +226,15 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(512) 555-0199"
-                className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
               />
             </div>
           </div>
 
           {/*  */}
-          <div className="border-t border-slate-200 pt-5">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center space-x-1.5">
-              <MapPin className="w-3.5 h-3.5 text-orange-500" />
+          <div className="border-t border-[#262626] pt-5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] mb-3 flex items-center space-x-1.5">
+              <MapPin className="w-3.5 h-3.5 text-[#c5a059]" />
               <span>Billing Address</span>
             </h4>
             <div className="space-y-3">
@@ -246,7 +246,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={billStreet}
                     onChange={(e) => setBillStreet(e.target.value)}
                     placeholder="Street Address"
-                    className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>
                 <div>
@@ -255,7 +255,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={billUnit}
                     onChange={(e) => setBillUnit(e.target.value)}
                     placeholder="Apt / Suite"
-                    className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>
               </div>
@@ -266,7 +266,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={billCity}
                   onChange={(e) => setBillCity(e.target.value)}
                   placeholder="City"
-                  className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                 />
                 <input
                   type="text"
@@ -274,7 +274,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={billState}
                   onChange={(e) => setBillState(e.target.value)}
                   placeholder="State"
-                  className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                 />
                 <input
                   type="text"
@@ -282,25 +282,25 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={billZip}
                   onChange={(e) => setBillZip(e.target.value)}
                   placeholder="Zip Code"
-                  className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                 />
               </div>
             </div>
           </div>
 
           {/*  */}
-          <div className="border-t border-slate-200 pt-5">
+          <div className="border-t border-[#262626] pt-5">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5">
-                <Building2 className="w-3.5 h-3.5 text-orange-500" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] flex items-center space-x-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[#c5a059]" />
                 <span>Initial Service Property</span>
               </h4>
-              <label className="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer">
+              <label className="flex items-center space-x-2 text-xs text-[#b8b0a5] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={sameAsBilling}
                   onChange={(e) => setSameAsBilling(e.target.checked)}
-                  className="rounded text-orange-600 focus:ring-orange-500"
+                  className="rounded accent-[#c5a059] bg-[#181818] border-[#2a2a2a]"
                 />
                 <span>Same as billing address</span>
               </label>
@@ -308,7 +308,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
                   Property Label / Identifier
                 </label>
                 <input
@@ -316,7 +316,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   value={propLabel}
                   onChange={(e) => setPropLabel(e.target.value)}
                   placeholder="e.g. Primary Home, Building A, Rental Duplex"
-                  className="w-full text-slate-900 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                 />
               </div>
 
@@ -330,7 +330,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                         value={propStreet}
                         onChange={(e) => setPropStreet(e.target.value)}
                         placeholder="Service Street Address"
-                        className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                     <div>
@@ -339,7 +339,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                         value={propUnit}
                         onChange={(e) => setPropUnit(e.target.value)}
                         placeholder="Unit #"
-                        className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                   </div>
@@ -350,7 +350,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                       value={propCity}
                       onChange={(e) => setPropCity(e.target.value)}
                       placeholder="City"
-                      className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                     />
                     <input
                       type="text"
@@ -358,7 +358,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                       value={propState}
                       onChange={(e) => setPropState(e.target.value)}
                       placeholder="State"
-                      className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                     />
                     <input
                       type="text"
@@ -366,7 +366,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                       value={propZip}
                       onChange={(e) => setPropZip(e.target.value)}
                       placeholder="Zip Code"
-                      className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                     />
                   </div>
                 </>
@@ -374,8 +374,8 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1 flex items-center space-x-1">
-                    <Key className="w-3 h-3 text-slate-400" />
+                  <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1 flex items-center space-x-1">
+                    <Key className="w-3 h-3 text-[#78716c]" />
                     <span>Gate / Lockbox Code</span>
                   </label>
                   <input
@@ -383,11 +383,11 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={gateCode}
                     onChange={(e) => setGateCode(e.target.value)}
                     placeholder="#1234 or Key under mat"
-                    className="w-full text-slate-900 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
                     Access Instructions
                   </label>
                   <input
@@ -395,7 +395,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     value={accessInstructions}
                     onChange={(e) => setAccessInstructions(e.target.value)}
                     placeholder="Side gate unlocked, watch for dog"
-                    className="w-full text-slate-900 text-xs px-3.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>
               </div>
@@ -403,9 +403,9 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
           </div>
 
           {/*  */}
-          <div className="border-t border-slate-200 pt-5">
-            <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center space-x-1.5">
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
+          <div className="border-t border-[#262626] pt-5">
+            <label className="block text-xs font-bold text-[#b8b0a5] mb-1 flex items-center space-x-1.5">
+              <FileText className="w-3.5 h-3.5 text-[#78716c]" />
               <span>General Client Notes</span>
             </label>
             <textarea
@@ -413,22 +413,22 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Special customer preferences, billing requirements, preferred contact time..."
-              className="w-full text-slate-900 bg-white text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
             />
           </div>
 
           {/*  */}
-          <div className="border-t border-slate-200 pt-4 flex items-center justify-end space-x-3">
+          <div className="border-t border-[#262626] pt-4 flex items-center justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              className="px-4 py-2 rounded-lg border border-[#333333] text-xs font-bold text-[#b8b0a5] hover:bg-[#1a1a1a]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5"
+              className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-md transition flex items-center space-x-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Create Client & Property</span>
