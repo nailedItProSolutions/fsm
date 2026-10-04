@@ -27,7 +27,8 @@ export type AuditActionType =
   | 'payment_verify' 
   | 'ocr_upload'
   | 'invoice_sent'
-  | 'payment_received';
+  | 'payment_received'
+  | 'agreement_created';
 
 export type AuditEntityType = 
   | 'job' 
@@ -39,6 +40,7 @@ export type AuditEntityType =
   | 'timesheet'
   | 'work_log'
   | 'user'
+  | 'agreement'
   | 'system';
 
 export interface AuditLog {
@@ -129,6 +131,10 @@ export interface Job {
   invoiceId?: string;
   notes: string;
   totalAmount?: number;
+  workAgreementId?: string;
+  originalEstimateTotal?: number;
+  varianceAmount?: number;
+  varianceReason?: string;
   completedAt?: string;
   createdAt: string;
 }
@@ -158,6 +164,9 @@ export interface Estimate {
   convertedToJobId?: string;
   validUntil: string;
   createdAt: string;
+  payments?: EstimatePayment[];
+  depositPaid?: number;
+  workAgreementId?: string;
   marketComparison?: {
     trade: string;
     tradeLabel: string;
@@ -167,6 +176,63 @@ export interface Estimate {
     customerDollarSavings: number;
     percentBelowMedian: number;
   };
+}
+
+
+export type PaymentMethod = 'cashapp' | 'zelle' | 'check' | 'money_order' | 'cash' | 'debit_credit';
+
+export interface EstimatePayment {
+  id: string;
+  estimateId: string;
+  estimateNumber: string;
+  clientId: string;
+  clientName: string;
+  amount: number;
+  method: PaymentMethod;
+  referenceNumber?: string;
+  notes?: string;
+  receiptNumber: string;
+  receivedBy: string;
+  createdAt: string;
+}
+
+export interface WorkAgreementItem {
+  id: string;
+  type: 'labor' | 'material' | 'flat_rate';
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  isNewOrModified?: boolean;
+  varianceNote?: string;
+}
+
+export interface WorkAgreement {
+  id: string;
+  agreementNumber: string;
+  estimateId: string;
+  estimateNumber: string;
+  jobId?: string;
+  jobNumber?: string;
+  clientId: string;
+  clientName: string;
+  propertyId: string;
+  propertyAddress: string;
+  originalEstimateTotal: number;
+  updatedTotal: number;
+  varianceAmount: number;
+  varianceReason: string;
+  depositPaid: number;
+  balanceDue: number;
+  paymentMethod?: PaymentMethod;
+  paymentReceiptNumber?: string;
+  items: WorkAgreementItem[];
+  terms: string;
+  contractorSignedBy: string;
+  contractorSignedAt: string;
+  clientSignatureName?: string;
+  clientSignedAt?: string;
+  createdAt: string;
 }
 
 export interface InvoiceItem {

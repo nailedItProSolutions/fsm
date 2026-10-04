@@ -1,4 +1,4 @@
-import { Client, Property, Job, Estimate, Invoice, UserProfile, UserRole, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification, TimesheetBonus, TimesheetDeduction, AuditLog, AuditActionType, AuditEntityType } from '@/types';
+import { Client, Property, Job, Estimate, Invoice, UserProfile, UserRole, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification, TimesheetBonus, TimesheetDeduction, AuditLog, AuditActionType, AuditEntityType, PaymentMethod, EstimatePayment, WorkAgreementItem, WorkAgreement } from '@/types';
 import { sortWorkLogsChronologically, aggregateWeeklyTimesheet, verifyWeeklyTimesheet, updateTimesheetAudit, groupWorkLogsByCalendarWeek } from './ocrEngine';
 
 // Seed Initial Data
@@ -905,6 +905,7 @@ export class FSMStore {
   private weeklyTimesheets: WeeklyTimesheet[] = INITIAL_WEEKLY_TIMESHEETS;
   private users: UserProfile[] = INITIAL_USERS;
   private auditLogs: AuditLog[] = INITIAL_AUDIT_LOGS;
+  private workAgreements: WorkAgreement[] = [];
   private listeners: Array<() => void> = [];
 
   private constructor() {
@@ -935,6 +936,7 @@ export class FSMStore {
             }
           }
           this.auditLogs = parsed.auditLogs || INITIAL_AUDIT_LOGS;
+          this.workAgreements = parsed.workAgreements || [];
         }
       } catch (e) {
         console.error('Failed to load store from localStorage', e);
@@ -965,6 +967,7 @@ export class FSMStore {
             weeklyTimesheets: this.weeklyTimesheets,
             users: this.users,
             auditLogs: this.auditLogs,
+            workAgreements: this.workAgreements,
           })
         );
       } catch (e) {
@@ -1529,6 +1532,193 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     return newJob;
   }
+
+
+  // --- Estimate Payments & Client Receipts ---
+  public recordEstimatePayment(
+    estimateId: string,
+    paymentData: {
+      amount: number;
+      method: PaymentMethod;
+      referenceNumber?: string;
+      notes?: string;
+      receivedBy?: string;
+    }
+  ): { payment: EstimatePayment; estimate: Estimate } {
+    const est = this.estimates.find((e) => e.id === estimateId);
+    if (!est) throw new Error('Estimate not found');
+
+    const paymentId = `pay-${Date.now()}`;
+    const receiptNumber = `REC-${Math.floor(100000 + Math.random() * 900000)}`;
+    const now = new Date().toISOString();
+
+    const payment: EstimatePayment = {
+      id: paymentId,
+      estimateId: est.id,
+      estimateNumber: est.estimateNumber,
+      clientId: est.clientId,
+      clientName: est.clientName,
+      amount: Number(paymentData.amount),
+      method: paymentData.method,
+      referenceNumber: paymentData.referenceNumber?.trim(),
+      notes: paymentData.notes?.trim(),
+      receiptNumber,
+      receivedBy: paymentData.receivedBy || 'Brianna Cronan - HR Mgr',
+      createdAt: now,
+    };
+
+    if (!est.payments) {
+      est.payments = [];
+    }
+    est.payments.push(payment);
+    est.depositPaid = (est.depositPaid || 0) + payment.amount;
+
+    const methodNames: Record<PaymentMethod, string> = {
+      cashapp: 'Cash App',
+      zelle: 'Zelle',
+      check: 'Check',
+      money_order: 'Money Order',
+      cash: 'Cash',
+      debit_credit: 'Debit/Credit Card',
+    };
+    const methodName = methodNames[payment.method] || payment.method;
+    const refText = payment.referenceNumber ? ` (Ref: ${payment.referenceNumber})` : '';
+
+    this.logActivity(
+      'payment_received',
+      'estimate',
+      est.id,
+      `Received $${payment.amount.toFixed(2)} payment via ${methodName}${refText} for ${est.estimateNumber}. Receipt #${receiptNumber} generated.`
+    );
+
+    const client = this.clients.find((c) => c.id === est.clientId);
+    if (client) {
+      client.totalSpent = (client.totalSpent || 0) + payment.amount;
+    }
+
+    this.persist();
+    return { payment, estimate: est };
+  }
+
+  // --- Company Work Agreements ---
+  public getWorkAgreements(): WorkAgreement[] {
+    return [...this.workAgreements];
+  }
+
+  public getWorkAgreementById(id: string): WorkAgreement | undefined {
+    return this.workAgreements.find((w) => w.id === id);
+  }
+
+  public getWorkAgreementByEstimateId(estimateId: string): WorkAgreement | undefined {
+    return this.workAgreements.find((w) => w.estimateId === estimateId);
+  }
+
+  public createWorkAgreement(
+    estimateId: string,
+    agreementData: {
+      items: WorkAgreementItem[];
+      varianceReason: string;
+      depositPaid?: number;
+      paymentMethod?: PaymentMethod;
+      paymentReceiptNumber?: string;
+      clientSignatureName?: string;
+      terms?: string;
+      scheduledDate?: string;
+      techId?: string;
+    }
+  ): WorkAgreement {
+    const est = this.estimates.find((e) => e.id === estimateId);
+    if (!est) throw new Error('Estimate not found');
+
+    const agreementId = `cwa-${Date.now()}`;
+    const agreementNumber = `CWA-${est.estimateNumber.replace(/[^0-9]/g, '') || Math.floor(1000 + Math.random() * 9000)}`;
+    const now = new Date().toISOString();
+
+    const updatedSubtotal = agreementData.items.reduce((acc, i) => acc + (Number(i.total) || 0), 0);
+    const taxAmount = updatedSubtotal * (est.taxRate || 0.08);
+    const updatedTotal = updatedSubtotal + taxAmount;
+    const varianceAmount = updatedTotal - est.total;
+    const deposit = agreementData.depositPaid !== undefined ? Number(agreementData.depositPaid) : (est.depositPaid || 0);
+    const balanceDue = Math.max(0, updatedTotal - deposit);
+
+    const defaultTerms = `1. SCOPE OF SERVICE: Nailed It Property Solutions agrees to furnish all qualified labor, necessary tools, and materials specified above in accordance with standard residential and commercial trade practices in Rome, GA (Floyd County).\n2. PAYMENT & COMPLETION: Client agrees to pay the final balance due upon certified substantial completion and walk-through inspection.\n3. CHANGE ORDER POLICY: Any unforeseen structural defects, concealed plumbing/electrical hazards, or client-requested additions discovered during execution will be documented with photos and approved in writing prior to proceeding.\n4. WORKMANSHIP GUARANTEE: All installation labor is backed by Nailed It Property Solutions' 1-Year Workmanship Warranty.`;
+
+    const agreement: WorkAgreement = {
+      id: agreementId,
+      agreementNumber,
+      estimateId: est.id,
+      estimateNumber: est.estimateNumber,
+      clientId: est.clientId,
+      clientName: est.clientName,
+      propertyId: est.propertyId,
+      propertyAddress: est.propertyAddress,
+      originalEstimateTotal: est.total,
+      updatedTotal,
+      varianceAmount,
+      varianceReason: agreementData.varianceReason.trim() || 'Scope and materials updated for work execution',
+      depositPaid: deposit,
+      balanceDue,
+      paymentMethod: agreementData.paymentMethod,
+      paymentReceiptNumber: agreementData.paymentReceiptNumber,
+      items: agreementData.items,
+      terms: agreementData.terms || defaultTerms,
+      contractorSignedBy: 'Brianna Cronan - HR Mgr',
+      contractorSignedAt: now,
+      clientSignatureName: agreementData.clientSignatureName?.trim(),
+      clientSignedAt: agreementData.clientSignatureName ? now : undefined,
+      createdAt: now,
+    };
+
+    const tech = this.users.find((u) => u.uid === agreementData.techId) || this.users.find((u) => u.role === 'technician');
+    const newJob = this.addJob({
+      clientId: est.clientId,
+      clientName: est.clientName,
+      propertyId: est.propertyId,
+      propertyAddress: est.propertyAddress,
+      assignedTechId: tech?.uid,
+      assignedTechName: tech?.displayName || 'Charles Willis',
+      title: `Work Order: ${agreement.items[0]?.description || est.estimateNumber}`,
+      description: agreement.items.map((i) => `• [${i.type.toUpperCase()}] ${i.description} (Qty: ${i.quantity}) - $${Number(i.total).toFixed(2)}`).join('\n'),
+      status: 'scheduled',
+      priority: 'medium',
+      scheduledDate: agreementData.scheduledDate || new Date().toISOString().split('T')[0],
+      timeWindowStart: '09:00',
+      timeWindowEnd: '13:00',
+      checklist: agreement.items.map((item, idx) => ({
+        id: `chk-agree-${idx}`,
+        text: item.description,
+        done: false,
+      })),
+      photosBefore: [],
+      photosAfter: [],
+      estimateId: est.id,
+      notes: `Company Work Agreement ${agreementNumber} active. Scope change variance: ${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} (${agreement.varianceReason}). Deposit paid: $${deposit.toFixed(2)}.`,
+      totalAmount: updatedTotal,
+      workAgreementId: agreement.id,
+      originalEstimateTotal: est.total,
+      varianceAmount,
+      varianceReason: agreement.varianceReason,
+    });
+
+    agreement.jobId = newJob.id;
+    agreement.jobNumber = newJob.jobNumber;
+
+    this.workAgreements.push(agreement);
+    est.status = 'approved';
+    est.convertedToJobId = newJob.id;
+    est.workAgreementId = agreement.id;
+
+    this.logActivity(
+      'agreement_created',
+      'estimate',
+      est.id,
+      `Company Work Agreement ${agreementNumber} created (Job ${newJob.jobNumber}). Updated Total: $${updatedTotal.toFixed(2)} (${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} variance from estimate). Reason: ${agreement.varianceReason}.`
+    );
+
+    this.persist();
+    return agreement;
+  }
+
 
   // --- Invoices ---
   public getInvoices(): Invoice[] {

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useActiveFSMData } from '@/lib/useStore';
 import { Estimate } from '@/types';
 import { EstimateBuilderModal } from './EstimateBuilderModal';
+import { EstimatePaymentModal } from './EstimatePaymentModal';
+import { WorkAgreementModal } from './WorkAgreementModal';
 import { 
   FileText, 
   Plus, 
@@ -27,6 +29,8 @@ export const EstimatesList: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<Estimate['status'] | 'all'>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [payingEstimate, setPayingEstimate] = useState<Estimate | null>(null);
+  const [agreeingEstimate, setAgreeingEstimate] = useState<Estimate | null>(null);
   const [convertedJobAlert, setConvertedJobAlert] = useState<{ estNum: string; jobNum: string } | null>(null);
 
   useEffect(() => {
@@ -215,58 +219,86 @@ export const EstimatesList: React.FC = () => {
                 </td>
 
                 {/* Total */}
-                <td className="px-6 py-4 text-right font-mono font-bold text-sm text-[#fdfbf7]">
-                  ${Number(est.total).toFixed(2)}
+                <td className="px-6 py-4 text-right">
+                  <div className="font-mono font-bold text-sm text-[#fdfbf7]">
+                    ${Number(est.total).toFixed(2)}
+                  </div>
+                  {Number(est.depositPaid || 0) > 0 && (
+                    <div className="text-[10px] text-emerald-400 font-mono font-medium mt-0.5">
+                      Paid: ${Number(est.depositPaid).toFixed(2)}
+                    </div>
+                  )}
+                  {est.workAgreementId && (
+                    <div className="text-[10px] text-[#c5a059] font-medium mt-0.5">
+                      ✓ Agreement Active
+                    </div>
+                  )}
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4 text-right space-x-2">
-                  {/* Public Digital Approval Link */}
-                  <Link
-                    href={`/estimate/${est.id}`}
-                    target="_blank"
-                    className="inline-block bg-[#1c1c1c] hover:bg-[#252525] text-[#b8b0a5] hover:text-[#fdfbf7] border border-[#333333] px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition"
-                    title="View Customer Digital Approval Page"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-
-                  {/* Copy Link to SMS/Email */}
-                  <button
-                    onClick={() => handleCopyLink(est.id)}
-                    className="bg-[#1c1c1c] hover:bg-[#252525] text-[#b8b0a5] hover:text-[#c5a059] border border-[#333333] px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition"
-                    title="Copy customer link to SMS / Email"
-                  >
-                    {copiedId === est.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-
-                  {/* One-Click Convert to Job if Approved */}
-                  {est.status === 'approved' && !est.convertedToJobId && (
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end space-x-1.5">
+                    {/* Record Manual Payment / Deposit */}
                     <button
-                      onClick={() => handleConvert(est.id)}
-                      className="bg-[#FF8A00] hover:bg-[#ea580c] text-black font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow flex items-center space-x-1 inline-flex"
+                      onClick={() => setPayingEstimate(est)}
+                      className="bg-[#1c1c1c] hover:bg-[#252525] text-[#c5a059] hover:text-white border border-[#333333] px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center space-x-1"
+                      title="Record manual payment (CashApp, Zelle, Check, Cash, Card) & print receipt"
                     >
-                      <Wrench className="w-3.5 h-3.5" />
-                      <span>1-Click Convert to Job</span>
+                      <DollarSign className="w-3.5 h-3.5 text-[#c5a059]" />
+                      <span>Payment</span>
                     </button>
-                  )}
 
-                  {/* If already converted, show link */}
-                  {est.convertedToJobId && (
-                    <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-800/40">
-                      ✓ Active Job Dispatched
-                    </span>
-                  )}
+                    {/* Create Company Work Agreement / Convert */}
+                    {!est.convertedToJobId ? (
+                      <button
+                        onClick={() => setAgreeingEstimate(est)}
+                        className="bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow flex items-center space-x-1"
+                        title="Create Company Work Agreement with updated materials, prices, and variance tracking"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-black" />
+                        <span>Work Agreement</span>
+                      </button>
+                    ) : (
+                      <Link
+                        href={est.workAgreementId ? `/agreement/${est.workAgreementId}?print=true` : `/estimate/${est.id}`}
+                        target="_blank"
+                        className="bg-emerald-950/40 text-emerald-400 border border-emerald-800/40 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                        title="View active agreement & work order"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Agreement Active</span>
+                      </Link>
+                    )}
 
-                  {/* If sent, allow quick test-approve button */}
-                  {est.status === 'sent' && (
+                    {/* Print Document */}
+                    <Link
+                      href={`/estimate/${est.id}?print=true`}
+                      target="_blank"
+                      className="bg-[#1c1c1c] hover:bg-[#252525] text-[#b8b0a5] hover:text-[#fdfbf7] border border-[#333333] px-2 py-1.5 rounded-lg text-[11px] font-semibold transition"
+                      title="Print office / client estimate copy"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-[#c5a059]" />
+                    </Link>
+
+                    {/* Public Digital Approval Link */}
+                    <Link
+                      href={`/estimate/${est.id}`}
+                      target="_blank"
+                      className="inline-block bg-[#1c1c1c] hover:bg-[#252525] text-[#b8b0a5] hover:text-[#fdfbf7] border border-[#333333] px-2 py-1.5 rounded-lg text-[11px] font-semibold transition"
+                      title="View Customer Digital Approval Page"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+
+                    {/* Copy Link to SMS/Email */}
                     <button
-                      onClick={() => updateEstimateStatus(est.id, 'approved')}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow"
+                      onClick={() => handleCopyLink(est.id)}
+                      className="bg-[#1c1c1c] hover:bg-[#252525] text-[#b8b0a5] hover:text-[#c5a059] border border-[#333333] px-2 py-1.5 rounded-lg text-[11px] font-semibold transition"
+                      title="Copy customer link to SMS / Email"
                     >
-                      Approve Quote
+                      {copiedId === est.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
-                  )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -281,6 +313,25 @@ export const EstimatesList: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+
+      {/* Record Payment Modal */}
+      {payingEstimate && (
+        <EstimatePaymentModal
+          isOpen={true}
+          onClose={() => setPayingEstimate(null)}
+          estimate={payingEstimate}
+        />
+      )}
+
+      {/* Company Work Agreement Modal */}
+      {agreeingEstimate && (
+        <WorkAgreementModal
+          isOpen={true}
+          onClose={() => setAgreeingEstimate(null)}
+          estimate={agreeingEstimate}
+        />
+      )}
 
       {/* New Estimate Builder Modal */}
       <EstimateBuilderModal
