@@ -77,6 +77,8 @@ export function useFSMStore() {
     getAuditLogsByEntity: (entityType: any, entityId: string) => store.getAuditLogsByEntity(entityType, entityId),
     logActivity: (...args: any[]) => (store.logActivity as Function)(...args),
     resetToDefault: () => store.resetToDefault(),
+    syncAllToSupabase: () => store.syncAllToSupabase(),
+    hydrateFromSupabase: () => store.hydrateFromSupabase(),
   };
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/authContext';
 import { 
@@ -11,8 +11,11 @@ import {
   Menu,
   Phone,
   MapPin,
-  Building2
+  Building2,
+  Database
 } from 'lucide-react';
+import { SupabaseSyncModal } from './common/SupabaseSyncModal';
+import { getSupabaseConfig } from '@/lib/supabase';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -20,6 +23,13 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   const { user, loginAs, isAdmin, isTechnician, isClient } = useAuth();
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [isCloudConfigured, setIsCloudConfigured] = useState(false);
+
+  useEffect(() => {
+    const cfg = getSupabaseConfig();
+    setIsCloudConfigured(cfg.isConfigured);
+  }, [syncModalOpen]);
 
   return (
     <header className="bg-[#111111] border-b border-[#222222] text-[#fdfbf7] sticky top-0 z-40 shadow-lg">
@@ -105,7 +115,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             </button>
           </div>
 
-          {/*  */}
+          {/* Cloud Persistence Sync Button */}
+          <button
+            onClick={() => setSyncModalOpen(true)}
+            title={isCloudConfigured ? "Supabase Cloud Database Connected" : "Configure Supabase Cloud Sync"}
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-[#181818] border border-[#2a2a2a] hover:border-amber-500/40 text-xs font-semibold text-[#b8b0a5] hover:text-[#fdfbf7] transition shadow-sm"
+          >
+            <Database className="w-3.5 h-3.5 text-[#c5a059]" />
+            <span className="hidden sm:inline">Cloud Sync</span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isCloudConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+              }`}
+            />
+          </button>
+
+          {/* User Profile */}
           <div className="flex items-center space-x-2 pl-2 border-l border-[#2a2a2a]">
             <div className="w-8 h-8 rounded-full bg-[#1e1e1e] border border-[#c5a059]/40 flex items-center justify-center text-xs font-bold text-[#c5a059]">
               {user?.displayName ? user.displayName.charAt(0) : 'U'}
@@ -121,6 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           </div>
         </div>
       </div>
+      <SupabaseSyncModal isOpen={syncModalOpen} onClose={() => setSyncModalOpen(false)} />
     </header>
   );
 };

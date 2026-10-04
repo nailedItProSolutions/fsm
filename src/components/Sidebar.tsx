@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
@@ -16,8 +16,10 @@ import {
   PhoneCall,
   Building2,
   Archive,
-  Wrench
+  Wrench,
+  Database
 } from 'lucide-react';
+import { SupabaseSyncModal } from './common/SupabaseSyncModal';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -27,6 +29,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const pathname = usePathname();
   const { role } = useAuth();
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
 
   const navItems = [
     {
@@ -161,7 +164,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           </nav>
         </div>
 
-        {/*  */}
+        {/* Supabase Cloud Persistence Action */}
+        <div className="px-4 py-2 border-t border-[#1e1e1e]">
+          <button
+            onClick={() => setSyncModalOpen(true)}
+            className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#161616] hover:bg-[#1f1f1f] border border-[#2a2a2a] hover:border-amber-500/40 text-xs font-semibold text-[#fdfbf7] transition group shadow-sm"
+          >
+            <div className="flex items-center space-x-2.5">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#c5a059] group-hover:scale-105 transition-transform">
+                <Database className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left">
+                <div className="text-[11px] font-bold text-white leading-tight">Cloud Persistence</div>
+                <div className="text-[9px] text-[#b8b0a5]">Supabase Sync</div>
+              </div>
+            </div>
+            <span className="text-[9px] bg-emerald-950/80 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/40 font-bold uppercase">
+              DB
+            </span>
+          </button>
+        </div>
+
+        {/* Footer */}
         <div className="p-4 border-t border-[#222222] bg-[#0c0c0c] text-xs">
           <div className="flex items-center justify-between text-[#78716c]">
             <div>
@@ -174,6 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           </div>
         </div>
       </aside>
+      <SupabaseSyncModal isOpen={syncModalOpen} onClose={() => setSyncModalOpen(false)} />
     </>
   );
 };

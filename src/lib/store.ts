@@ -1,5 +1,22 @@
 import { Client, Property, Job, Estimate, Invoice, UserProfile, UserRole, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification, TimesheetBonus, TimesheetDeduction, AuditLog, AuditActionType, AuditEntityType, PaymentMethod, EstimatePayment, WorkAgreementItem, WorkAgreement } from '@/types';
 import { sortWorkLogsChronologically, aggregateWeeklyTimesheet, verifyWeeklyTimesheet, updateTimesheetAudit, groupWorkLogsByCalendarWeek } from './ocrEngine';
+import {
+  fetchAllFromSupabase,
+  pushAllLocalToSupabase,
+  syncRecordInBackground,
+  deleteRecordInBackground,
+  clientToDb,
+  propertyToDb,
+  jobToDb,
+  estimateToDb,
+  workAgreementToDb,
+  invoiceToDb,
+  subscriptionToDb,
+  userToDb,
+  dailyWorkLogToDb,
+  weeklyTimesheetToDb,
+  auditLogToDb,
+} from './supabaseSync';
 
 // Seed Initial Data
 export const INITIAL_USERS: UserProfile[] = [
@@ -941,6 +958,9 @@ export class FSMStore {
       } catch (e) {
         console.error('Failed to load store from localStorage', e);
       }
+
+      // Asynchronously hydrate from Supabase to preserve data across code updates & devices
+      this.hydrateFromSupabase();
     }
   }
 
@@ -949,6 +969,47 @@ export class FSMStore {
       FSMStore.instance = new FSMStore();
     }
     return FSMStore.instance;
+  }
+
+  public async hydrateFromSupabase(): Promise<boolean> {
+    try {
+      const cloudData = await fetchAllFromSupabase();
+      if (cloudData) {
+        if (cloudData.clients.length > 0) this.clients = cloudData.clients;
+        if (cloudData.properties.length > 0) this.properties = cloudData.properties;
+        if (cloudData.jobs.length > 0) this.jobs = cloudData.jobs;
+        if (cloudData.estimates.length > 0) this.estimates = cloudData.estimates;
+        if (cloudData.workAgreements.length > 0) this.workAgreements = cloudData.workAgreements;
+        if (cloudData.invoices.length > 0) this.invoices = cloudData.invoices;
+        if (cloudData.subscriptions.length > 0) this.subscriptions = cloudData.subscriptions;
+        if (cloudData.dailyWorkLogs.length > 0) this.dailyWorkLogs = cloudData.dailyWorkLogs;
+        if (cloudData.weeklyTimesheets.length > 0) this.weeklyTimesheets = cloudData.weeklyTimesheets;
+        if (cloudData.users.length > 0) this.users = cloudData.users;
+        if (cloudData.auditLogs.length > 0) this.auditLogs = cloudData.auditLogs;
+
+        this.persist();
+        return true;
+      }
+    } catch (err) {
+      console.warn('Hydration from Supabase skipped/failed:', err);
+    }
+    return false;
+  }
+
+  public async syncAllToSupabase(): Promise<{ success: boolean; counts: Record<string, number>; errors: string[] }> {
+    return pushAllLocalToSupabase({
+      clients: this.clients,
+      properties: this.properties,
+      jobs: this.jobs,
+      estimates: this.estimates,
+      workAgreements: this.workAgreements,
+      invoices: this.invoices,
+      subscriptions: this.subscriptions,
+      users: this.users,
+      dailyWorkLogs: this.dailyWorkLogs,
+      weeklyTimesheets: this.weeklyTimesheets,
+      auditLogs: this.auditLogs,
+    });
   }
 
   private persist() {
@@ -1065,6 +1126,7 @@ export class FSMStore {
 
     this.auditLogs.unshift(logEntry);
     this.persist();
+    syncRecordInBackground('audit_logs', auditLogToDb(logEntry));
     return logEntry;
   }
 
@@ -1093,6 +1155,7 @@ export class FSMStore {
     client.updatedAt = new Date().toISOString();
     this.logActivity('status_change', 'client', id, 'Client archived');
     this.persist();
+    syncRecordInBackground('clients', clientToDb(client));
   }
 
   public unarchiveClient(id: string): void {
@@ -1102,6 +1165,7 @@ export class FSMStore {
     client.updatedAt = new Date().toISOString();
     this.logActivity('status_change', 'client', id, 'Client restored from archive');
     this.persist();
+    syncRecordInBackground('clients', clientToDb(client));
   }
 
 public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'totalSpent' | 'activeJobsCount' | 'propertyIds'>, initialProperty?: Omit<Property, 'id' | 'clientId' | 'createdAt' | 'serviceHistoryJobIds'>): Client {
@@ -1134,6 +1198,11 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     this.clients.unshift(newClient);
     this.persist();
+    syncRecordInBackground('clients', clientToDb(newClient));
+    if (initialProperty && propertyIds.length > 0) {
+      const p = this.properties.find((pr) => pr.id === propertyIds[0]);
+      if (p) syncRecordInBackground('properties', propertyToDb(p));
+    }
     this.logActivity(
       'create',
       'client',
@@ -1175,9 +1244,11 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     if (client && !client.propertyIds.includes(propId)) {
       client.propertyIds.push(propId);
       client.updatedAt = new Date().toISOString();
+      syncRecordInBackground('clients', clientToDb(client));
     }
 
     this.persist();
+    syncRecordInBackground('properties', propertyToDb(newProp));
     this.logActivity(
       'create',
       'property',
@@ -1232,6 +1303,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     }
 
     this.persist();
+    syncRecordInBackground('jobs', jobToDb(newJob));
     this.logActivity(
       'create',
       'job',
@@ -1293,6 +1365,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     this.users.push(newTech);
     this.persist();
+    syncRecordInBackground('users', userToDb(newTech), 'uid');
     this.logActivity(
       'create',
       'user',
@@ -1321,6 +1394,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const prev = { ...tech };
     Object.assign(tech, updates);
     this.persist();
+    syncRecordInBackground('users', userToDb(tech), 'uid');
     this.logActivity(
       'update',
       'user',
@@ -1343,6 +1417,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     this.users = this.users.filter((u) => u.uid !== uid);
     this.persist();
+    deleteRecordInBackground('users', uid, 'uid');
     this.logActivity(
       'delete',
       'user',
@@ -1358,6 +1433,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       const prev = { ...job };
       Object.assign(job, updates);
       this.persist();
+      syncRecordInBackground('jobs', jobToDb(job));
       this.logActivity(
         'update',
         'job',
@@ -1378,6 +1454,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         const prevDone = item.done;
         item.done = !item.done;
         this.persist();
+        syncRecordInBackground('jobs', jobToDb(job));
         this.logActivity(
           'checklist_toggle',
           'job',
@@ -1400,6 +1477,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         job.photosAfter = [...(job.photosAfter || []), photoUrl];
       }
       this.persist();
+      syncRecordInBackground('jobs', jobToDb(job));
       this.logActivity(
         'photo_added',
         'job',
@@ -1425,8 +1503,10 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       if (client && prevStatus !== 'completed' && status === 'completed') {
         client.activeJobsCount = Math.max(0, (client.activeJobsCount || 1) - 1);
         client.totalSpent = (client.totalSpent || 0) + (job.totalAmount || 0);
+        syncRecordInBackground('clients', clientToDb(client));
       }
       this.persist();
+      syncRecordInBackground('jobs', jobToDb(job));
       this.logActivity(
         'status_change',
         'job',
@@ -1464,6 +1544,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     this.estimates.unshift(newEst);
     this.persist();
+    syncRecordInBackground('estimates', estimateToDb(newEst));
     this.logActivity(
       'create',
       'estimate',
@@ -1482,6 +1563,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       const prevStatus = est.status;
       est.status = status;
       this.persist();
+      syncRecordInBackground('estimates', estimateToDb(est));
       this.logActivity(
         'status_change',
         'estimate',
@@ -1529,6 +1611,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     est.status = 'approved';
     est.convertedToJobId = newJob.id;
     this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
 
     return newJob;
   }
@@ -1594,9 +1677,11 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const client = this.clients.find((c) => c.id === est.clientId);
     if (client) {
       client.totalSpent = (client.totalSpent || 0) + payment.amount;
+      syncRecordInBackground('clients', clientToDb(client));
     }
 
     this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
     return { payment, estimate: est };
   }
 
@@ -1721,6 +1806,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     );
 
     this.persist();
+    syncRecordInBackground('work_agreements', workAgreementToDb(agreement));
+    syncRecordInBackground('estimates', estimateToDb(est));
     return agreement;
   }
 
@@ -1730,6 +1817,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     agr.clientSignatureName = clientSignatureName.trim();
     agr.clientSignedAt = new Date().toISOString();
     this.persist();
+    syncRecordInBackground('work_agreements', workAgreementToDb(agr));
     this.logActivity(
       'update',
       'estimate',
@@ -1764,14 +1852,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     };
 
     this.invoices.unshift(newInv);
-
-    // Link to job if applicable
-    const job = this.jobs.find((j) => j.id === invoiceData.jobId);
-    if (job) {
-      job.invoiceId = invId;
-    }
-
     this.persist();
+    syncRecordInBackground('invoices', invoiceToDb(newInv));
     this.logActivity(
       'create',
       'invoice',
@@ -1800,9 +1882,11 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       const client = this.clients.find((c) => c.id === inv.clientId);
       if (client) {
         client.totalSpent = (client.totalSpent || 0) + inv.total;
+        syncRecordInBackground('clients', clientToDb(client));
       }
 
       this.persist();
+      syncRecordInBackground('invoices', invoiceToDb(inv));
       this.logActivity(
         'payment_received',
         'invoice',
@@ -1840,6 +1924,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     this.subscriptions.unshift(newSub);
     this.persist();
+    syncRecordInBackground('subscriptions', subscriptionToDb(newSub));
     this.logActivity({
       actionType: 'create',
       entityType: 'subscription',
@@ -1857,6 +1942,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       const prevStatus = sub.status;
       sub.status = 'canceled';
       this.persist();
+      syncRecordInBackground('subscriptions', subscriptionToDb(sub));
       this.logActivity({
         actionType: 'delete',
         entityType: 'subscription',
@@ -2006,6 +2092,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       newState: newLog,
     });
     this.persist();
+    syncRecordInBackground('daily_work_logs', dailyWorkLogToDb(newLog));
     return newLog;
   }
 
@@ -2030,6 +2117,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       this.weeklyTimesheets.unshift(timesheet);
     }
     this.persist();
+    syncRecordInBackground('weekly_timesheets', weeklyTimesheetToDb(timesheet));
     return timesheet;
   }
 
@@ -2056,6 +2144,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       newState: updated,
     });
     this.persist();
+    syncRecordInBackground('weekly_timesheets', weeklyTimesheetToDb(updated));
     return updated;
   }
 
@@ -2089,6 +2178,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       newState: updated,
     });
     this.persist();
+    syncRecordInBackground('weekly_timesheets', weeklyTimesheetToDb(updated));
     return updated;
   }
 

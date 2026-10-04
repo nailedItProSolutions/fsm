@@ -92,6 +92,7 @@ export interface Client {
   billingAddress: Address;
   propertyIds: string[];
   isArchived?: boolean;
+  archivedAt?: string;
   notes?: string;
   totalSpent: number;
   activeJobsCount: number;
