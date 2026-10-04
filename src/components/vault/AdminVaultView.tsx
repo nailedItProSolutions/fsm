@@ -130,7 +130,7 @@ export const AdminVaultView: React.FC = () => {
   }, [dailyWorkLogs, searchKeyword, selectedProperty, selectedCategory, selectedTech, startDate, endDate, sortOrder]);
 
   // Handle OCR Ingestion from sample or uploaded text
-  const handleIngestOcr = async (rawText: string, techNameHint: string, techIdHint: string) => {
+  const handleIngestOcr = async (rawText: string, techNameHint: string = 'Charles Willis', techIdHint: string = 'user-tech-1') => {
     setIsProcessingOcr(true);
     setOcrSuccessAlert(null);
 
@@ -182,7 +182,7 @@ export const AdminVaultView: React.FC = () => {
 
   const handleSimulateDropzoneUpload = () => {
     const sample = SAMPLE_HANDWRITTEN_TIMESHEETS[selectedSampleIndex % SAMPLE_HANDWRITTEN_TIMESHEETS.length];
-    handleIngestOcr(sample.rawHandwritingText, sample.technicianName, sample.technicianId);
+    handleIngestOcr(sample.rawHandwritingText, sample.technicianName, sample.technicianId || 'user-tech-1');
     setSelectedSampleIndex((prev) => prev + 1);
   };
 
@@ -314,7 +314,7 @@ export const AdminVaultView: React.FC = () => {
               {SAMPLE_HANDWRITTEN_TIMESHEETS.map((sample, idx) => (
                 <button
                   key={sample.fileName}
-                  onClick={() => handleIngestOcr(sample.rawHandwritingText, sample.technicianName, sample.technicianId)}
+                  onClick={() => handleIngestOcr(sample.rawHandwritingText, sample.technicianName, sample.technicianId || 'user-tech-1')}
                   disabled={isProcessingOcr}
                   className="w-full text-left text-[11px] bg-[#1d1d1d] hover:bg-[#252525] border border-[#2a2a2a] p-2 rounded-lg transition flex items-center justify-between group"
                 >

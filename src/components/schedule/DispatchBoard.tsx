@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { useActiveFSMData } from '@/lib/useStore';
 import { Job, JobStatus } from '@/types';
 import { NewJobModal } from './NewJobModal';
@@ -180,6 +181,13 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
             </button>
           </div>
 
+          <Link
+            href="/dashboard/technicians"
+            className="bg-[#181818] hover:bg-[#222222] border border-[#2a2a2a] text-[#b8b0a5] hover:text-[#fdfbf7] font-semibold text-xs px-3.5 py-2.5 rounded-xl transition flex items-center space-x-1.5"
+          >
+            <Wrench className="w-3.5 h-3.5 text-[#c5a059]" />
+            <span>Manage Technicians</span>
+          </Link>
           <button
             onClick={() => setIsNewJobOpen(true)}
             className="bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-1.5"

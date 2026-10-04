@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
 
     let rawText = '';
     let fileName = 'scanned_timesheet.jpg';
-    let techHint = { id: 'user-tech-1', name: 'Mike Rivera' };
+    let techHint = { id: 'user-tech-1', name: 'Charles Willis' };
 
     if (contentType.includes('application/json')) {
       const body = await req.json();

@@ -16,27 +16,15 @@ export const INITIAL_USERS: UserProfile[] = [
   },
   {
     uid: 'user-tech-1',
-    email: 'mike@nailedit.com',
-    displayName: 'Mike Rivera',
+    email: 'charles@nailedit.com',
+    displayName: 'Charles Willis',
     role: 'technician',
-    phone: '(512) 555-0101',
-    employeeId: 'TECH-101',
-    pin: '4592',
+    phone: '(706) 555-0142',
+    employeeId: '1014958',
+    pin: '8572',
     telegramChatId: '839201948',
     active: true,
     createdAt: '2024-01-15T08:00:00Z',
-  },
-  {
-    uid: 'user-tech-2',
-    email: 'david@nailedit.com',
-    displayName: 'David Lopez',
-    role: 'technician',
-    phone: '(512) 555-0102',
-    employeeId: 'TECH-102',
-    pin: '1048',
-    telegramChatId: '948172635',
-    active: true,
-    createdAt: '2024-02-01T08:00:00Z',
   },
   {
     uid: 'user-client-1',
@@ -214,7 +202,7 @@ export const INITIAL_JOBS: Job[] = [
     propertyId: 'prop-1',
     propertyAddress: '4512 Oakwood Ave (Bldg A, Unit 201), Austin, TX',
     assignedTechId: 'user-tech-1',
-    assignedTechName: 'Mike Rivera',
+    assignedTechName: 'Charles Willis',
     title: '🚨 EMERGENCY: Active Second-Floor Supply Pipe Burst Flooding Unit 101',
     description: 'Catastrophic water line rupture under bathroom vanity. Main riser shutoff required immediately. Water spreading into unit below.',
     status: 'in_progress',
@@ -232,7 +220,7 @@ export const INITIAL_JOBS: Job[] = [
       'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80',
     ],
     photosAfter: [],
-    notes: '24/7 Emergency response dispatched via Telegram Bot to Mike Rivera. Water main key is on utility wall.',
+    notes: '24/7 Emergency response dispatched via Telegram Bot to Charles Willis. Water main key is on utility wall.',
     totalAmount: 850.00,
     createdAt: '2026-09-26T08:15:00Z',
   },
@@ -244,7 +232,7 @@ export const INITIAL_JOBS: Job[] = [
     propertyId: 'prop-1',
     propertyAddress: '4512 Oakwood Ave (Bldg A), Austin, TX',
     assignedTechId: 'user-tech-1',
-    assignedTechName: 'Mike Rivera',
+    assignedTechName: 'Charles Willis',
     title: 'Drywall Patching & Water Leak Inspection',
     description: 'Unit 102 bathroom ceiling dry rot repair after second-floor supply line leak.',
     status: 'in_progress',
@@ -275,7 +263,7 @@ export const INITIAL_JOBS: Job[] = [
     propertyId: 'prop-1',
     propertyAddress: '4512 Oakwood Ave (Unit 104), Austin, TX',
     assignedTechId: 'user-tech-1',
-    assignedTechName: 'Mike Rivera',
+    assignedTechName: 'Charles Willis',
     title: 'Apartment Turnover: Standardized Make-Ready Protocol',
     description: 'Full unit turn between tenants. Execute 7-point standardized turnover checklist and document after completion photo.',
     status: 'in_progress',
@@ -308,7 +296,7 @@ export const INITIAL_JOBS: Job[] = [
     propertyId: 'prop-3',
     propertyAddress: '1208 Westlake Dr (Unit 3), Austin, TX',
     assignedTechId: 'user-tech-1',
-    assignedTechName: 'Mike Rivera',
+    assignedTechName: 'Charles Willis',
     title: 'Turnover Service: Move-In Ready QA Audit',
     description: 'Final turnover verification. All 7 standard turnover punch-list tasks completed and verified with photographic evidence.',
     status: 'in_progress',
@@ -343,7 +331,7 @@ export const INITIAL_JOBS: Job[] = [
     propertyId: 'prop-4',
     propertyAddress: '742 Evergreen Terrace, Austin, TX',
     assignedTechId: 'user-tech-1',
-    assignedTechName: 'Mike Rivera',
+    assignedTechName: 'Charles Willis',
     title: 'Shower Faucet Cartridge Replacement & Re-caulk',
     description: 'Moen positive temp cartridge replacement; scrape old mildewed caulk and apply mold-resistant silicone.',
     status: 'scheduled',
@@ -369,8 +357,8 @@ export const INITIAL_JOBS: Job[] = [
     clientName: 'Robert Miller',
     propertyId: 'prop-5',
     propertyAddress: '883 Westgate Dr, Austin, TX',
-    assignedTechId: 'user-tech-2',
-    assignedTechName: 'David Lopez',
+    assignedTechId: 'user-tech-1',
+    assignedTechName: 'Charles Willis',
     title: 'Tenant Turnover Punch-List & Lock Re-key',
     description: 'Re-key 3 exterior deadbolts, replace HVAC filters (20x25x1), patch door hinge screws.',
     status: 'scheduled',
@@ -396,8 +384,8 @@ export const INITIAL_JOBS: Job[] = [
     clientName: 'Apex Property Management',
     propertyId: 'prop-1',
     propertyAddress: '4512 Oakwood Ave (Bldg A), Austin, TX',
-    assignedTechId: 'user-tech-2',
-    assignedTechName: 'David Lopez',
+    assignedTechId: 'user-tech-1',
+    assignedTechName: 'Charles Willis',
     title: 'Commercial Gutter Clean & Downspout Snaking',
     description: 'Clean debris from north and west perimeter gutters, flush downspouts with hose.',
     status: 'completed',
@@ -430,7 +418,7 @@ export const INITIAL_JOBS: Job[] = [
     propertyId: 'prop-3',
     propertyAddress: '1208 Westlake Dr (Unit 2), Austin, TX',
     assignedTechId: 'user-tech-1',
-    assignedTechName: 'Mike Rivera',
+    assignedTechName: 'Charles Willis',
     title: 'Tenant Turnover Punch-List & Interior Re-paint',
     description: 'Complete apartment turnover preparation. Re-painted living area with eggshell satin, cleaned coils, replaced safety hardware.',
     status: 'completed',
@@ -667,7 +655,7 @@ export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
   {
     id: 'log-101',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-14',
     startTime: '08:00 AM',
     stopTime: '04:30 PM',
@@ -684,7 +672,7 @@ export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
   {
     id: 'log-102',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-15',
     startTime: '08:30 AM',
     stopTime: '04:30 PM',
@@ -700,8 +688,8 @@ export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
   },
   {
     id: 'log-103',
-    technicianId: 'user-tech-2',
-    technicianName: 'David Lopez',
+    technicianId: 'user-tech-1',
+    technicianName: 'Charles Willis',
     date: '2024-10-15',
     startTime: '08:00 AM',
     stopTime: '04:00 PM',
@@ -717,7 +705,7 @@ export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
   {
     id: 'log-104',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-16',
     startTime: '09:00 AM',
     stopTime: '05:00 PM',
@@ -733,8 +721,8 @@ export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
   },
   {
     id: 'log-105',
-    technicianId: 'user-tech-2',
-    technicianName: 'David Lopez',
+    technicianId: 'user-tech-1',
+    technicianName: 'Charles Willis',
     date: '2024-10-17',
     startTime: '08:00 AM',
     stopTime: '04:00 PM',
@@ -750,7 +738,7 @@ export const INITIAL_DAILY_WORK_LOGS: DailyWorkLog[] = [
   {
     id: 'log-106',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-18',
     startTime: '08:30 AM',
     stopTime: '04:00 PM',
@@ -770,7 +758,7 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
   {
     id: 'timesheet-2024-W42-user-tech-1',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     weekNumber: 42,
     year: 2024,
     weekStartDate: '2024-10-14',
@@ -812,7 +800,7 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
       paymentDate: '2024-10-21',
       paymentMethod: 'check',
       checkImageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
-      notes: 'Floyd County First National Bank Payroll Check #CHK-94821 issued to Mike Rivera. Cleared on 10/22/2024.',
+      notes: 'Floyd County First National Bank Payroll Check #CHK-94821 issued to Charles Willis. Cleared on 10/22/2024.',
       verifiedBy: 'Brianna Cronan - HR Mgr',
       verifiedAt: '2024-10-21T14:30:00Z',
     },
@@ -820,9 +808,9 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
     updatedAt: '2024-10-21T14:30:00Z',
   },
   {
-    id: 'timesheet-2024-W42-user-tech-2',
-    technicianId: 'user-tech-2',
-    technicianName: 'David Lopez',
+    id: 'timesheet-2024-W41-user-tech-1',
+    technicianId: 'user-tech-1',
+    technicianName: 'Charles Willis',
     weekNumber: 42,
     year: 2024,
     weekStartDate: '2024-10-14',
@@ -853,7 +841,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     actionType: 'payment_verify',
     entityType: 'timesheet',
     entityId: 'timesheet-2024-W42-user-tech-1',
-    entityTitle: 'Mike Rivera - Week 42 Payroll',
+    entityTitle: 'Charles Willis - Week 42 Payroll',
     summary: 'Attached verified Check #CHK-94821 and locked weekly timesheet',
     previousState: { status: 'pending_review', locked: false },
     newState: { status: 'verified_paid', locked: true, checkNumber: 'CHK-94821' },
@@ -861,8 +849,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'audit-seed-2',
-    employeeId: 'TECH-101',
-    employeeName: 'Mike Rivera',
+    employeeId: '1014958',
+    employeeName: 'Charles Willis',
     employeeRole: 'technician',
     actionType: 'checklist_toggle',
     entityType: 'job',
@@ -882,7 +870,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
     entityType: 'job',
     entityId: 'job-1',
     entityTitle: 'JOB-1042: Ruptured Copper Pipe Emergency',
-    summary: 'Job status transitioned from unscheduled to in_progress and assigned to Mike Rivera',
+    summary: 'Job status transitioned from unscheduled to in_progress and assigned to Charles Willis',
     previousState: { status: 'unscheduled', assignedTechId: null },
     newState: { status: 'in_progress', assignedTechId: 'user-tech-1' },
     timestamp: '2026-09-26T09:30:00Z',
@@ -933,7 +921,19 @@ export class FSMStore {
           this.subscriptions = parsed.subscriptions || INITIAL_SUBSCRIPTIONS;
           this.dailyWorkLogs = parsed.dailyWorkLogs || INITIAL_DAILY_WORK_LOGS;
           this.weeklyTimesheets = parsed.weeklyTimesheets || INITIAL_WEEKLY_TIMESHEETS;
-          this.users = parsed.users || INITIAL_USERS;
+          // Load users and migrate old technician seeds
+          const loadedUsers: UserProfile[] = parsed.users || INITIAL_USERS;
+          this.users = loadedUsers.filter(
+            (u) => u.employeeId !== 'TECH-101' && u.employeeId !== 'TECH-102' && u.displayName !== 'David Lopez' && u.displayName !== 'Mike Rivera'
+          );
+          // Ensure Charles Willis (1014958) is always active in the roster
+          const charlesExists = this.users.some((u) => u.employeeId === '1014958');
+          if (!charlesExists) {
+            const charlesDefault = INITIAL_USERS.find((u) => u.employeeId === '1014958');
+            if (charlesDefault) {
+              this.users.splice(1, 0, { ...charlesDefault });
+            }
+          }
           this.auditLogs = parsed.auditLogs || INITIAL_AUDIT_LOGS;
         }
       } catch (e) {
@@ -1245,8 +1245,108 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return this.jobs.find((j) => j.id === id);
   }
 
+  public getUsers(): UserProfile[] {
+    return [...this.users];
+  }
+
   public getTechnicians(): UserProfile[] {
     return this.users.filter((u) => u.role === 'technician');
+  }
+
+  public addTechnician(techData: {
+    displayName: string;
+    email: string;
+    phone?: string;
+    employeeId: string;
+    pin: string;
+    telegramChatId?: string;
+    active?: boolean;
+  }): UserProfile {
+    const cleanEmpId = techData.employeeId.trim().toUpperCase();
+    const cleanPin = techData.pin.trim();
+
+    if (!cleanEmpId) {
+      throw new Error('Employee ID is required.');
+    }
+    if (!cleanPin) {
+      throw new Error('Security PIN code is required.');
+    }
+    if (this.users.some((u) => u.employeeId?.toUpperCase() === cleanEmpId)) {
+      throw new Error(`Employee ID "${cleanEmpId}" is already assigned to another staff member.`);
+    }
+
+    const newTech: UserProfile = {
+      uid: `user-tech-${Date.now()}`,
+      displayName: techData.displayName.trim(),
+      email: techData.email.trim(),
+      role: 'technician',
+      phone: techData.phone?.trim() || '',
+      employeeId: cleanEmpId,
+      pin: cleanPin,
+      telegramChatId: techData.telegramChatId?.trim() || undefined,
+      active: techData.active !== undefined ? techData.active : true,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.users.push(newTech);
+    this.persist();
+    this.logActivity(
+      'create',
+      'user',
+      newTech.uid,
+      `Added new technician ${newTech.displayName} (Employee ID: ${newTech.employeeId})`
+    );
+    return newTech;
+  }
+
+  public updateTechnician(uid: string, updates: Partial<UserProfile>): boolean {
+    const tech = this.users.find((u) => u.uid === uid && u.role === 'technician');
+    if (!tech) return false;
+
+    // Protection rule: Cannot change Charles Willis employee ID away from 1014958
+    if ((tech.employeeId === '1014958' || tech.uid === 'user-tech-1') && updates.employeeId && updates.employeeId !== '1014958') {
+      throw new Error('Employee ID for primary technician Charles Willis (1014958) is system-protected and cannot be changed.');
+    }
+
+    if (updates.employeeId && updates.employeeId.toUpperCase() !== tech.employeeId?.toUpperCase()) {
+      const cleanEmpId = updates.employeeId.trim().toUpperCase();
+      if (this.users.some((u) => u.uid !== uid && u.employeeId?.toUpperCase() === cleanEmpId)) {
+        throw new Error(`Employee ID "${cleanEmpId}" is already assigned to another staff member.`);
+      }
+    }
+
+    const prev = { ...tech };
+    Object.assign(tech, updates);
+    this.persist();
+    this.logActivity(
+      'update',
+      'user',
+      uid,
+      `Updated technician profile for ${tech.displayName} (ID: ${tech.employeeId})`,
+      prev,
+      updates
+    );
+    return true;
+  }
+
+  public deleteTechnician(uid: string): boolean {
+    const tech = this.users.find((u) => u.uid === uid && u.role === 'technician');
+    if (!tech) return false;
+
+    // System Protection Rule: Primary technician Charles Willis (1014958) CANNOT be deleted
+    if (tech.employeeId === '1014958' || tech.uid === 'user-tech-1' || tech.displayName.toLowerCase().includes('charles willis')) {
+      throw new Error('Primary technician Charles Willis (Employee ID: 1014958) is system-protected and cannot be deleted.');
+    }
+
+    this.users = this.users.filter((u) => u.uid !== uid);
+    this.persist();
+    this.logActivity(
+      'delete',
+      'user',
+      uid,
+      `Deleted technician profile for ${tech.displayName} (Employee ID: ${tech.employeeId})`
+    );
+    return true;
   }
 
   public updateJob(jobId: string, updates: Partial<Job>) {

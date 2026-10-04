@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserRole } from '@/types';
-import { INITIAL_USERS } from './store';
+import { INITIAL_USERS, FSMStore } from './store';
 import { auth } from './firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
@@ -59,8 +59,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
+  const getAllRegisteredUsers = (): UserProfile[] => {
+    if (typeof window !== 'undefined') {
+      try {
+        return FSMStore.getInstance().getUsers();
+      } catch (e) {
+        return INITIAL_USERS;
+      }
+    }
+    return INITIAL_USERS;
+  };
+
   const loginAs = (role: UserRole) => {
-    const target = INITIAL_USERS.find((u) => u.role === role) || INITIAL_USERS[0];
+    const users = getAllRegisteredUsers();
+    const target = users.find((u) => u.role === role) || users[0];
     setUser(target);
     if (typeof window !== 'undefined') {
       localStorage.setItem('nailed_it_auth_user', JSON.stringify(target));
@@ -70,7 +82,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loginWithEmail = async (email: string, pass: string): Promise<boolean> => {
     // Authenticate against registered employee profiles
-    const matched = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const users = getAllRegisteredUsers();
+    const matched = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (matched) {
       setUser(matched);
       if (typeof window !== 'undefined') {
@@ -108,7 +121,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const cleanId = employeeId.trim().toUpperCase();
     const cleanPin = pin.trim();
 
-    const matched = INITIAL_USERS.find(
+    const users = getAllRegisteredUsers();
+    const matched = users.find(
       (u) => u.employeeId?.toUpperCase() === cleanId && u.pin === cleanPin
     );
 
@@ -135,7 +149,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Check if they match an existing seed user, or provision a new profile
       const email = fbUser.email || '';
-      let matched = INITIAL_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      const users = getAllRegisteredUsers();
+      let matched = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
       
       if (!matched) {
         // Provision a new technician/admin profile based on email domain or just default to technician

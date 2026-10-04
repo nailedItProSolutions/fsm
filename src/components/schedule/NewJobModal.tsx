@@ -51,7 +51,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
   const [propertyId, setPropertyId] = useState(preselectedPropertyId || '');
   const [title, setTitle] = useState(initialIsEmergency ? '🚨 EMERGENCY: 24/7 Service Call' : '');
   const [description, setDescription] = useState('');
-  const [assignedTechId, setAssignedTechId] = useState('user-tech-1');
+  const [assignedTechId, setAssignedTechId] = useState(() => technicians[0]?.uid || 'user-tech-1');
   const [status, setStatus] = useState<JobStatus>('scheduled');
   const [priority, setPriority] = useState<JobPriority>(initialIsEmergency ? 'emergency' : 'medium');
   const [isEmergency, setIsEmergency] = useState(initialIsEmergency);

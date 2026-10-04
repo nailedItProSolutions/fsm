@@ -15,7 +15,8 @@ import {
   Sparkles,
   PhoneCall,
   Building2,
-  Archive
+  Archive,
+  Wrench
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,6 +47,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       href: '/dashboard/schedule',
       icon: CalendarDays,
       roles: ['admin', 'dispatcher'],
+    },
+    {
+      label: 'Technician Roster',
+      href: '/dashboard/technicians',
+      icon: Wrench,
+      roles: ['admin', 'dispatcher'],
+      badge: 'Staff',
     },
     {
       label: 'Estimates & Quotes',

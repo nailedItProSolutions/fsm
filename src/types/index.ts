@@ -38,6 +38,7 @@ export type AuditEntityType =
   | 'subscription' 
   | 'timesheet'
   | 'work_log'
+  | 'user'
   | 'system';
 
 export interface AuditLog {

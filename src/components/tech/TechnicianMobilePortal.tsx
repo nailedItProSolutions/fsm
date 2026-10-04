@@ -71,7 +71,7 @@ export const TechnicianMobilePortal: React.FC = () => {
 
   // Active tech state
   const [selectedTechId, setSelectedTechId] = useState<string>(() => {
-    return user?.uid?.startsWith('user-tech') ? user.uid : 'user-tech-1';
+    return user?.uid?.startsWith('user-tech') ? user.uid : (technicians[0]?.uid || 'user-tech-1');
   });
 
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);

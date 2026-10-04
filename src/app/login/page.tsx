@@ -220,7 +220,7 @@ function LoginForm() {
                     required
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="e.g. TECH-101 or 1019974"
+                    placeholder="e.g. 1014958 or 1019974"
                     className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg pl-9 pr-4 py-2.5 text-[#fdfbf7] font-mono uppercase placeholder-[#78716c] focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>

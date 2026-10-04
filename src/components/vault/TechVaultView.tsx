@@ -25,7 +25,7 @@ export const TechVaultView: React.FC = () => {
   const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId } = useActiveFSMData();
 
   const currentTechId = user?.role === 'technician' ? user.uid : 'user-tech-1';
-  const techDisplayName = user?.role === 'technician' ? user.displayName : 'Mike Rivera (Lead Field Tech)';
+  const techDisplayName = user?.role === 'technician' ? user.displayName : 'Charles Willis (Lead Field Tech)';
   const myDailyLogs = getDailyWorkLogsByTechId(currentTechId);
   const myWeeklyTimesheets = getWeeklyTimesheetsByTechId(currentTechId);
 

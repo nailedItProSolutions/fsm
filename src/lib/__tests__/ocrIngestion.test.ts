@@ -50,7 +50,7 @@ assert(inferJobCategory('Installed new door casing and baseboard trim') === 'Car
 assert(inferJobCategory('Unit turnover, trash cleanout and lockbox re-key') === 'Turnover', 'infers Turnover category');
 
 console.log('\n--- 2. Handwriting OCR Extraction into JSON Schema ---');
-// Test Sample 1: Mike Rivera Plumbing
+// Test Sample 1: Charles Willis Plumbing
 const sample1 = SAMPLE_HANDWRITTEN_TIMESHEETS[0];
 const parsed1 = parseHandwrittenTimesheetText(sample1.rawHandwritingText);
 
@@ -61,10 +61,10 @@ assert(parsed1.totalHours === 8.5, 'Extracts Total Hours: 8.5');
 assert(parsed1.propertyLocation.includes('4512 Oakwood Ave'), 'Extracts Property Location: 4512 Oakwood Ave');
 assert(parsed1.jobCategory === 'Plumbing', 'Categorizes trade as Plumbing');
 assert(parsed1.taskDetails.toLowerCase().includes('copper p-trap'), 'Extracts Task Details containing copper P-trap');
-assert(parsed1.technicianName === 'Mike Rivera', 'Extracts Technician Name: Mike Rivera');
+assert(parsed1.technicianName === 'Charles Willis', 'Extracts Technician Name: Charles Willis');
 assert(parsed1.confidenceScore >= 0.9, 'Confidence score >= 90%');
 
-// Test Sample 2: Mike Rivera Drywall (varied format)
+// Test Sample 2: Charles Willis Drywall (varied format)
 const sample2 = SAMPLE_HANDWRITTEN_TIMESHEETS[1];
 const parsed2 = parseHandwrittenTimesheetText(sample2.rawHandwritingText);
 assert(parsed2.date === '2024-10-15', 'Extracts Date: 2024-10-15 from "October 15, 2024"');
@@ -74,11 +74,11 @@ assert(parsed2.totalHours === 8.0, 'Extracts Total Hours: 8.0');
 assert(parsed2.propertyLocation.includes('1208 Westlake Dr'), 'Extracts Property: 1208 Westlake Dr');
 assert(parsed2.jobCategory === 'Drywall', 'Categorizes trade as Drywall');
 
-// Test Sample 4: David Lopez HVAC
+// Test Sample 4: Charles Willis HVAC
 const sample4 = SAMPLE_HANDWRITTEN_TIMESHEETS[3];
 const parsed4 = parseHandwrittenTimesheetText(sample4.rawHandwritingText);
 assert(parsed4.date === '2024-10-17', 'Extracts Date: 2024-10-17');
-assert(parsed4.technicianName === 'David Lopez', 'Extracts Technician: David Lopez');
+assert(parsed4.technicianName === 'Charles Willis', 'Extracts Technician: Charles Willis');
 assert(parsed4.jobCategory === 'HVAC', 'Categorizes trade as HVAC');
 assert(parsed4.totalHours === 8.0, 'Extracts Hours: 8.0');
 
@@ -88,7 +88,7 @@ const unorganizedLogs: DailyWorkLog[] = [
   {
     id: 'log-oct16',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-16',
     startTime: '09:00 AM',
     stopTime: '05:00 PM',
@@ -103,7 +103,7 @@ const unorganizedLogs: DailyWorkLog[] = [
   {
     id: 'log-oct14',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-14',
     startTime: '08:00 AM',
     stopTime: '04:30 PM',
@@ -117,8 +117,8 @@ const unorganizedLogs: DailyWorkLog[] = [
   },
   {
     id: 'log-oct17',
-    technicianId: 'user-tech-2',
-    technicianName: 'David Lopez',
+    technicianId: 'user-tech-1',
+    technicianName: 'Charles Willis',
     date: '2024-10-17',
     startTime: '08:00 AM',
     stopTime: '04:00 PM',
@@ -133,7 +133,7 @@ const unorganizedLogs: DailyWorkLog[] = [
   {
     id: 'log-oct15',
     technicianId: 'user-tech-1',
-    technicianName: 'Mike Rivera',
+    technicianName: 'Charles Willis',
     date: '2024-10-15',
     startTime: '08:30 AM',
     stopTime: '04:30 PM',
@@ -159,7 +159,7 @@ assert(sortedDesc[0].date === '2024-10-17', 'Reverse chronological sorts Oct 17 
 assert(sortedDesc[3].date === '2024-10-14', 'Reverse chronological sorts Oct 14 last');
 
 console.log('\n--- 4. Tamper-Proof Weekly Timesheet Aggregation & Locking ---');
-// Filter logs for Mike Rivera (Oct 14, 15, 16)
+// Filter logs for Charles Willis (Oct 14, 15, 16)
 const mikesLogs = unorganizedLogs.filter((l) => l.technicianId === 'user-tech-1');
 const groupedWeeks = groupWorkLogsByCalendarWeek(mikesLogs);
 
@@ -167,7 +167,7 @@ assert(groupedWeeks.size === 1, 'All logs correctly grouped into single calendar
 
 const weekKey = Array.from(groupedWeeks.keys())[0];
 const weekLogs = groupedWeeks.get(weekKey)!;
-const weeklyTimesheet = aggregateWeeklyTimesheet(weekLogs, 'user-tech-1', 'Mike Rivera', 35.0);
+const weeklyTimesheet = aggregateWeeklyTimesheet(weekLogs, 'user-tech-1', 'Charles Willis', 35.0);
 
 assert(weeklyTimesheet.totalHours === 24.5, 'Aggregates exact total hours: 24.5 hrs (8.5 + 8.0 + 8.0)');
 assert(weeklyTimesheet.totalGrossPay === 857.5, 'Computes total gross pay: $857.50 (24.5 hrs × $35/hr)');
@@ -238,7 +238,7 @@ assert(calcResult.netPay === 1140.0, 'Calculates exact Bold Net Pay: $1,140.00 (
 const baseTimesheet: WeeklyTimesheet = {
   id: 'timesheet-2024-W40-user-tech-1',
   technicianId: 'user-tech-1',
-  technicianName: 'Mike Rivera',
+  technicianName: 'Charles Willis',
   weekNumber: 40,
   year: 2024,
   weekStartDate: '2024-09-30',

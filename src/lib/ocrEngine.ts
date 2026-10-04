@@ -115,7 +115,7 @@ export function inferJobCategory(text: string): JobTradeCategory {
  */
 export function parseHandwrittenTimesheetText(
   rawText: string,
-  defaultTech: { id: string; name: string } = { id: 'user-tech-1', name: 'Mike Rivera' }
+  defaultTech: { id: string; name: string } = { id: 'user-tech-1', name: 'Charles Willis' }
 ): Omit<DailyWorkLog, 'id' | 'createdAt'> {
   const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
 
@@ -194,7 +194,7 @@ export function parseHandwrittenTimesheetText(
       if (parsedTech.length > 2) {
         techName = parsedTech;
         if (/david/i.test(techName)) {
-          techId = 'user-tech-2';
+          techId = 'user-tech-1';
         } else {
           techId = 'user-tech-1';
         }
@@ -521,12 +521,12 @@ export const SAMPLE_HANDWRITTEN_TIMESHEETS = [
   {
     fileName: 'timesheet_scan_oct14_mike.jpg',
     uploadedSequence: 3, // Uploaded 3rd in batch
-    technicianName: 'Mike Rivera',
+    technicianname: 'Charles Willis',
     technicianId: 'user-tech-1',
     rawHandwritingText: `
 DAILY WORK REPORT - NAILED IT PROPERTY SOLUTIONS
 Date: 10/14/2024
-Technician: Mike Rivera
+Technician: Charles Willis
 Location: 4512 Oakwood Ave, Building A
 Shift: 08:00 AM - 04:30 PM
 Total Hours: 8.5 hrs
@@ -539,11 +539,11 @@ Cleaned water residue and tested drainage. No leaks observed.
   {
     fileName: 'timesheet_scan_oct15_mike.jpg',
     uploadedSequence: 1, // Uploaded 1st in batch
-    technicianName: 'Mike Rivera',
+    technicianname: 'Charles Willis',
     technicianId: 'user-tech-1',
     rawHandwritingText: `
 DAILY JOB SUMMARY
-Technician: Mike Rivera
+Technician: Charles Willis
 Date: October 15, 2024
 Site: 1208 Westlake Dr, Unit 2
 Time In: 08:30 AM
@@ -558,11 +558,11 @@ Hung 1/2-in drywall, taped and applied first coat 45-minute hot mud.
   {
     fileName: 'timesheet_scan_oct16_mike.jpg',
     uploadedSequence: 4, // Uploaded 4th in batch
-    technicianName: 'Mike Rivera',
+    technicianname: 'Charles Willis',
     technicianId: 'user-tech-1',
     rawHandwritingText: `
 FIELD SERVICE LOG
-Tech Name: Mike Rivera
+Tech Name: Charles Willis
 Date: 10/16/2024
 Property Address: 742 Evergreen Terrace
 Time: 09:00 AM - 05:00 PM
@@ -576,12 +576,12 @@ Reset tripping 20A breaker and verified proper grounding on all kitchen circuits
   {
     fileName: 'timesheet_scan_oct17_david.jpg',
     uploadedSequence: 2, // Uploaded 2nd in batch
-    technicianName: 'David Lopez',
+    technicianName: 'Charles Willis',
     technicianId: 'user-tech-2',
     rawHandwritingText: `
 DAILY LOG
 Date: 10/17/2024
-Worker: David Lopez
+Worker: Charles Willis
 Location: 4514 Oakwood Ave, Building B
 Start: 08:00 AM   Stop: 04:00 PM
 Total: 8.0 hrs
