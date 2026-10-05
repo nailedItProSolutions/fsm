@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
 import { 
   LayoutDashboard, 
@@ -17,7 +17,8 @@ import {
   Building2,
   Archive,
   Wrench,
-  Database
+  Database,
+  LogOut
 } from 'lucide-react';
 import { SupabaseSyncModal } from './common/SupabaseSyncModal';
 
@@ -28,7 +29,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const pathname = usePathname();
-  const { role } = useAuth();
+  const router = useRouter();
+  const { role, logout } = useAuth();
   const [syncModalOpen, setSyncModalOpen] = useState(false);
 
   const navItems = [
@@ -191,6 +193,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
             <span className="text-[9px] bg-emerald-950/80 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/40 font-bold uppercase">
               DB
             </span>
+          </button>
+        </div>
+
+        {/* Log Out Action */}
+        <div className="px-4 py-2 border-t border-[#1e1e1e]">
+          <button
+            onClick={() => {
+              logout();
+              router.push('/login');
+            }}
+            className="w-full flex items-center justify-center space-x-2 p-2 rounded-xl bg-[#161616] hover:bg-red-950/40 border border-[#2a2a2a] hover:border-red-900/50 text-xs font-semibold text-[#b8b0a5] hover:text-red-400 transition shadow-sm cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Log Out</span>
           </button>
         </div>
 

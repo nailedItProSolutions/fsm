@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
 import { 
   ShieldCheck, 
@@ -12,7 +13,8 @@ import {
   Phone,
   MapPin,
   Building2,
-  Database
+  Database,
+  LogOut
 } from 'lucide-react';
 import { SupabaseSyncModal } from './common/SupabaseSyncModal';
 import { getSupabaseConfig } from '@/lib/supabase';
@@ -22,9 +24,15 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
-  const { user, loginAs, isAdmin, isTechnician, isClient } = useAuth();
+  const router = useRouter();
+  const { user, loginAs, logout, isAdmin, isTechnician, isClient } = useAuth();
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [isCloudConfigured, setIsCloudConfigured] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   useEffect(() => {
     const cfg = getSupabaseConfig();
@@ -130,8 +138,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             />
           </button>
 
-          {/* User Profile */}
-          <div className="flex items-center space-x-2 pl-2 border-l border-[#2a2a2a]">
+          {/* User Profile & Logout */}
+          <div className="flex items-center space-x-2.5 pl-2 border-l border-[#2a2a2a]">
             <div className="w-8 h-8 rounded-full bg-[#1e1e1e] border border-[#c5a059]/40 flex items-center justify-center text-xs font-bold text-[#c5a059]">
               {user?.displayName ? user.displayName.charAt(0) : 'U'}
             </div>
@@ -143,6 +151,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 {user?.role || 'Guest'}
               </div>
             </div>
+
+            {/* Logout Action Button */}
+            <button
+              onClick={handleLogout}
+              title="Log Out of Session"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-[#181818] border border-[#2a2a2a] hover:border-red-500/50 hover:bg-red-950/30 text-xs font-semibold text-[#b8b0a5] hover:text-red-400 transition shadow-sm ml-1"
+            >
+              <LogOut className="w-3.5 h-3.5 text-[#b8b0a5] group-hover:text-red-400" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </div>
       </div>
