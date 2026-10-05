@@ -98,31 +98,13 @@ export default function WorkAgreementPage() {
           method: agreement.paymentMethod || 'cash',
           referenceNumber: 'Deposit applied at agreement creation',
           notes: 'Advance deposit credited towards contract scope',
-          receivedBy: agreement.contractorSignedBy || 'Brianna Cronan - HR Mgr',
+          receivedBy: agreement.contractorSignedBy || 'Charles Willis - Owner & Field Specialist',
           createdAt: agreement.createdAt,
         },
       ];
     }
     return [];
   }, [agreement, linkedEstimate]);
-
-  // Generate QR Code
-  useEffect(() => {
-    if (!agreement) return;
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://naileditpro.com';
-    const verifyUrl = `${origin}/agreement/${agreement.id}?verified=true&contractId=${contractId}&seal=${tamperHash}`;
-    
-    QRCode.toDataURL(verifyUrl, {
-      width: 220,
-      margin: 1,
-      color: {
-        dark: '#000000',
-        light: '#ffffff',
-      },
-    })
-      .then((url) => setQrDataUrl(url))
-      .catch((err) => console.error('Failed to generate QR code', err));
-  }, [agreement, contractId, tamperHash]);
 
   // Auto-print check or verified query check
   useEffect(() => {
@@ -452,7 +434,7 @@ export default function WorkAgreementPage() {
             
             <div className="h-12 border-b-2 border-[#555] print:border-black flex items-end pb-1">
               <span className="font-serif italic text-base text-[#fdfbf7] print:text-black">
-                {agreement.contractorSignedBy || 'Brianna Cronan - HR Mgr'}
+                {agreement.contractorSignedBy || 'Charles Willis - Owner & Field Specialist'}
               </span>
             </div>
 
@@ -846,7 +828,7 @@ export default function WorkAgreementPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#78716c]">Authorized Officer:</span>
-                <span className="text-white">Brianna Cronan - HR Mgr</span>
+                <span className="text-white">Charles Willis - Owner & Field Specialist</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#78716c]">Registry Timestamp:</span>

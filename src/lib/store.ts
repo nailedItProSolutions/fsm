@@ -5,6 +5,16 @@ import {
   pushAllLocalToSupabase,
   syncRecordInBackground,
   deleteRecordInBackground,
+  reconcileCollection,
+  retryFailedDeletes,
+  waitForPendingWrites,
+  subscribeToCloudChanges,
+  setWriteFailureHandler,
+  getPendingWrites,
+  isCloudDirty,
+  clearCloudDirty,
+  markCloudDirty,
+  getLastWriteError,
   clientToDb,
   propertyToDb,
   jobToDb,
@@ -17,6 +27,16 @@ import {
   weeklyTimesheetToDb,
   auditLogToDb,
 } from './supabaseSync';
+import { getSupabaseConfig } from './supabase';
+
+export type CloudSyncStatus = 'disabled' | 'syncing' | 'synced' | 'offline' | 'error';
+export interface CloudSyncState {
+  status: CloudSyncStatus;
+  lastSyncedAt: string | null;
+  error: string | null;
+}
+
+const AUTO_SYNC_INTERVAL_MS = 45000;
 
 // Seed Initial Data
 export const INITIAL_USERS: UserProfile[] = [
@@ -1013,6 +1033,7 @@ export class FSMStore {
   }
 
   private persist() {
+    if (!this.applyingCloud) this.mutationCount++;
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(

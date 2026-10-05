@@ -17,7 +17,7 @@ import {
 // Mappers: Domain Types <-> Supabase DB Rows
 // ==========================================
 
-export function clientToDb(c: Client): any {
+function clientToDbBase(c: Client): any {
   return {
     id: c.id,
     is_company: Boolean(c.isCompany),
@@ -38,7 +38,7 @@ export function clientToDb(c: Client): any {
   };
 }
 
-export function dbToClient(r: any): Client {
+function dbToClientBase(r: any): Client {
   return {
     id: r.id,
     isCompany: Boolean(r.is_company),
@@ -59,7 +59,7 @@ export function dbToClient(r: any): Client {
   };
 }
 
-export function propertyToDb(p: Property): any {
+function propertyToDbBase(p: Property): any {
   const fullAddress = p.street ? `${p.street}${p.unit ? `, ${p.unit}` : ''}, ${p.city || 'Rome'}, ${p.state || 'GA'} ${p.zip || '30162'}` : ((p as any).address || '');
   return {
     id: p.id,
@@ -72,7 +72,7 @@ export function propertyToDb(p: Property): any {
   };
 }
 
-export function dbToProperty(r: any): Property {
+function dbToPropertyBase(r: any): Property {
   return {
     id: r.id,
     clientId: r.client_id,
@@ -86,7 +86,7 @@ export function dbToProperty(r: any): Property {
   };
 }
 
-export function jobToDb(j: Job): any {
+function jobToDbBase(j: Job): any {
   return {
     id: j.id,
     job_number: j.jobNumber,
@@ -119,7 +119,7 @@ export function jobToDb(j: Job): any {
   };
 }
 
-export function dbToJob(r: any): Job {
+function dbToJobBase(r: any): Job {
   return {
     id: r.id,
     jobNumber: r.job_number,
@@ -152,7 +152,7 @@ export function dbToJob(r: any): Job {
   };
 }
 
-export function estimateToDb(e: Estimate): any {
+function estimateToDbBase(e: Estimate): any {
   return {
     id: e.id,
     estimate_number: e.estimateNumber,
@@ -176,7 +176,7 @@ export function estimateToDb(e: Estimate): any {
   };
 }
 
-export function dbToEstimate(r: any): Estimate {
+function dbToEstimateBase(r: any): Estimate {
   return {
     id: r.id,
     estimateNumber: r.estimate_number,
@@ -200,7 +200,7 @@ export function dbToEstimate(r: any): Estimate {
   };
 }
 
-export function workAgreementToDb(a: WorkAgreement): any {
+function workAgreementToDbBase(a: WorkAgreement): any {
   return {
     id: a.id,
     contract_id: a.contractId || null,
@@ -231,7 +231,7 @@ export function workAgreementToDb(a: WorkAgreement): any {
   };
 }
 
-export function dbToWorkAgreement(r: any): WorkAgreement {
+function dbToWorkAgreementBase(r: any): WorkAgreement {
   return {
     id: r.id,
     contractId: r.contract_id || undefined,
@@ -262,7 +262,7 @@ export function dbToWorkAgreement(r: any): WorkAgreement {
   };
 }
 
-export function invoiceToDb(i: Invoice): any {
+function invoiceToDbBase(i: Invoice): any {
   return {
     id: i.id,
     invoice_number: i.invoiceNumber,
@@ -286,7 +286,7 @@ export function invoiceToDb(i: Invoice): any {
   };
 }
 
-export function dbToInvoice(r: any): Invoice {
+function dbToInvoiceBase(r: any): Invoice {
   return {
     id: r.id,
     invoiceNumber: r.invoice_number,
@@ -310,7 +310,7 @@ export function dbToInvoice(r: any): Invoice {
   };
 }
 
-export function subscriptionToDb(s: Subscription): any {
+function subscriptionToDbBase(s: Subscription): any {
   return {
     id: s.id,
     client_id: s.clientId,
@@ -336,7 +336,7 @@ export function subscriptionToDb(s: Subscription): any {
   };
 }
 
-export function dbToSubscription(r: any): Subscription {
+function dbToSubscriptionBase(r: any): Subscription {
   return {
     id: r.id,
     clientId: r.client_id,
@@ -362,7 +362,7 @@ export function dbToSubscription(r: any): Subscription {
   };
 }
 
-export function userToDb(u: UserProfile): any {
+function userToDbBase(u: UserProfile): any {
   return {
     uid: u.uid,
     email: u.email || '',
@@ -379,7 +379,7 @@ export function userToDb(u: UserProfile): any {
   };
 }
 
-export function dbToUser(r: any): UserProfile {
+function dbToUserBase(r: any): UserProfile {
   return {
     uid: r.uid,
     email: r.email || '',
@@ -396,7 +396,7 @@ export function dbToUser(r: any): UserProfile {
   };
 }
 
-export function dailyWorkLogToDb(l: DailyWorkLog): any {
+function dailyWorkLogToDbBase(l: DailyWorkLog): any {
   return {
     id: l.id,
     technician_id: l.technicianId,
@@ -418,7 +418,7 @@ export function dailyWorkLogToDb(l: DailyWorkLog): any {
   };
 }
 
-export function dbToDailyWorkLog(r: any): DailyWorkLog {
+function dbToDailyWorkLogBase(r: any): DailyWorkLog {
   return {
     id: r.id,
     technicianId: r.technician_id,
@@ -440,7 +440,7 @@ export function dbToDailyWorkLog(r: any): DailyWorkLog {
   };
 }
 
-export function weeklyTimesheetToDb(t: WeeklyTimesheet): any {
+function weeklyTimesheetToDbBase(t: WeeklyTimesheet): any {
   return {
     id: t.id,
     technician_id: t.technicianId,
@@ -470,7 +470,7 @@ export function weeklyTimesheetToDb(t: WeeklyTimesheet): any {
   };
 }
 
-export function dbToWeeklyTimesheet(r: any): WeeklyTimesheet {
+function dbToWeeklyTimesheetBase(r: any): WeeklyTimesheet {
   return {
     id: r.id,
     technicianId: r.technician_id,
@@ -500,7 +500,7 @@ export function dbToWeeklyTimesheet(r: any): WeeklyTimesheet {
   };
 }
 
-export function auditLogToDb(a: AuditLog): any {
+function auditLogToDbBase(a: AuditLog): any {
   return {
     id: a.id,
     employee_id: a.employeeId || '',
@@ -520,7 +520,7 @@ export function auditLogToDb(a: AuditLog): any {
   };
 }
 
-export function dbToAuditLog(r: any): AuditLog {
+function dbToAuditLogBase(r: any): AuditLog {
   return {
     id: r.id,
     employeeId: r.employee_id || '',
@@ -540,82 +540,151 @@ export function dbToAuditLog(r: any): AuditLog {
   };
 }
 
+
 // ==========================================
-// Cloud Sync Engine & Real-Time Upsert Calls
+// Lossless wrappers: every row also carries the full domain object in a
+// `raw` JSONB column, so round-trips never lose structure (e.g. property
+// street/city/state/zip). Rows pushed by older versions (no `raw`) fall
+// back to the legacy column mappers and are flagged as "legacy".
 // ==========================================
 
-export async function fetchAllFromSupabase(): Promise<{
-  clients: Client[];
-  properties: Property[];
-  jobs: Job[];
-  estimates: Estimate[];
-  workAgreements: WorkAgreement[];
-  invoices: Invoice[];
-  subscriptions: Subscription[];
-  users: UserProfile[];
-  dailyWorkLogs: DailyWorkLog[];
-  weeklyTimesheets: WeeklyTimesheet[];
-  auditLogs: AuditLog[];
-} | null> {
-  const client = getSupabaseClient();
-  if (!client) return null;
+const withRaw = (row: any, obj: unknown) => ({ ...row, raw: obj });
+const fromRow = <T>(r: any, base: (row: any) => T): T =>
+  r && r.raw && typeof r.raw === 'object' ? (r.raw as T) : base(r);
 
-  try {
-    const [
-      clientsRes,
-      propsRes,
-      jobsRes,
-      estRes,
-      agreementsRes,
-      invRes,
-      subRes,
-      usersRes,
-      workLogsRes,
-      timesheetsRes,
-      auditRes,
-    ] = await Promise.all([
-      client.from('clients').select('*'),
-      client.from('properties').select('*'),
-      client.from('jobs').select('*'),
-      client.from('estimates').select('*'),
-      client.from('work_agreements').select('*'),
-      client.from('invoices').select('*'),
-      client.from('subscriptions').select('*'),
-      client.from('users').select('*'),
-      client.from('daily_work_logs').select('*'),
-      client.from('weekly_timesheets').select('*'),
-      client.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(200),
-    ]);
+export function clientToDb(c: Client): any { return withRaw(clientToDbBase(c), c); }
+export function dbToClient(r: any): Client { return fromRow(r, dbToClientBase); }
+export function propertyToDb(p: Property): any { return withRaw(propertyToDbBase(p), p); }
+export function dbToProperty(r: any): Property { return fromRow(r, dbToPropertyBase); }
+export function jobToDb(j: Job): any { return withRaw(jobToDbBase(j), j); }
+export function dbToJob(r: any): Job { return fromRow(r, dbToJobBase); }
+export function estimateToDb(e: Estimate): any { return withRaw(estimateToDbBase(e), e); }
+export function dbToEstimate(r: any): Estimate { return fromRow(r, dbToEstimateBase); }
+export function workAgreementToDb(a: WorkAgreement): any { return withRaw(workAgreementToDbBase(a), a); }
+export function dbToWorkAgreement(r: any): WorkAgreement { return fromRow(r, dbToWorkAgreementBase); }
+export function invoiceToDb(i: Invoice): any { return withRaw(invoiceToDbBase(i), i); }
+export function dbToInvoice(r: any): Invoice { return fromRow(r, dbToInvoiceBase); }
+export function subscriptionToDb(s: Subscription): any { return withRaw(subscriptionToDbBase(s), s); }
+export function dbToSubscription(r: any): Subscription { return fromRow(r, dbToSubscriptionBase); }
+export function userToDb(u: UserProfile): any { return withRaw(userToDbBase(u), u); }
+export function dbToUser(r: any): UserProfile { return fromRow(r, dbToUserBase); }
+export function dailyWorkLogToDb(l: DailyWorkLog): any { return withRaw(dailyWorkLogToDbBase(l), l); }
+export function dbToDailyWorkLog(r: any): DailyWorkLog { return fromRow(r, dbToDailyWorkLogBase); }
+export function weeklyTimesheetToDb(t: WeeklyTimesheet): any { return withRaw(weeklyTimesheetToDbBase(t), t); }
+export function dbToWeeklyTimesheet(r: any): WeeklyTimesheet { return fromRow(r, dbToWeeklyTimesheetBase); }
+export function auditLogToDb(a: AuditLog): any { return withRaw(auditLogToDbBase(a), a); }
+export function dbToAuditLog(r: any): AuditLog { return fromRow(r, dbToAuditLogBase); }
 
-    // Check if critical tables returned data
-    const hasData = (clientsRes.data?.length || 0) + (jobsRes.data?.length || 0) + (estRes.data?.length || 0) > 0;
-    if (!hasData) {
-      return null;
-    }
+// ==========================================
+// Write tracking (pending / failed background writes)
+// ==========================================
 
-    return {
-      clients: (clientsRes.data || []).map(dbToClient),
-      properties: (propsRes.data || []).map(dbToProperty),
-      jobs: (jobsRes.data || []).map(dbToJob),
-      estimates: (estRes.data || []).map(dbToEstimate),
-      workAgreements: (agreementsRes.data || []).map(dbToWorkAgreement),
-      invoices: (invRes.data || []).map(dbToInvoice),
-      subscriptions: (subRes.data || []).map(dbToSubscription),
-      users: (usersRes.data || []).map(dbToUser),
-      dailyWorkLogs: (workLogsRes.data || []).map(dbToDailyWorkLog),
-      weeklyTimesheets: (timesheetsRes.data || []).map(dbToWeeklyTimesheet),
-      auditLogs: (auditRes.data || []).map(dbToAuditLog),
-    };
-  } catch (err) {
-    console.warn('Failed to pull from Supabase (falling back to local cache):', err);
-    return null;
+export const SYNC_TABLES = [
+  'users',
+  'clients',
+  'properties',
+  'jobs',
+  'estimates',
+  'work_agreements',
+  'invoices',
+  'subscriptions',
+  'daily_work_logs',
+  'weekly_timesheets',
+  'audit_logs',
+];
+
+let pendingWrites = 0;
+let cloudDirty = false;
+let lastWriteError: string | null = null;
+let writeFailureHandler: (() => void) | null = null;
+const failedDeletes = new Map<string, { table: string; id: string; idKey: string }>();
+
+export const getPendingWrites = () => pendingWrites;
+export const isCloudDirty = () => cloudDirty;
+export const markCloudDirty = () => { cloudDirty = true; };
+export const clearCloudDirty = () => { cloudDirty = false; };
+export const getLastWriteError = () => lastWriteError;
+export const setWriteFailureHandler = (fn: (() => void) | null) => { writeFailureHandler = fn; };
+
+export async function waitForPendingWrites(timeoutMs = 8000): Promise<void> {
+  const start = Date.now();
+  while (pendingWrites > 0 && Date.now() - start < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 
-/**
- * Pushes entire local database snapshot into Supabase in bulk.
- */
-export async function pushAllLocalToSupabase(data: {
+export function describeSupabaseError(table: string, error: { message?: string; code?: string }): string {
+  const msg = error?.message || 'Unknown error';
+  if (error?.code === 'PGRST204' || /\braw\b/i.test(msg)) {
+    return `Schema is out of date (missing "raw" column on "${table}") - re-run supabase/schema.sql in the Supabase SQL Editor.`;
+  }
+  if (error?.code === '42P01' || error?.code === 'PGRST205' || /schema cache|does not exist/i.test(msg)) {
+    return `Table "${table}" is missing - run supabase/schema.sql in the Supabase SQL Editor.`;
+  }
+  return `${table}: ${msg}`;
+}
+
+function trackWrite(op: PromiseLike<any>, table: string, onFail?: () => void) {
+  pendingWrites++;
+  const fail = (message: string) => {
+    cloudDirty = true;
+    lastWriteError = message;
+    if (onFail) onFail();
+    if (writeFailureHandler) writeFailureHandler();
+  };
+  Promise.resolve(op).then(
+    (res: any) => {
+      pendingWrites = Math.max(0, pendingWrites - 1);
+      if (res && res.error) {
+        console.warn(`[Supabase Background Sync] ${table} error:`, res.error.message);
+        fail(describeSupabaseError(table, res.error));
+      } else {
+        lastWriteError = null;
+      }
+    },
+    (err: any) => {
+      pendingWrites = Math.max(0, pendingWrites - 1);
+      console.warn(`[Supabase Background Sync] ${table} exception:`, err);
+      fail(err?.message || 'Network error');
+    }
+  );
+}
+
+// Single-record background sync helper functions
+export function syncRecordInBackground(tableName: string, row: any, conflictKey = 'id') {
+  const client = getSupabaseClient();
+  if (!client) return;
+  trackWrite(client.from(tableName).upsert(row, { onConflict: conflictKey }), tableName);
+}
+
+export function deleteRecordInBackground(tableName: string, id: string, idKey = 'id') {
+  const client = getSupabaseClient();
+  if (!client) return;
+  const key = `${tableName}:${id}`;
+  trackWrite(client.from(tableName).delete().eq(idKey, id), tableName, () => {
+    failedDeletes.set(key, { table: tableName, id, idKey });
+  });
+}
+
+/** Retries deletes that previously failed (e.g. while offline) so removed records don't resurrect. */
+export async function retryFailedDeletes(): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client || failedDeletes.size === 0) return;
+  for (const [key, item] of Array.from(failedDeletes.entries())) {
+    try {
+      const { error } = await client.from(item.table).delete().eq(item.idKey, item.id);
+      if (!error) failedDeletes.delete(key);
+    } catch {
+      /* keep for next cycle */
+    }
+  }
+}
+
+// ==========================================
+// Cloud Sync Engine
+// ==========================================
+
+export interface LocalSnapshot {
   clients: Client[];
   properties: Property[];
   jobs: Job[];
@@ -627,7 +696,137 @@ export async function pushAllLocalToSupabase(data: {
   dailyWorkLogs: DailyWorkLog[];
   weeklyTimesheets: WeeklyTimesheet[];
   auditLogs: AuditLog[];
-}): Promise<{
+}
+
+export interface CloudSnapshot extends LocalSnapshot {
+  /** "table:id" keys of cloud rows written by an older version (no `raw` column data). */
+  legacy: Set<string>;
+  /** True if the cloud has any clients, jobs or estimates. */
+  hasData: boolean;
+}
+
+/**
+ * Fetches every table. Returns null if Supabase isn't configured.
+ * Throws a descriptive Error if any query fails (missing tables, bad key, offline...).
+ */
+export async function fetchAllFromSupabase(): Promise<CloudSnapshot | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  const names = [
+    'clients',
+    'properties',
+    'jobs',
+    'estimates',
+    'work_agreements',
+    'invoices',
+    'subscriptions',
+    'users',
+    'daily_work_logs',
+    'weekly_timesheets',
+    'audit_logs',
+  ];
+
+  const results = await Promise.all([
+    client.from('clients').select('*'),
+    client.from('properties').select('*'),
+    client.from('jobs').select('*'),
+    client.from('estimates').select('*'),
+    client.from('work_agreements').select('*'),
+    client.from('invoices').select('*'),
+    client.from('subscriptions').select('*'),
+    client.from('users').select('*'),
+    client.from('daily_work_logs').select('*'),
+    client.from('weekly_timesheets').select('*'),
+    client.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(500),
+  ]);
+
+  results.forEach((res, i) => {
+    if (res.error) throw new Error(describeSupabaseError(names[i], res.error));
+  });
+
+  const [clientsRes, propsRes, jobsRes, estRes, agreementsRes, invRes, subRes, usersRes, workLogsRes, timesheetsRes, auditRes] =
+    results;
+
+  const legacy = new Set<string>();
+  const convert = <T>(table: string, idKey: string, rows: any[] | null, mapper: (r: any) => T): T[] =>
+    (rows || []).map((r) => {
+      if (!r.raw) legacy.add(`${table}:${r[idKey]}`);
+      return mapper(r);
+    });
+
+  const snapshot: CloudSnapshot = {
+    clients: convert('clients', 'id', clientsRes.data, dbToClient),
+    properties: convert('properties', 'id', propsRes.data, dbToProperty),
+    jobs: convert('jobs', 'id', jobsRes.data, dbToJob),
+    estimates: convert('estimates', 'id', estRes.data, dbToEstimate),
+    workAgreements: convert('work_agreements', 'id', agreementsRes.data, dbToWorkAgreement),
+    invoices: convert('invoices', 'id', invRes.data, dbToInvoice),
+    subscriptions: convert('subscriptions', 'id', subRes.data, dbToSubscription),
+    users: convert('users', 'uid', usersRes.data, dbToUser),
+    dailyWorkLogs: convert('daily_work_logs', 'id', workLogsRes.data, dbToDailyWorkLog),
+    weeklyTimesheets: convert('weekly_timesheets', 'id', timesheetsRes.data, dbToWeeklyTimesheet),
+    auditLogs: convert('audit_logs', 'id', auditRes.data, dbToAuditLog),
+    legacy,
+    hasData: false,
+  };
+  snapshot.hasData = snapshot.clients.length + snapshot.jobs.length + snapshot.estimates.length > 0;
+  return snapshot;
+}
+
+/**
+ * Reconciles one collection between local state and the cloud.
+ *  - 'merge'   : keep local-only records (and push them), cloud wins for shared records
+ *                (except legacy cloud rows, where local wins and is re-pushed in the new format).
+ *  - 'replace' : cloud is authoritative; local-only records are dropped.
+ * Local ordering is preserved to avoid UI flicker. An empty cloud table never wipes local data
+ * unless `authoritativeEmpty` is set (fresh device joining an existing cloud database).
+ */
+export function reconcileCollection<T>(
+  table: string,
+  local: T[],
+  cloud: T[],
+  idOf: (item: T) => string,
+  legacy: Set<string>,
+  mode: 'merge' | 'replace',
+  authoritativeEmpty = false
+): { result: T[]; toPush: T[] } {
+  if (cloud.length === 0 && !(mode === 'replace' && authoritativeEmpty)) {
+    return { result: local, toPush: mode === 'merge' ? local : [] };
+  }
+
+  const cloudMap = new Map<string, T>();
+  cloud.forEach((c) => cloudMap.set(idOf(c), c));
+  const localIds = new Set<string>();
+  const result: T[] = [];
+  const toPush: T[] = [];
+
+  for (const l of local) {
+    const id = idOf(l);
+    localIds.add(id);
+    const c = cloudMap.get(id);
+    if (c === undefined) {
+      if (mode === 'merge') {
+        result.push(l);
+        toPush.push(l);
+      }
+    } else if (mode === 'merge' && legacy.has(`${table}:${id}`)) {
+      result.push(l);
+      toPush.push(l);
+    } else {
+      result.push(c);
+    }
+  }
+  for (const c of cloud) {
+    if (!localIds.has(idOf(c))) result.push(c);
+  }
+  return { result, toPush };
+}
+
+/**
+ * Pushes (a subset of) the local database into Supabase in chunked bulk upserts.
+ */
+export async function pushAllLocalToSupabase(data: Partial<LocalSnapshot>): Promise<{
   success: boolean;
   counts: Record<string, number>;
   errors: string[];
@@ -645,31 +844,38 @@ export async function pushAllLocalToSupabase(data: {
   }
 
   const tasks = [
-    { name: 'clients', rows: data.clients.map(clientToDb), key: 'id' },
-    { name: 'properties', rows: data.properties.map(propertyToDb), key: 'id' },
-    { name: 'jobs', rows: data.jobs.map(jobToDb), key: 'id' },
-    { name: 'estimates', rows: data.estimates.map(estimateToDb), key: 'id' },
-    { name: 'work_agreements', rows: data.workAgreements.map(workAgreementToDb), key: 'id' },
-    { name: 'invoices', rows: data.invoices.map(invoiceToDb), key: 'id' },
-    { name: 'subscriptions', rows: data.subscriptions.map(subscriptionToDb), key: 'id' },
-    { name: 'users', rows: data.users.map(userToDb), key: 'uid' },
-    { name: 'daily_work_logs', rows: data.dailyWorkLogs.map(dailyWorkLogToDb), key: 'id' },
-    { name: 'weekly_timesheets', rows: data.weeklyTimesheets.map(weeklyTimesheetToDb), key: 'id' },
-    { name: 'audit_logs', rows: data.auditLogs.map(auditLogToDb), key: 'id' },
+    { name: 'users', rows: (data.users || []).map(userToDb), key: 'uid' },
+    { name: 'clients', rows: (data.clients || []).map(clientToDb), key: 'id' },
+    { name: 'properties', rows: (data.properties || []).map(propertyToDb), key: 'id' },
+    { name: 'jobs', rows: (data.jobs || []).map(jobToDb), key: 'id' },
+    { name: 'estimates', rows: (data.estimates || []).map(estimateToDb), key: 'id' },
+    { name: 'work_agreements', rows: (data.workAgreements || []).map(workAgreementToDb), key: 'id' },
+    { name: 'invoices', rows: (data.invoices || []).map(invoiceToDb), key: 'id' },
+    { name: 'subscriptions', rows: (data.subscriptions || []).map(subscriptionToDb), key: 'id' },
+    { name: 'daily_work_logs', rows: (data.dailyWorkLogs || []).map(dailyWorkLogToDb), key: 'id' },
+    { name: 'weekly_timesheets', rows: (data.weeklyTimesheets || []).map(weeklyTimesheetToDb), key: 'id' },
+    { name: 'audit_logs', rows: (data.auditLogs || []).map(auditLogToDb), key: 'id' },
   ];
 
+  const CHUNK = 100;
   for (const task of tasks) {
     if (task.rows.length === 0) continue;
-    try {
-      const { error } = await client.from(task.name).upsert(task.rows, { onConflict: task.key });
-      if (error) {
-        errors.push(`Table ${task.name}: ${error.message}`);
-      } else {
-        counts[task.name] = task.rows.length;
+    let pushed = 0;
+    for (let i = 0; i < task.rows.length; i += CHUNK) {
+      const chunk = task.rows.slice(i, i + CHUNK);
+      try {
+        const { error } = await client.from(task.name).upsert(chunk, { onConflict: task.key });
+        if (error) {
+          errors.push(describeSupabaseError(task.name, error));
+          break;
+        }
+        pushed += chunk.length;
+      } catch (e: any) {
+        errors.push(`Table ${task.name} exception: ${e?.message}`);
+        break;
       }
-    } catch (e: any) {
-      errors.push(`Table ${task.name} exception: ${e?.message}`);
     }
+    if (pushed > 0) counts[task.name] = pushed;
   }
 
   return {
@@ -679,33 +885,29 @@ export async function pushAllLocalToSupabase(data: {
   };
 }
 
-// Single-record background sync helper functions
-export function syncRecordInBackground(tableName: string, row: any, conflictKey = 'id') {
+/**
+ * Subscribes to Supabase Realtime changes on every synced table.
+ * Returns an unsubscribe function. Silently no-ops if not configured.
+ */
+export function subscribeToCloudChanges(onChange: () => void): () => void {
   const client = getSupabaseClient();
-  if (!client) return;
+  if (!client) return () => {};
 
-  Promise.resolve(client.from(tableName).upsert(row, { onConflict: conflictKey }))
-    .then(({ error }: any) => {
-      if (error) {
-        console.warn(`[Supabase Background Sync] ${tableName} error:`, error.message);
-      }
-    })
-    .catch((err: any) => {
-      console.warn(`[Supabase Background Sync] ${tableName} exception:`, err);
+  try {
+    const channel = client.channel('fsm-autosync');
+    SYNC_TABLES.forEach((table) => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => onChange());
     });
-}
-
-export function deleteRecordInBackground(tableName: string, id: string, idKey = 'id') {
-  const client = getSupabaseClient();
-  if (!client) return;
-
-  Promise.resolve(client.from(tableName).delete().eq(idKey, id))
-    .then(({ error }: any) => {
-      if (error) {
-        console.warn(`[Supabase Background Sync Delete] ${tableName} error:`, error.message);
+    channel.subscribe();
+    return () => {
+      try {
+        client.removeChannel(channel);
+      } catch {
+        /* ignore */
       }
-    })
-    .catch((err: any) => {
-      console.warn(`[Supabase Background Sync Delete] ${tableName} exception:`, err);
-    });
+    };
+  } catch (err) {
+    console.warn('Realtime subscription unavailable (polling fallback active):', err);
+    return () => {};
+  }
 }
