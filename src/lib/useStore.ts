@@ -79,6 +79,8 @@ export function useFSMStore() {
     resetToDefault: () => store.resetToDefault(),
     syncAllToSupabase: () => store.syncAllToSupabase(),
     hydrateFromSupabase: () => store.hydrateFromSupabase(),
+    syncWithCloud: (mode?: 'merge' | 'replace') => store.syncWithCloud(mode),
+    syncState: store.getSyncState(),
   };
 }
 

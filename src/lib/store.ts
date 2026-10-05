@@ -944,6 +944,16 @@ export class FSMStore {
   private auditLogs: AuditLog[] = INITIAL_AUDIT_LOGS;
   private workAgreements: WorkAgreement[] = [];
   private listeners: Array<() => void> = [];
+  private applyingCloud: boolean = false;
+  private mutationCount: number = 0;
+  private syncState: CloudSyncState = {
+    status: 'disabled',
+    lastSyncedAt: null,
+    error: null,
+  };
+  private autoSyncTimer: any = null;
+  private syncDebounceTimer: any = null;
+  private unsubscribeRealtime: (() => void) | null = null;
 
   private constructor() {
     if (typeof window !== 'undefined') {
@@ -973,14 +983,19 @@ export class FSMStore {
             }
           }
           this.auditLogs = parsed.auditLogs || INITIAL_AUDIT_LOGS;
-          this.workAgreements = parsed.workAgreements || [];
+          this.workAgreements = (parsed.workAgreements || []).map((a: WorkAgreement) => {
+            if (a.contractorSignedBy && a.contractorSignedBy.includes('Brianna')) {
+              return { ...a, contractorSignedBy: 'Charles Willis - Owner & Field Specialist' };
+            }
+            return a;
+          });
         }
       } catch (e) {
         console.error('Failed to load store from localStorage', e);
       }
 
-      // Asynchronously hydrate from Supabase to preserve data across code updates & devices
-      this.hydrateFromSupabase();
+      // Initialize automatic background synchronization
+      this.initAutoSync();
     }
   }
 
@@ -991,29 +1006,152 @@ export class FSMStore {
     return FSMStore.instance;
   }
 
-  public async hydrateFromSupabase(): Promise<boolean> {
-    try {
-      const cloudData = await fetchAllFromSupabase();
-      if (cloudData) {
-        if (cloudData.clients.length > 0) this.clients = cloudData.clients;
-        if (cloudData.properties.length > 0) this.properties = cloudData.properties;
-        if (cloudData.jobs.length > 0) this.jobs = cloudData.jobs;
-        if (cloudData.estimates.length > 0) this.estimates = cloudData.estimates;
-        if (cloudData.workAgreements.length > 0) this.workAgreements = cloudData.workAgreements;
-        if (cloudData.invoices.length > 0) this.invoices = cloudData.invoices;
-        if (cloudData.subscriptions.length > 0) this.subscriptions = cloudData.subscriptions;
-        if (cloudData.dailyWorkLogs.length > 0) this.dailyWorkLogs = cloudData.dailyWorkLogs;
-        if (cloudData.weeklyTimesheets.length > 0) this.weeklyTimesheets = cloudData.weeklyTimesheets;
-        if (cloudData.users.length > 0) this.users = cloudData.users;
-        if (cloudData.auditLogs.length > 0) this.auditLogs = cloudData.auditLogs;
+  private initAutoSync() {
+    if (typeof window === 'undefined') return;
 
-        this.persist();
-        return true;
-      }
-    } catch (err) {
-      console.warn('Hydration from Supabase skipped/failed:', err);
+    // Retry background write failures automatically
+    setWriteFailureHandler(() => this.triggerDebouncedSync());
+
+    // Subscribe to live Realtime changes in Supabase
+    this.unsubscribeRealtime = subscribeToCloudChanges(() => {
+      this.triggerDebouncedSync();
+    });
+
+    // Start background polling timer
+    this.autoSyncTimer = setInterval(() => {
+      this.syncWithCloud('merge');
+    }, AUTO_SYNC_INTERVAL_MS);
+
+    // Sync when coming back online or focusing tab
+    window.addEventListener('online', () => this.syncWithCloud('merge'));
+    window.addEventListener('focus', () => this.triggerDebouncedSync());
+
+    // Run initial sync
+    this.syncWithCloud('merge');
+  }
+
+  public triggerDebouncedSync() {
+    if (this.syncDebounceTimer) clearTimeout(this.syncDebounceTimer);
+    this.syncDebounceTimer = setTimeout(() => {
+      this.syncWithCloud('merge');
+    }, 1500);
+  }
+
+  public getSyncState(): CloudSyncState {
+    return { ...this.syncState };
+  }
+
+  public async syncWithCloud(mode: 'merge' | 'replace' = 'merge'): Promise<boolean> {
+    const config = getSupabaseConfig();
+    if (!config.isConfigured) {
+      this.syncState = {
+        status: 'disabled',
+        lastSyncedAt: this.syncState.lastSyncedAt,
+        error: null,
+      };
+      return false;
     }
-    return false;
+
+    if (this.syncState.status === 'syncing') {
+      return false;
+    }
+
+    this.syncState = { ...this.syncState, status: 'syncing' };
+
+    try {
+      const cloudSnapshot = await fetchAllFromSupabase();
+      if (!cloudSnapshot) {
+        this.syncState = {
+          status: 'offline',
+          lastSyncedAt: this.syncState.lastSyncedAt,
+          error: null,
+        };
+        return false;
+      }
+
+      this.applyingCloud = true;
+
+      const legacy = cloudSnapshot.legacy;
+      const rClients = reconcileCollection('clients', this.clients, cloudSnapshot.clients, (c) => c.id, legacy, mode);
+      const rProps = reconcileCollection('properties', this.properties, cloudSnapshot.properties, (p) => p.id, legacy, mode);
+      const rJobs = reconcileCollection('jobs', this.jobs, cloudSnapshot.jobs, (j) => j.id, legacy, mode);
+      const rEst = reconcileCollection('estimates', this.estimates, cloudSnapshot.estimates, (e) => e.id, legacy, mode);
+      const rAgr = reconcileCollection('work_agreements', this.workAgreements, cloudSnapshot.workAgreements, (a) => a.id, legacy, mode);
+      const rInv = reconcileCollection('invoices', this.invoices, cloudSnapshot.invoices, (i) => i.id, legacy, mode);
+      const rSub = reconcileCollection('subscriptions', this.subscriptions, cloudSnapshot.subscriptions, (s) => s.id, legacy, mode);
+      const rUsers = reconcileCollection('users', this.users, cloudSnapshot.users, (u) => u.uid, legacy, mode);
+      const rLogs = reconcileCollection('daily_work_logs', this.dailyWorkLogs, cloudSnapshot.dailyWorkLogs, (l) => l.id, legacy, mode);
+      const rSheets = reconcileCollection('weekly_timesheets', this.weeklyTimesheets, cloudSnapshot.weeklyTimesheets, (t) => t.id, legacy, mode);
+      const rAudit = reconcileCollection('audit_logs', this.auditLogs, cloudSnapshot.auditLogs, (a) => a.id, legacy, mode);
+
+      this.clients = rClients.result;
+      this.properties = rProps.result;
+      this.jobs = rJobs.result;
+      this.estimates = rEst.result;
+      this.workAgreements = rAgr.result;
+      this.invoices = rInv.result;
+      this.subscriptions = rSub.result;
+      this.users = rUsers.result;
+      this.dailyWorkLogs = rLogs.result;
+      this.weeklyTimesheets = rSheets.result;
+      this.auditLogs = rAudit.result;
+
+      // Check if any local records need to be pushed
+      const hasItemsToPush =
+        rClients.toPush.length > 0 ||
+        rProps.toPush.length > 0 ||
+        rJobs.toPush.length > 0 ||
+        rEst.toPush.length > 0 ||
+        rAgr.toPush.length > 0 ||
+        rInv.toPush.length > 0 ||
+        rSub.toPush.length > 0 ||
+        rUsers.toPush.length > 0 ||
+        rLogs.toPush.length > 0 ||
+        rSheets.toPush.length > 0 ||
+        rAudit.toPush.length > 0;
+
+      if (hasItemsToPush || isCloudDirty()) {
+        await pushAllLocalToSupabase({
+          clients: rClients.toPush.length > 0 ? rClients.toPush : undefined,
+          properties: rProps.toPush.length > 0 ? rProps.toPush : undefined,
+          jobs: rJobs.toPush.length > 0 ? rJobs.toPush : undefined,
+          estimates: rEst.toPush.length > 0 ? rEst.toPush : undefined,
+          workAgreements: rAgr.toPush.length > 0 ? rAgr.toPush : undefined,
+          invoices: rInv.toPush.length > 0 ? rInv.toPush : undefined,
+          subscriptions: rSub.toPush.length > 0 ? rSub.toPush : undefined,
+          users: rUsers.toPush.length > 0 ? rUsers.toPush : undefined,
+          dailyWorkLogs: rLogs.toPush.length > 0 ? rLogs.toPush : undefined,
+          weeklyTimesheets: rSheets.toPush.length > 0 ? rSheets.toPush : undefined,
+          auditLogs: rAudit.toPush.length > 0 ? rAudit.toPush : undefined,
+        });
+        clearCloudDirty();
+      }
+
+      await retryFailedDeletes();
+
+      this.syncState = {
+        status: 'synced',
+        lastSyncedAt: new Date().toISOString(),
+        error: null,
+      };
+
+      this.applyingCloud = false;
+      this.persist();
+      return true;
+    } catch (err: any) {
+      this.applyingCloud = false;
+      this.syncState = {
+        status: 'error',
+        lastSyncedAt: this.syncState.lastSyncedAt,
+        error: err?.message || 'Sync error',
+      };
+      this.listeners.forEach((cb) => cb());
+      return false;
+    }
+  }
+
+  public async hydrateFromSupabase(): Promise<boolean> {
+    return this.syncWithCloud('merge');
   }
 
   public async syncAllToSupabase(): Promise<{ success: boolean; counts: Record<string, number>; errors: string[] }> {
@@ -1667,7 +1805,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       referenceNumber: paymentData.referenceNumber?.trim(),
       notes: paymentData.notes?.trim(),
       receiptNumber,
-      receivedBy: paymentData.receivedBy || 'Brianna Cronan - HR Mgr',
+      receivedBy: paymentData.receivedBy || 'Charles Willis - Owner & Field Specialist',
       createdAt: now,
     };
 
@@ -1773,7 +1911,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       paymentReceiptNumber: agreementData.paymentReceiptNumber,
       items: agreementData.items,
       terms: agreementData.terms || defaultTerms,
-      contractorSignedBy: 'Brianna Cronan - HR Mgr',
+      contractorSignedBy: 'Charles Willis - Owner & Field Specialist',
       contractorSignedAt: now,
       clientSignatureName: agreementData.clientSignatureName?.trim(),
       clientSignedAt: agreementData.clientSignatureName ? now : undefined,
