@@ -45,9 +45,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           </button>
           
           <Link href="/dashboard" className="flex items-center space-x-3 py-2 group">
-            <div className="relative h-12 w-48 sm:w-56 flex items-center">
+            <div className="relative h-12 w-48 sm:w-60 flex items-center">
               <img 
-                src="/logo.png" 
+                src="/logo-full.png" 
                 alt="Nailed It Property Solutions" 
                 className="max-h-12 w-auto object-contain transition-transform group-hover:scale-105 duration-200" 
               />

@@ -95,13 +95,13 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-[#262626]">
             <div>
               <img 
-                src="/logo.png" 
+                src="/logo-full.png" 
                 alt="Nailed It Property Solutions" 
-                className="h-12 w-auto object-contain mb-1" 
+                className="h-14 w-auto object-contain mb-1" 
               />
               <div className="text-[11px] text-[#b8b0a5] space-y-0.5">
                 <div>PO Box 53, Rome, GA 30162</div>
-                <div>Office: (706) 844-8193 • contact@naileditprops.com</div>
+                <div>Office: (706) 844-8193 • contact@naileditpropertysolutions.com</div>
               </div>
             </div>
 

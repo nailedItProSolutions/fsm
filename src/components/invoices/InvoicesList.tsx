@@ -22,11 +22,13 @@ import {
   MapPin, 
   X,
   ShieldCheck,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export const InvoicesList: React.FC = () => {
-  const { invoices, markInvoicePaid } = useActiveFSMData();
+  const { invoices, markInvoicePaid, deleteInvoice } = useActiveFSMData();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'sent' | 'paid' | 'overdue'>('all');
@@ -34,6 +36,13 @@ export const InvoicesList: React.FC = () => {
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
   const [selectedInvoiceForStripe, setSelectedInvoiceForStripe] = useState<Invoice | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
+
+  const handleConfirmDeleteInvoice = (authorizingUser: any) => {
+    if (!deletingInvoice) return;
+    deleteInvoice(deletingInvoice.id, authorizingUser);
+    setDeletingInvoice(null);
+  };
 
   // Stripe Modal state
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
@@ -69,7 +78,8 @@ export const InvoicesList: React.FC = () => {
   });
 
   const handleCopyLink = (invoice: Invoice) => {
-    const url = `${window.location.origin}/pay/${invoice.id}`;
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://fsm.naileditpropertysolutions.com';
+    const url = `${origin}/pay/${invoice.id}`;
     navigator.clipboard.writeText(url);
     setCopiedId(invoice.id);
     setTimeout(() => setCopiedId(null), 2500);
@@ -330,6 +340,15 @@ export const InvoicesList: React.FC = () => {
                               Paid ✓
                             </span>
                           )}
+
+                          {/* Delete Invoice Button (PIN Protected) */}
+                          <button
+                            onClick={() => setDeletingInvoice(invoice)}
+                            title="Delete Invoice (Requires Employee PIN)"
+                            className="p-1.5 rounded-lg bg-[#1a1a1a] hover:bg-red-950/60 text-[#78716c] hover:text-red-400 border border-[#2c2c2c] hover:border-red-800/60 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -499,9 +518,9 @@ export const InvoicesList: React.FC = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pb-6 border-b border-gray-200">
                 <div>
                   <img
-                    src="/logo.png"
+                    src="/logo-full.png"
                     alt="Nailed It Property Solutions"
-                    className="h-14 w-auto object-contain mb-2"
+                    className="h-16 w-auto object-contain mb-2"
                   />
                   <p className="text-xs text-gray-600 font-medium">Nailed It Property Solutions LLC</p>
                   <p className="text-xs text-gray-500">PO Box 53, Rome, GA 30162</p>
@@ -622,6 +641,19 @@ export const InvoicesList: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Invoice Modal with Employee PIN Verification */}
+      {deletingInvoice && (
+        <DeleteWithPinModal
+          isOpen={!!deletingInvoice}
+          onClose={() => setDeletingInvoice(null)}
+          onConfirm={handleConfirmDeleteInvoice}
+          title="Delete Invoice"
+          itemName={`Invoice ${deletingInvoice.invoiceNumber} - ${deletingInvoice.clientName} ($${Number(deletingInvoice.total).toFixed(2)})`}
+          itemType="invoice"
+          warningMessage="Deleting this invoice will permanently remove it from local and cloud databases. This action is irreversible and recorded in the audit log."
+        />
       )}
     </div>
   );

@@ -83,9 +83,9 @@ export default function CustomerEstimateApprovalPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-[#222222] mt-4 sm:mt-0 pr-12">
             <div>
               <img 
-                src="/logo.png" 
+                src="/logo-full.png" 
                 alt="Nailed It Property Solutions" 
-                className="h-14 w-auto object-contain mb-2" 
+                className="h-16 w-auto object-contain mb-2" 
               />
               <div className="text-xs text-[#b8b0a5] flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-[#FF8A00]" />

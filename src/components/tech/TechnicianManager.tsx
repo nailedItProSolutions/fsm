@@ -24,6 +24,7 @@ import {
   Shield,
   Smartphone
 } from 'lucide-react';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export const TechnicianManager: React.FC = () => {
   const { getTechnicians, addTechnician, updateTechnician, deleteTechnician } = useActiveFSMData();
@@ -145,12 +146,12 @@ export const TechnicianManager: React.FC = () => {
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = (authorizingUser: UserProfile) => {
     if (!deletingTech) return;
 
     try {
-      deleteTechnician(deletingTech.uid);
-      showSuccess(`Technician ${deletingTech.displayName} removed from roster.`);
+      deleteTechnician(deletingTech.uid, authorizingUser);
+      showSuccess(`Technician ${deletingTech.displayName} removed from roster [Authorized by ${authorizingUser.displayName}].`);
       setDeletingTech(null);
     } catch (err: any) {
       showError(err.message || 'Failed to delete technician.');
@@ -740,43 +741,18 @@ export const TechnicianManager: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal with Employee PIN Verification */}
       {deletingTech && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-md w-full border border-red-900/40 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
-            <div className="flex items-center space-x-3 text-red-400">
-              <div className="w-10 h-10 rounded-xl bg-red-950/50 border border-red-800/50 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base text-[#fdfbf7]">Delete Technician</h3>
-                <p className="text-xs text-[#b8b0a5]">Confirm permanent removal from roster</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-[#b8b0a5] leading-relaxed">
-              Are you sure you want to remove <span className="font-bold text-[#fdfbf7]">{deletingTech.displayName}</span> (Employee ID: {deletingTech.employeeId})? This technician will no longer be able to log in or be assigned new work orders.
-            </p>
-
-            <div className="border-t border-[#262626] pt-4 flex items-center justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setDeletingTech(null)}
-                className="px-4 py-2 rounded-lg border border-[#333333] text-xs font-bold text-[#b8b0a5] hover:bg-[#1a1a1a]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="px-5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Confirm Removal</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteWithPinModal
+          isOpen={!!deletingTech}
+          onClose={() => setDeletingTech(null)}
+          onConfirm={handleConfirmDelete}
+          title="Delete Technician"
+          itemName={`${deletingTech.displayName} (Employee ID: ${deletingTech.employeeId || 'N/A'})`}
+          itemType="technician"
+          targetId={deletingTech.uid}
+          warningMessage={`Are you sure you want to remove ${deletingTech.displayName}? This technician will no longer be able to log in or be assigned new work orders.`}
+        />
       )}
     </div>
   );

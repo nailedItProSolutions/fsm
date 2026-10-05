@@ -18,10 +18,29 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://fsm.naileditpropertysolutions.com'),
   title: 'Nailed It Property Solutions | Field Service Management (FSM)',
   description: 'Operating system for property maintenance, repair services, scheduling, and billing in Rome, GA.',
   icons: {
-    icon: '/favicon.jpg',
+    icon: '/logo-icon.png',
+    shortcut: '/logo-icon.png',
+    apple: '/logo-icon.png',
+  },
+  openGraph: {
+    title: 'Nailed It Property Solutions | Field Service Management',
+    description: 'Operating system for property maintenance, repair services, scheduling, and billing in Rome, GA.',
+    url: 'https://fsm.naileditpropertysolutions.com',
+    siteName: 'Nailed It Property Solutions',
+    images: [
+      {
+        url: '/logo-full.png',
+        width: 1200,
+        height: 630,
+        alt: 'Nailed It Property Solutions',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
   },
 };
 

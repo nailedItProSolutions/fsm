@@ -20,18 +20,28 @@ import {
   Wrench,
   TrendingUp,
   Clock,
-  ArrowRight, Printer
+  ArrowRight, 
+  Printer,
+  Trash2
 } from 'lucide-react';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export const EstimatesList: React.FC = () => {
-  const { estimates, updateEstimateStatus, convertEstimateToJob } = useActiveFSMData();
+  const { estimates, updateEstimateStatus, convertEstimateToJob, deleteEstimate } = useActiveFSMData();
 
   const [filterStatus, setFilterStatus] = useState<Estimate['status'] | 'all'>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [payingEstimate, setPayingEstimate] = useState<Estimate | null>(null);
   const [agreeingEstimate, setAgreeingEstimate] = useState<Estimate | null>(null);
+  const [deletingEstimate, setDeletingEstimate] = useState<Estimate | null>(null);
   const [convertedJobAlert, setConvertedJobAlert] = useState<{ estNum: string; jobNum: string } | null>(null);
+
+  const handleConfirmDeleteEstimate = (authorizingUser: any) => {
+    if (!deletingEstimate) return;
+    deleteEstimate(deletingEstimate.id, authorizingUser);
+    setDeletingEstimate(null);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -52,7 +62,8 @@ export const EstimatesList: React.FC = () => {
   const approvedValue = estimates.filter((e) => e.status === 'approved').reduce((acc, e) => acc + (e.total || 0), 0);
 
   const handleCopyLink = (id: string) => {
-    const url = `${window.location.origin}/estimate/${id}`;
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://fsm.naileditpropertysolutions.com';
+    const url = `${origin}/estimate/${id}`;
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2500);
@@ -298,6 +309,15 @@ export const EstimatesList: React.FC = () => {
                     >
                       {copiedId === est.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
+
+                    {/* Delete Estimate (PIN Protected) */}
+                    <button
+                      onClick={() => setDeletingEstimate(est)}
+                      className="bg-[#1c1c1c] hover:bg-red-950/60 text-[#78716c] hover:text-red-400 border border-[#333333] hover:border-red-800/60 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition"
+                      title="Delete Estimate (Requires Employee PIN)"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -330,6 +350,19 @@ export const EstimatesList: React.FC = () => {
           isOpen={true}
           onClose={() => setAgreeingEstimate(null)}
           estimate={agreeingEstimate}
+        />
+      )}
+
+      {/* Delete Estimate Modal with Employee PIN Verification */}
+      {deletingEstimate && (
+        <DeleteWithPinModal
+          isOpen={!!deletingEstimate}
+          onClose={() => setDeletingEstimate(null)}
+          onConfirm={handleConfirmDeleteEstimate}
+          title="Delete Estimate"
+          itemName={`Estimate ${deletingEstimate.estimateNumber} - ${deletingEstimate.clientName} ($${Number(deletingEstimate.total).toFixed(2)})`}
+          itemType="estimate"
+          warningMessage="Deleting this estimate will also unlink or remove any associated company work agreements. This action is permanent and recorded in the audit log."
         />
       )}
 

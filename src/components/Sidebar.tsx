@@ -110,17 +110,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         }`}
       >
         <div className="p-4 space-y-6 overflow-y-auto">
-          {/*  */}
+          {/* Dispatch Status Card with Icon */}
           <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3.5 text-xs">
-            <div className="flex items-center justify-between text-[#b8b0a5] font-semibold mb-1">
+            <div className="flex items-center justify-between text-[#b8b0a5] font-semibold mb-2">
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3 h-3 text-[#FF8A00]" /> Rome Dispatch
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </div>
-            <div className="font-bold text-[#fdfbf7] text-sm font-heading">Nailed It Operations</div>
-            <div className="text-[11px] text-[#c5a059] mt-0.5 font-medium">
-              Role: <span className="capitalize">{role || 'Admin'}</span>
+            <div className="flex items-center gap-2.5">
+              <img 
+                src="/logo-icon.png" 
+                alt="Nailed It Icon" 
+                className="w-8 h-8 object-contain shrink-0 drop-shadow" 
+              />
+              <div>
+                <div className="font-bold text-[#fdfbf7] text-sm font-heading leading-tight">Nailed It Operations</div>
+                <div className="text-[11px] text-[#c5a059] mt-0.5 font-medium">
+                  Role: <span className="capitalize">{role || 'Admin'}</span>
+                </div>
+              </div>
             </div>
           </div>
 

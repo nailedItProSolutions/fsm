@@ -105,15 +105,14 @@ function LoginForm() {
       <div className="absolute bottom-0 right-10 w-[400px] h-[300px] bg-[#FF8A00]/10 blur-[100px] pointer-events-none rounded-full" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center z-10">
-        <div className="flex justify-center mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-[#c5a059] flex items-center justify-center text-black font-extrabold text-2xl shadow-xl shadow-[#c5a059]/20">
-            N
-          </div>
+        <div className="flex justify-center mb-3">
+          <img 
+            src="/logo-full.png" 
+            alt="Nailed It Property Solutions" 
+            className="h-20 w-auto object-contain drop-shadow-[0_10px_20px_rgba(197,160,89,0.25)]" 
+          />
         </div>
         
-        <h1 className="text-2xl font-bold font-heading text-[#fdfbf7]">
-          NAILED IT PROPERTY SOLUTIONS
-        </h1>
         <p className="mt-1 text-xs text-[#b8b0a5] flex items-center justify-center gap-1.5">
           <MapPin className="w-3.5 h-3.5 text-[#FF8A00]" />
           <span>Rome, GA • Floyd County Field Operations</span>

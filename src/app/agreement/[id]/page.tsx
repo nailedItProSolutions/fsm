@@ -28,14 +28,16 @@ import {
   FileCheck2,
   Copy,
   ExternalLink,
-  Receipt
+  Receipt,
+  Trash2
 } from 'lucide-react';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export default function WorkAgreementPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { getWorkAgreementById, getEstimateById, signWorkAgreementClient, getAuditLogs } = useFSMStore();
+  const { getWorkAgreementById, getEstimateById, signWorkAgreementClient, getAuditLogs, deleteWorkAgreement } = useFSMStore();
 
   const agreementId = params.id as string;
   const agreement = getWorkAgreementById(agreementId);
@@ -48,6 +50,7 @@ export default function WorkAgreementPage() {
   const [signNameInput, setSignNameInput] = useState<string>('');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 
   // Fallback / stable Contract ID
   const contractId = useMemo(() => {
@@ -111,7 +114,7 @@ export default function WorkAgreementPage() {
   // Generate QR Code with tamper-proof audit verification URL
   useEffect(() => {
     if (!agreement) return;
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://naileditpro.com';
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://fsm.naileditpropertysolutions.com';
     const verifyUrl = `${origin}/agreement/${agreement.id}?verified=true&contractId=${contractId}&seal=${tamperHash}`;
     
     QRCode.toDataURL(verifyUrl, {
@@ -253,8 +256,14 @@ export default function WorkAgreementPage() {
     }
   };
 
+  const handleConfirmDeleteAgreement = (authorizingUser: any) => {
+    deleteWorkAgreement(agreement.id, authorizingUser);
+    setShowDeleteModal(false);
+    router.push('/dashboard/estimates');
+  };
+
   const handleCopyVerifyLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://naileditpro.com';
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://fsm.naileditpropertysolutions.com';
     const verifyUrl = `${origin}/agreement/${agreement.id}?verified=true&contractId=${contractId}&seal=${tamperHash}`;
     navigator.clipboard.writeText(verifyUrl);
     setIsCopied(true);
@@ -312,9 +321,9 @@ export default function WorkAgreementPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-[#222222] print:border-black">
           <div>
             <img 
-              src="/logo.png" 
+              src="/logo-full.png" 
               alt="Nailed It Property Solutions" 
-              className="h-14 w-auto object-contain mb-2 print:grayscale" 
+              className="h-16 w-auto object-contain mb-2 print:grayscale" 
             />
             <div className="text-xs text-[#b8b0a5] print:text-black flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-[#FF8A00] print:text-black" />
@@ -758,6 +767,16 @@ export default function WorkAgreementPage() {
                 <Printer className="w-4 h-4" />
                 <span>Print Contract</span>
               </button>
+
+              {/* Delete Agreement Button */}
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="px-3 py-2 bg-[#181818] hover:bg-red-950/60 border border-[#333] hover:border-red-800/60 text-[#78716c] hover:text-red-400 text-xs font-bold rounded-xl transition flex items-center gap-1.5"
+                title="Delete Work Agreement (Requires Employee PIN)"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
             </div>
           </div>
 
@@ -1059,6 +1078,19 @@ export default function WorkAgreementPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Work Agreement Modal with Employee PIN Verification */}
+      {showDeleteModal && (
+        <DeleteWithPinModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleConfirmDeleteAgreement}
+          title="Delete Work Agreement"
+          itemName={`Agreement ${agreement.agreementNumber} (${contractId}) - ${agreement.clientName}`}
+          itemType="agreement"
+          warningMessage="Deleting this work agreement will permanently remove it from the system and restore the linked estimate to sent status. This action is irreversible and recorded in the audit log."
+        />
       )}
 
     </div>

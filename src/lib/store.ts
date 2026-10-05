@@ -1565,7 +1565,31 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return true;
   }
 
-  public deleteTechnician(uid: string): boolean {
+  public verifyEmployeePin(pin: string, employeeId?: string): UserProfile | null {
+    const cleanPin = pin.trim();
+    if (!cleanPin) return null;
+    if (employeeId) {
+      const cleanEmpId = employeeId.trim().toUpperCase();
+      return (
+        this.users.find(
+          (u) =>
+            u.employeeId?.toUpperCase() === cleanEmpId &&
+            u.pin === cleanPin &&
+            u.active !== false
+        ) || null
+      );
+    }
+    return (
+      this.users.find(
+        (u) =>
+          u.pin === cleanPin &&
+          u.active !== false &&
+          (u.role === 'admin' || u.role === 'technician')
+      ) || null
+    );
+  }
+
+  public deleteTechnician(uid: string, authorizingUser?: UserProfile): boolean {
     const tech = this.users.find((u) => u.uid === uid && u.role === 'technician');
     if (!tech) return false;
 
@@ -1581,7 +1605,100 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       'delete',
       'user',
       uid,
-      `Deleted technician profile for ${tech.displayName} (Employee ID: ${tech.employeeId})`
+      `Deleted technician profile for ${tech.displayName} (Employee ID: ${tech.employeeId})${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
+    );
+    return true;
+  }
+
+  public deleteEstimate(estimateId: string, authorizingUser?: UserProfile): boolean {
+    const est = this.estimates.find((e) => e.id === estimateId);
+    if (!est) return false;
+
+    // If estimate was converted to a job or has active agreement, clean up reference
+    if (est.workAgreementId) {
+      this.workAgreements = this.workAgreements.filter((w) => w.id !== est.workAgreementId);
+      deleteRecordInBackground('work_agreements', est.workAgreementId);
+    }
+
+    this.estimates = this.estimates.filter((e) => e.id !== estimateId);
+    this.persist();
+    deleteRecordInBackground('estimates', estimateId);
+
+    this.logActivity(
+      'delete',
+      'estimate',
+      estimateId,
+      `Permanently deleted Estimate ${est.estimateNumber} for ${est.clientName}${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
+    );
+    return true;
+  }
+
+  public deleteWorkAgreement(agreementId: string, authorizingUser?: UserProfile): boolean {
+    const agr = this.workAgreements.find((w) => w.id === agreementId);
+    if (!agr) return false;
+
+    this.workAgreements = this.workAgreements.filter((w) => w.id !== agreementId);
+
+    // Unlink from estimate if linked
+    const est = this.estimates.find((e) => e.workAgreementId === agreementId || e.id === agr.estimateId);
+    if (est) {
+      est.workAgreementId = undefined;
+      if (est.status === 'approved') est.status = 'sent';
+      syncRecordInBackground('estimates', estimateToDb(est));
+    }
+
+    this.persist();
+    deleteRecordInBackground('work_agreements', agreementId);
+
+    this.logActivity(
+      'delete',
+      'estimate',
+      agreementId,
+      `Permanently deleted Company Work Agreement ${agr.agreementNumber} (${agr.contractId || agr.id})${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
+    );
+    return true;
+  }
+
+  public deleteInvoice(invoiceId: string, authorizingUser?: UserProfile): boolean {
+    const inv = this.invoices.find((i) => i.id === invoiceId);
+    if (!inv) return false;
+
+    this.invoices = this.invoices.filter((i) => i.id !== invoiceId);
+    this.persist();
+    deleteRecordInBackground('invoices', invoiceId);
+
+    this.logActivity(
+      'delete',
+      'invoice',
+      invoiceId,
+      `Permanently deleted Invoice ${inv.invoiceNumber} for ${inv.clientName}${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
+    );
+    return true;
+  }
+
+  public deleteJob(jobId: string, authorizingUser?: UserProfile): boolean {
+    const job = this.jobs.find((j) => j.id === jobId);
+    if (!job) return false;
+
+    this.jobs = this.jobs.filter((j) => j.id !== jobId);
+    this.persist();
+    deleteRecordInBackground('jobs', jobId);
+
+    this.logActivity(
+      'delete',
+      'job',
+      jobId,
+      `Permanently deleted Job ${job.jobNumber} (${job.title})${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
     );
     return true;
   }
