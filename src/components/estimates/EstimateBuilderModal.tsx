@@ -83,8 +83,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     const updated = [...items];
     const current = { ...updated[index], [field]: val };
     if (field === 'quantity' || field === 'unitPrice') {
-      const q = field === 'quantity' ? parseFloat(val) || 0 : current.quantity;
-      const p = field === 'unitPrice' ? parseFloat(val) || 0 : current.unitPrice;
+      const q = field === 'quantity' ? (val === '' ? 0 : parseFloat(val) || 0) : Number(current.quantity) || 0;
+      const p = field === 'unitPrice' ? (val === '' ? 0 : parseFloat(val) || 0) : Number(current.unitPrice) || 0;
       current.total = Math.round(q * p * 100) / 100;
     }
     updated[index] = current;
@@ -401,8 +401,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                   <div className="col-span-2">
                     <input
                       type="number"
-                      step="0.5"
-                      min="0.5"
+                      step="any"
+                      min="0"
                       value={item.quantity}
                       onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
                       className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-[#fdfbf7] text-center focus:outline-none"

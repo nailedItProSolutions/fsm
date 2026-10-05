@@ -225,6 +225,9 @@ export interface WorkAgreement {
   varianceAmount: number;
   varianceReason: string;
   depositPaid: number;
+  amountDueNow?: number;
+  dueNowDescription?: string;
+  balanceDueUponCompletion?: number;
   balanceDue: number;
   paymentMethod?: PaymentMethod;
   paymentReceiptNumber?: string;

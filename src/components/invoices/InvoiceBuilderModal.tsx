@@ -126,8 +126,9 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
         if (item.id === id) {
           const updated = { ...item, [field]: value };
           if (field === 'quantity' || field === 'unitPrice') {
-            const qty = field === 'quantity' ? Number(value) : item.quantity;
-            const price = field === 'unitPrice' ? Number(value) : item.unitPrice;
+            const valNum = value === '' ? 0 : parseFloat(String(value)) || 0;
+            const qty = field === 'quantity' ? valNum : Number(item.quantity) || 0;
+            const price = field === 'unitPrice' ? valNum : Number(item.unitPrice) || 0;
             updated.total = Math.round(qty * price * 100) / 100;
           }
           return updated;
@@ -352,8 +353,8 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                       <span className="text-[10px] text-[#78716c] mr-1.5">Qty:</span>
                       <input
                         type="number"
-                        min="0.25"
-                        step="0.25"
+                        min="0"
+                        step="any"
                         required
                         value={item.quantity}
                         onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}

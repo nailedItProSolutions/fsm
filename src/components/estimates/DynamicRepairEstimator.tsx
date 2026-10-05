@@ -200,7 +200,8 @@ export const DynamicRepairEstimator: React.FC<DynamicRepairEstimatorProps> = ({
           </label>
           <input
             type="number"
-            step="0.25"
+            min="0"
+            step="any"
             value={result.laborHours}
             onChange={(e) => setCustomLaborHours(parseFloat(e.target.value) || 0)}
             className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
@@ -214,7 +215,8 @@ export const DynamicRepairEstimator: React.FC<DynamicRepairEstimatorProps> = ({
           </label>
           <input
             type="number"
-            step="5"
+            min="0"
+            step="any"
             value={result.materialsCost}
             onChange={(e) => setCustomMaterialsCost(parseFloat(e.target.value) || 0)}
             className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"

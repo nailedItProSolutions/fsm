@@ -1863,6 +1863,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       items: WorkAgreementItem[];
       varianceReason: string;
       depositPaid?: number;
+      amountDueNow?: number;
+      dueNowDescription?: string;
       paymentMethod?: PaymentMethod;
       paymentReceiptNumber?: string;
       clientSignatureName?: string;
@@ -1883,7 +1885,10 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const updatedTotal = updatedSubtotal + taxAmount;
     const varianceAmount = updatedTotal - est.total;
     const deposit = agreementData.depositPaid !== undefined ? Number(agreementData.depositPaid) : (est.depositPaid || 0);
-    const balanceDue = Math.max(0, updatedTotal - deposit);
+    const amountDueNow = agreementData.amountDueNow !== undefined ? Math.max(0, Number(agreementData.amountDueNow)) : 0;
+    const dueNowDescription = agreementData.dueNowDescription?.trim();
+    const balanceDueUponCompletion = Math.max(0, updatedTotal - deposit - amountDueNow);
+    const balanceDue = balanceDueUponCompletion;
 
     const defaultTerms = `1. SCOPE OF SERVICE: Nailed It Property Solutions agrees to furnish all qualified labor, necessary tools, and materials specified above in accordance with standard residential and commercial trade practices in Rome, GA (Floyd County).\n2. PAYMENT & COMPLETION: Client agrees to pay the final balance due upon certified substantial completion and walk-through inspection.\n3. CHANGE ORDER POLICY: Any unforeseen structural defects, concealed plumbing/electrical hazards, or client-requested additions discovered during execution will be documented with photos and approved in writing prior to proceeding.\n4. WORKMANSHIP GUARANTEE: All installation labor is backed by Nailed It Property Solutions' 1-Year Workmanship Warranty.`;
 
@@ -1906,10 +1911,18 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       varianceAmount,
       varianceReason: agreementData.varianceReason.trim() || 'Scope and materials updated for work execution',
       depositPaid: deposit,
+      amountDueNow,
+      dueNowDescription,
+      balanceDueUponCompletion,
       balanceDue,
       paymentMethod: agreementData.paymentMethod,
       paymentReceiptNumber: agreementData.paymentReceiptNumber,
-      items: agreementData.items,
+      items: agreementData.items.map((item) => ({
+        ...item,
+        quantity: Number(item.quantity) || 0,
+        unitPrice: Number(item.unitPrice) || 0,
+        total: Number(item.total) || 0,
+      })),
       terms: agreementData.terms || defaultTerms,
       contractorSignedBy: 'Charles Willis - Owner & Field Specialist',
       contractorSignedAt: now,
@@ -1941,7 +1954,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       photosBefore: [],
       photosAfter: [],
       estimateId: est.id,
-      notes: `Company Work Agreement ${agreementNumber} active. Scope change variance: ${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} (${agreement.varianceReason}). Deposit paid: $${deposit.toFixed(2)}.`,
+      notes: `Company Work Agreement ${agreementNumber} active. Scope change variance: ${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} (${agreement.varianceReason}). Deposit paid: $${deposit.toFixed(2)}.${amountDueNow > 0 ? ` Due now upon signing: $${amountDueNow.toFixed(2)}${dueNowDescription ? ` (${dueNowDescription})` : ''}.` : ''} Remaining balance upon completion: $${balanceDueUponCompletion.toFixed(2)}.`,
       totalAmount: updatedTotal,
       workAgreementId: agreement.id,
       originalEstimateTotal: est.total,
@@ -1961,7 +1974,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       'agreement_created',
       'estimate',
       est.id,
-      `Company Work Agreement ${agreementNumber} (Contract ID: ${contractId}) created (Job ${newJob.jobNumber}). Updated Total: $${updatedTotal.toFixed(2)} (${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} variance from estimate). Reason: ${agreement.varianceReason}.`
+      `Company Work Agreement ${agreementNumber} (Contract ID: ${contractId}) created (Job ${newJob.jobNumber}). Updated Total: $${updatedTotal.toFixed(2)} (${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} variance from estimate).${amountDueNow > 0 ? ` Due now upon signing: $${amountDueNow.toFixed(2)}.` : ''} Balance upon completion: $${balanceDueUponCompletion.toFixed(2)}. Reason: ${agreement.varianceReason}.`
     );
 
     this.persist();

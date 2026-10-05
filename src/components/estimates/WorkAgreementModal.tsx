@@ -69,6 +69,8 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
   
   // Financials
   const [depositPaid, setDepositPaid] = useState<number>(Number(estimate.depositPaid || 0));
+  const [amountDueNow, setAmountDueNow] = useState<number>(0);
+  const [dueNowDescription, setDueNowDescription] = useState<string>('');
   const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [assignedTechId, setAssignedTechId] = useState<string>(technicians[0]?.uid || 'user-tech-1');
   const [clientSignatureName, setClientSignatureName] = useState(estimate.clientName);
@@ -87,17 +89,26 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
   const updatedTotal = updatedSubtotal + updatedTax;
   const varianceAmount = updatedTotal - originalEstimateTotal;
   const variancePercent = originalEstimateTotal > 0 ? (varianceAmount / originalEstimateTotal) * 100 : 0;
-  const balanceDue = Math.max(0, updatedTotal - depositPaid);
+  const balanceDueUponCompletion = Math.max(0, updatedTotal - depositPaid - amountDueNow);
+  const balanceDue = balanceDueUponCompletion;
 
   const handleItemChange = (index: number, field: keyof WorkAgreementItem, value: any) => {
     setItems((prev) => {
       const copy = [...prev];
-      const item = { ...copy[index], [field]: value, isNewOrModified: true };
+      const item = { ...copy[index], isNewOrModified: true };
 
-      if (field === 'quantity' || field === 'unitPrice') {
-        const q = field === 'quantity' ? Number(value) : item.quantity;
-        const p = field === 'unitPrice' ? Number(value) : item.unitPrice;
+      if (field === 'quantity') {
+        const q = value === '' ? 0 : parseFloat(value) || 0;
+        item.quantity = q;
+        const p = Number(item.unitPrice) || 0;
         item.total = Number((q * p).toFixed(2));
+      } else if (field === 'unitPrice') {
+        const p = value === '' ? 0 : parseFloat(value) || 0;
+        item.unitPrice = p;
+        const q = Number(item.quantity) || 0;
+        item.total = Number((q * p).toFixed(2));
+      } else {
+        (item as any)[field] = value;
       }
 
       copy[index] = item;
@@ -152,6 +163,8 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
         items,
         varianceReason: finalReason,
         depositPaid,
+        amountDueNow,
+        dueNowDescription: dueNowDescription.trim() || undefined,
         clientSignatureName: clientSignatureName.trim() || undefined,
         scheduledDate,
         techId: assignedTechId,
@@ -302,8 +315,8 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
                         <td className="p-2.5">
                           <input
                             type="number"
-                            min="0.1"
-                            step="0.5"
+                            min="0"
+                            step="any"
                             value={item.quantity}
                             onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
                             className="w-full bg-[#181818] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-center font-mono text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
@@ -313,7 +326,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
                           <input
                             type="number"
                             min="0"
-                            step="0.01"
+                            step="any"
                             value={item.unitPrice}
                             onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
                             className="w-full bg-[#181818] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-right font-mono text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
@@ -459,32 +472,121 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
                 </div>
               </div>
 
-              {/* Financial Totals Reconciliation */}
-              <div className="bg-[#181818] border border-[#262626] p-4 rounded-xl space-y-2">
-                <h5 className="font-bold text-xs uppercase tracking-wider text-[#c5a059] flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span>Financial Reconciliation</span>
+              {/* Financial Totals Reconciliation & Payment Schedule */}
+              <div className="bg-[#181818] border border-[#262626] p-4 rounded-xl space-y-3">
+                <h5 className="font-bold text-xs uppercase tracking-wider text-[#c5a059] flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Financial Reconciliation &amp; Payment Terms</span>
+                  </div>
                 </h5>
 
-                <div className="flex justify-between text-[#b8b0a5]">
-                  <span>Updated Items Subtotal:</span>
-                  <span className="font-mono text-[#fdfbf7]">${updatedSubtotal.toFixed(2)}</span>
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex justify-between text-[#b8b0a5]">
+                    <span>Updated Items Subtotal:</span>
+                    <span className="font-mono text-[#fdfbf7]">${updatedSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-[#b8b0a5]">
+                    <span>Estimated Tax ({(taxRate * 100).toFixed(0)}%):</span>
+                    <span className="font-mono text-[#fdfbf7]">${updatedTax.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-[#262626] text-xs font-bold text-[#fdfbf7]">
+                    <span>Total Agreement Amount:</span>
+                    <span className="font-mono text-sm text-[#c5a059]">${updatedTotal.toFixed(2)}</span>
+                  </div>
+                  {depositPaid > 0 && (
+                    <div className="flex justify-between text-emerald-400 font-bold">
+                      <span>Credited Advance Deposit (Paid to Date):</span>
+                      <span className="font-mono">-${depositPaid.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between text-[#b8b0a5]">
-                  <span>Estimated Tax ({(taxRate * 100).toFixed(0)}%):</span>
-                  <span className="font-mono text-[#fdfbf7]">${updatedTax.toFixed(2)}</span>
+
+                {/* Payment Amount Due Now & Schedule Note */}
+                <div className="pt-2 border-t border-[#262626] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-[#fdfbf7]">
+                      Payment Amount Due Now (If Any)
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setAmountDueNow(0)}
+                        className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#111111] border border-[#333333] text-[#78716c] hover:text-[#fdfbf7] transition"
+                      >
+                        $0 None
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAmountDueNow(Math.round(((updatedTotal - depositPaid) * 0.5) * 100) / 100)}
+                        className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#111111] border border-[#333333] text-[#c5a059] hover:bg-[#c5a059]/10 transition"
+                      >
+                        50% Upfront
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const matTotal = items.filter(i => i.type === 'material').reduce((acc, i) => acc + (Number(i.total) || 0), 0);
+                          setAmountDueNow(Math.round(matTotal * (1 + taxRate) * 100) / 100);
+                        }}
+                        className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#111111] border border-[#333333] text-[#c5a059] hover:bg-[#c5a059]/10 transition"
+                      >
+                        Materials Only
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <div className="sm:col-span-5 relative">
+                      <span className="absolute left-2.5 top-2 text-[#78716c] text-xs font-mono">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={amountDueNow === 0 ? '' : amountDueNow}
+                        placeholder="0.00"
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                          setAmountDueNow(Math.max(0, val));
+                        }}
+                        className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg pl-6 pr-2.5 py-1.5 text-xs text-[#fdfbf7] font-mono font-bold focus:outline-none focus:border-[#c5a059]"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-7">
+                      <input
+                        type="text"
+                        value={dueNowDescription}
+                        onChange={(e) => setDueNowDescription(e.target.value)}
+                        placeholder="What it's due for (optional: e.g. Upfront materials procurement, 50% mobilization fee)"
+                        className="w-full bg-[#121212] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-[#fdfbf7] placeholder-[#78716c] focus:outline-none focus:border-[#c5a059]"
+                      />
+                    </div>
+                  </div>
+
+                  {amountDueNow > 0 && (
+                    <div className="p-2 rounded-lg bg-[#c5a059]/10 border border-[#c5a059]/25 flex items-center justify-between text-[11px]">
+                      <span className="text-[#c5a059] font-medium">
+                        Due Now Upon Signing{dueNowDescription ? ` (${dueNowDescription})` : ''}:
+                      </span>
+                      <span className="font-mono font-bold text-[#fdfbf7]">
+                        ${amountDueNow.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between pt-1 border-t border-[#262626] text-xs font-bold text-[#fdfbf7]">
-                  <span>Total Agreement Amount:</span>
-                  <span className="font-mono text-sm text-[#c5a059]">${updatedTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-emerald-400 font-bold">
-                  <span>Credited Deposit (Paid to Date):</span>
-                  <span className="font-mono">-${depositPaid.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between pt-1.5 border-t border-[#262626] text-sm font-black text-white">
-                  <span>Balance Due upon Completion:</span>
-                  <span className="font-mono text-base text-emerald-400">${balanceDue.toFixed(2)}</span>
+
+                {/* Dynamic Remaining Balance Due Upon Completion */}
+                <div className="flex justify-between pt-2 border-t border-[#262626] text-sm font-black text-white">
+                  <div>
+                    <span>Remaining Balance Due upon Completion:</span>
+                    <span className="block text-[10px] text-[#78716c] font-normal">
+                      Total (${updatedTotal.toFixed(2)}) - Credited Deposit (${depositPaid.toFixed(2)}){amountDueNow > 0 ? ` - Due Now ($${amountDueNow.toFixed(2)})` : ''}
+                    </span>
+                  </div>
+                  <span className="font-mono text-base text-emerald-400 font-black">
+                    ${balanceDueUponCompletion.toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>

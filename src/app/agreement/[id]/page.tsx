@@ -60,7 +60,9 @@ export default function WorkAgreementPage() {
   // Deterministic Cryptographic Tamper-Proof Hash
   const tamperHash = useMemo(() => {
     if (!agreement) return '';
-    const raw = `${contractId}|${agreement.agreementNumber}|${agreement.clientId}|${agreement.updatedTotal.toFixed(2)}|${agreement.depositPaid.toFixed(2)}|${agreement.createdAt}|RomeGA`;
+    const dueNow = (agreement.amountDueNow || 0).toFixed(2);
+    const balanceUponComp = (agreement.balanceDueUponCompletion !== undefined ? agreement.balanceDueUponCompletion : agreement.balanceDue).toFixed(2);
+    const raw = `${contractId}|${agreement.agreementNumber}|${agreement.clientId}|${agreement.updatedTotal.toFixed(2)}|${agreement.depositPaid.toFixed(2)}|${dueNow}|${balanceUponComp}|${agreement.createdAt}|RomeGA`;
     let hash = 0;
     for (let i = 0; i < raw.length; i++) {
       const char = raw.charCodeAt(i);
@@ -157,7 +159,7 @@ export default function WorkAgreementPage() {
         entityType: 'estimate',
         entityId: agreement.id,
         entityTitle: `Contract ${contractId}`,
-        summary: `Company Work Agreement ${agreement.agreementNumber} (${contractId}) initialized and locked. Total scope: $${agreement.updatedTotal.toFixed(2)}${agreement.varianceAmount !== 0 ? ` (Variance: ${agreement.varianceAmount >= 0 ? '+' : ''}$${agreement.varianceAmount.toFixed(2)} - ${agreement.varianceReason || 'Scope revision'})` : ''}.`,
+        summary: `Company Work Agreement ${agreement.agreementNumber} (${contractId}) initialized and locked. Total scope: $${agreement.updatedTotal.toFixed(2)}${agreement.varianceAmount !== 0 ? ` (Variance: ${agreement.varianceAmount >= 0 ? '+' : ''}$${agreement.varianceAmount.toFixed(2)} - ${agreement.varianceReason || 'Scope revision'})` : ''}.${(agreement.amountDueNow ?? 0) > 0 ? ` Due Now upon signing: $${(agreement.amountDueNow ?? 0).toFixed(2)}${agreement.dueNowDescription ? ` (${agreement.dueNowDescription})` : ''}.` : ''} Remaining balance upon completion: $${(agreement.balanceDueUponCompletion !== undefined ? agreement.balanceDueUponCompletion : agreement.balanceDue).toFixed(2)}.`,
         timestamp: agreement.createdAt,
       });
     }
@@ -453,7 +455,7 @@ export default function WorkAgreementPage() {
           </div>
         </div>
 
-        {/* Financial Breakdown & Advance Deposits */}
+        {/* Financial Breakdown, Payment Schedule & Advance Deposits */}
         <div className="my-6 bg-[#161616] print:bg-zinc-50 p-5 rounded-xl print:rounded-none border border-[#222222] print:border-black space-y-2 text-xs">
           <div className="flex justify-between text-[#b8b0a5] print:text-black">
             <span>Updated Scope Total:</span>
@@ -465,9 +467,24 @@ export default function WorkAgreementPage() {
               <span className="font-mono">-${agreement.depositPaid.toFixed(2)}</span>
             </div>
           )}
+          {((agreement.amountDueNow ?? 0) > 0) && (
+            <div className="flex justify-between text-[#c5a059] print:text-black font-bold pt-1.5 border-t border-[#262626] print:border-zinc-300">
+              <div>
+                <span>Payment Amount Due Now (Upon Signing):</span>
+                {agreement.dueNowDescription && (
+                  <span className="block text-[10px] text-[#b8b0a5] print:text-zinc-700 font-normal italic">
+                    Purpose / Terms: {agreement.dueNowDescription}
+                  </span>
+                )}
+              </div>
+              <span className="font-mono text-sm">${(agreement.amountDueNow ?? 0).toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between pt-2 border-t border-[#262626] print:border-black text-sm font-bold text-white print:text-black">
-            <span>Final Balance Due upon Substantial Completion:</span>
-            <span className="font-mono text-base text-[#c5a059] print:text-black font-black">${agreement.balanceDue.toFixed(2)}</span>
+            <span>Remaining Balance Due upon Substantial Completion:</span>
+            <span className="font-mono text-base text-emerald-400 print:text-black font-black">
+              ${(agreement.balanceDueUponCompletion !== undefined ? agreement.balanceDueUponCompletion : agreement.balanceDue).toFixed(2)}
+            </span>
           </div>
         </div>
 
@@ -921,13 +938,25 @@ export default function WorkAgreementPage() {
                   <span className="text-[#78716c]">Executed Scope Total:</span>
                   <span className="text-white font-bold">${agreement.updatedTotal.toFixed(2)}</span>
                 </div>
+                {agreement.depositPaid > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-[#78716c]">Advance Deposit Credited:</span>
+                    <span className="text-emerald-400 font-bold">-${agreement.depositPaid.toFixed(2)}</span>
+                  </div>
+                )}
+                {((agreement.amountDueNow ?? 0) > 0) && (
+                  <div className="flex justify-between">
+                    <span className="text-[#78716c]">Payment Due Now Upon Signing:</span>
+                    <span className="text-[#c5a059] font-bold">
+                      ${(agreement.amountDueNow ?? 0).toFixed(2)}{agreement.dueNowDescription ? ` (${agreement.dueNowDescription})` : ''}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
-                  <span className="text-[#78716c]">Advance Deposit Credited:</span>
-                  <span className="text-emerald-400 font-bold">${agreement.depositPaid.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#78716c]">Net Balance Due:</span>
-                  <span className="text-[#c5a059] font-bold">${agreement.balanceDue.toFixed(2)}</span>
+                  <span className="text-[#78716c]">Remaining Balance Due upon Completion:</span>
+                  <span className="text-emerald-400 font-bold">
+                    ${(agreement.balanceDueUponCompletion !== undefined ? agreement.balanceDueUponCompletion : agreement.balanceDue).toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#78716c]">Contracting Entity:</span>

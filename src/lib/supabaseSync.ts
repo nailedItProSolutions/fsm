@@ -218,6 +218,9 @@ function workAgreementToDbBase(a: WorkAgreement): any {
     variance_amount: a.varianceAmount || 0,
     variance_reason: a.varianceReason || '',
     deposit_paid: a.depositPaid || 0,
+    amount_due_now: a.amountDueNow || 0,
+    due_now_description: a.dueNowDescription || null,
+    balance_due_upon_completion: a.balanceDueUponCompletion !== undefined ? a.balanceDueUponCompletion : a.balanceDue || 0,
     balance_due: a.balanceDue || 0,
     payment_method: a.paymentMethod || null,
     payment_receipt_number: a.paymentReceiptNumber || null,
@@ -249,6 +252,11 @@ function dbToWorkAgreementBase(r: any): WorkAgreement {
     varianceAmount: Number(r.variance_amount || 0),
     varianceReason: r.variance_reason || '',
     depositPaid: Number(r.deposit_paid || 0),
+    amountDueNow: r.amount_due_now !== undefined && r.amount_due_now !== null ? Number(r.amount_due_now) : undefined,
+    dueNowDescription: r.due_now_description || undefined,
+    balanceDueUponCompletion: r.balance_due_upon_completion !== undefined && r.balance_due_upon_completion !== null
+      ? Number(r.balance_due_upon_completion)
+      : Number(r.balance_due || 0),
     balanceDue: Number(r.balance_due || 0),
     paymentMethod: r.payment_method || undefined,
     paymentReceiptNumber: r.payment_receipt_number || undefined,
