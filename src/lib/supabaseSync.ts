@@ -283,6 +283,8 @@ function invoiceToDbBase(i: Invoice): any {
     items: i.items || [],
     subtotal: i.subtotal || 0,
     tax: i.tax || 0,
+    tax_rate: i.taxRate !== undefined ? i.taxRate : (i.taxExempt ? 0 : 0.07),
+    tax_exempt: i.taxExempt ?? false,
     total: i.total || 0,
     amount_paid: i.amountPaid || 0,
     balance_due: i.balanceDue || 0,
@@ -307,6 +309,8 @@ function dbToInvoiceBase(r: any): Invoice {
     items: Array.isArray(r.items) ? r.items : [],
     subtotal: Number(r.subtotal || 0),
     tax: Number(r.tax || 0),
+    taxRate: r.tax_rate !== undefined && r.tax_rate !== null ? Number(r.tax_rate) : undefined,
+    taxExempt: r.tax_exempt !== undefined ? Boolean(r.tax_exempt) : undefined,
     total: Number(r.total || 0),
     amountPaid: Number(r.amount_paid || 0),
     balanceDue: Number(r.balance_due || 0),
@@ -673,6 +677,16 @@ export function syncRecordInBackground(tableName: string, row: any, conflictKey 
         delete fallback.amount_due_now;
         delete fallback.due_now_description;
         delete fallback.balance_due_upon_completion;
+        if (/raw/i.test(msg)) delete fallback.raw;
+        res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
+      }
+    }
+    if (res?.error && tableName === 'invoices') {
+      const msg = res.error.message || '';
+      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
+        const fallback = { ...row };
+        delete fallback.tax_exempt;
+        delete fallback.tax_rate;
         if (/raw/i.test(msg)) delete fallback.raw;
         res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
       }

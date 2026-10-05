@@ -112,9 +112,16 @@ export default function CustomerInvoicePaymentPortal() {
             </div>
 
             <div className="text-left sm:text-right">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#c5a059] bg-[#1a1a1a] px-3 py-1 rounded-full border border-[#c5a059]/30">
-                Customer Invoice
-              </span>
+              <div className="flex items-center sm:justify-end gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#c5a059] bg-[#1a1a1a] px-3 py-1 rounded-full border border-[#c5a059]/30">
+                  Customer Invoice
+                </span>
+                {(invoice.taxExempt || invoice.tax === 0) && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    Tax Exempt
+                  </span>
+                )}
+              </div>
               <h1 className="font-mono text-xl font-bold text-[#fdfbf7] mt-2">{invoice.invoiceNumber}</h1>
               <div className="text-xs text-[#b8b0a5] mt-0.5">Due Date: {invoice.dueDate}</div>
             </div>
@@ -179,7 +186,11 @@ export default function CustomerInvoicePaymentPortal() {
                     <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(invoice.subtotal).toFixed(2)}</td>
                   </tr>
                   <tr>
-                    <td colSpan={3} className="p-3 text-right font-semibold text-[#b8b0a5]">Floyd County Sales Tax (7%):</td>
+                    <td colSpan={3} className="p-3 text-right font-semibold text-[#b8b0a5]">
+                      {invoice.taxExempt || invoice.tax === 0
+                        ? 'Sales Tax (Tax Exempt):'
+                        : `Floyd County Sales Tax (${Math.round((invoice.taxRate ?? 0.07) * 100)}%):`}
+                    </td>
                     <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(invoice.tax).toFixed(2)}</td>
                   </tr>
                   <tr className="bg-[#1c1c1c] text-[#c5a059] font-bold text-sm">

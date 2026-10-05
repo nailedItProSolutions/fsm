@@ -2538,6 +2538,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       ],
       subtotal: sub.amount,
       tax: 0,
+      taxExempt: true,
+      taxRate: 0,
       total: sub.amount,
       amountPaid: sub.amount,
       balanceDue: 0,

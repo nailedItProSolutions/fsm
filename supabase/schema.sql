@@ -171,6 +171,8 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     items JSONB DEFAULT '[]'::jsonb,
     subtotal NUMERIC(12, 2) DEFAULT 0,
     tax NUMERIC(12, 2) DEFAULT 0,
+    tax_rate NUMERIC(6, 4) DEFAULT 0.07,
+    tax_exempt BOOLEAN DEFAULT false,
     total NUMERIC(12, 2) DEFAULT 0,
     amount_paid NUMERIC(12, 2) DEFAULT 0,
     balance_due NUMERIC(12, 2) DEFAULT 0,
@@ -178,7 +180,8 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     stripe_payment_link TEXT,
     due_date DATE,
     paid_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_invoices_client_id ON public.invoices(client_id);
@@ -328,3 +331,7 @@ ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS raw JSONB;
 UPDATE public.work_agreements 
 SET balance_due_upon_completion = balance_due 
 WHERE balance_due_upon_completion IS NULL OR balance_due_upon_completion = 0;
+
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_exempt BOOLEAN DEFAULT false;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(6, 4) DEFAULT 0.07;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS raw JSONB;

@@ -261,6 +261,8 @@ export interface Invoice {
   items: InvoiceItem[];
   subtotal: number;
   tax: number;
+  taxExempt?: boolean;
+  taxRate?: number;
   total: number;
   amountPaid: number;
   balanceDue: number;

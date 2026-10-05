@@ -277,7 +277,14 @@ export const InvoicesList: React.FC = () => {
                       </td>
 
                       <td className="p-4 text-right font-mono font-bold text-sm text-[#fdfbf7]">
-                        ${Number(invoice.total).toFixed(2)}
+                        <div>${Number(invoice.total).toFixed(2)}</div>
+                        {(invoice.taxExempt || invoice.tax === 0) && (
+                          <div className="mt-0.5">
+                            <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded font-sans">
+                              Tax Exempt
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       <td className="p-4 text-center">
@@ -626,7 +633,11 @@ export const InvoicesList: React.FC = () => {
                     <span className="font-mono font-semibold">${Number(selectedInvoiceForPrint.subtotal).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Floyd County Sales Tax (7%):</span>
+                    <span>
+                      {selectedInvoiceForPrint.taxExempt || selectedInvoiceForPrint.tax === 0
+                        ? 'Sales Tax (Tax Exempt):'
+                        : `Floyd County Sales Tax (${Math.round((selectedInvoiceForPrint.taxRate ?? 0.07) * 100)}%):`}
+                    </span>
                     <span className="font-mono font-semibold">${Number(selectedInvoiceForPrint.tax).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-900 font-black text-sm pt-2 border-t border-gray-300">

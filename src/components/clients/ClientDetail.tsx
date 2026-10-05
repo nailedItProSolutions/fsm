@@ -562,7 +562,14 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
                       )}
                     </td>
                     <td className="px-6 py-4 text-right font-mono font-bold text-[#fdfbf7]">
-                      ${inv.total.toFixed(2)}
+                      <div>${inv.total.toFixed(2)}</div>
+                      {(inv.taxExempt || inv.tax === 0) && (
+                        <div className="mt-0.5">
+                          <span className="text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded font-sans tracking-wide">
+                            Tax Exempt
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right font-mono font-bold text-[#FF8A00]">
                       ${inv.balanceDue.toFixed(2)}

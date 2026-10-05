@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useActiveFSMData } from '@/lib/useStore';
 import { InvoiceItem, Job } from '@/types';
-import { X, Plus, Trash2, Receipt, Calculator, Calendar, FileText } from 'lucide-react';
+import { X, Plus, Trash2, Receipt, Calculator, Calendar, FileText, ShieldCheck } from 'lucide-react';
 
 interface InvoiceBuilderModalProps {
   isOpen: boolean;
@@ -21,6 +21,8 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
+  const [isTaxExempt, setIsTaxExempt] = useState(false);
+  const [taxRate, setTaxRate] = useState(0.07);
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 15);
@@ -144,8 +146,8 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   };
 
   const subtotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-  const taxRate = 0.07; // Floyd County 7%
-  const tax = Math.round(subtotal * taxRate * 100) / 100;
+  const effectiveTaxRate = isTaxExempt ? 0 : taxRate;
+  const tax = isTaxExempt ? 0 : Math.round(subtotal * effectiveTaxRate * 100) / 100;
   const total = Math.round((subtotal + tax) * 100) / 100;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -174,6 +176,8 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
       items,
       subtotal,
       tax,
+      taxExempt: isTaxExempt,
+      taxRate: effectiveTaxRate,
       total,
       amountPaid: 0,
       balanceDue: total,
@@ -198,7 +202,7 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
             <div>
               <h2 className="text-lg font-bold font-heading text-[#fdfbf7]">Create Customer Invoice</h2>
               <p className="text-xs text-[#b8b0a5]">
-                Generate invoice with Floyd County 7% sales tax & instant Stripe payment link
+                Generate invoice with optional tax exemption or Floyd County sales tax & instant Stripe payment link
               </p>
             </div>
           </div>
@@ -397,6 +401,58 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
             </div>
           </div>
 
+          {/* Tax Exemption Control Card */}
+          <div
+            className={`p-4 rounded-xl border transition-all ${
+              isTaxExempt
+                ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
+                : 'bg-[#181818] border-[#262626] text-[#b8b0a5]'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isTaxExempt}
+                  onChange={(e) => setIsTaxExempt(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-[#3a3a3a] bg-[#141414] text-[#c5a059] focus:ring-[#c5a059] cursor-pointer"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#fdfbf7] flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      Tax-Exempt Invoice (0% Sales Tax)
+                    </span>
+                    {isTaxExempt && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                        Exempt Applied
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#8e877f] mt-1 leading-relaxed">
+                    Check this option to prevent charging double taxes on materials where sales tax was already paid at supply stores, or for labor-only / tax-exempt commercial accounts.
+                  </p>
+                </div>
+              </label>
+
+              {!isTaxExempt && (
+                <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto bg-[#202020] px-2.5 py-1.5 rounded-lg border border-[#2e2e2e]">
+                  <span className="text-[11px] text-[#78716c]">Rate:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={Number((taxRate * 100).toFixed(2))}
+                    onChange={(e) => setTaxRate((parseFloat(e.target.value) || 0) / 100)}
+                    className="w-14 bg-[#141414] border border-[#333333] rounded px-1.5 py-0.5 text-xs text-[#fdfbf7] text-right font-mono focus:outline-none focus:border-[#c5a059]"
+                  />
+                  <span className="text-xs text-[#b8b0a5]">%</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Pricing Summary */}
           <div className="bg-[#181818] border border-[#262626] rounded-xl p-4 flex flex-col items-end space-y-1.5 text-xs">
             <div className="flex justify-between w-64 text-[#b8b0a5]">
@@ -404,8 +460,18 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
               <span className="font-mono text-[#fdfbf7] font-semibold">${Number(subtotal).toFixed(2)}</span>
             </div>
             <div className="flex justify-between w-64 text-[#b8b0a5]">
-              <span>Floyd County Tax (7%):</span>
-              <span className="font-mono text-[#fdfbf7] font-semibold">${Number(tax).toFixed(2)}</span>
+              <span>
+                {isTaxExempt
+                  ? 'Sales Tax (Tax Exempt):'
+                  : `Floyd County Tax (${Number(taxRate * 100).toFixed(0)}%):`}
+              </span>
+              <span
+                className={`font-mono font-semibold ${
+                  isTaxExempt ? 'text-emerald-400' : 'text-[#fdfbf7]'
+                }`}
+              >
+                ${Number(tax).toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between w-64 pt-2 border-t border-[#333333] text-sm font-bold text-[#c5a059]">
               <span>Total Balance Due:</span>
