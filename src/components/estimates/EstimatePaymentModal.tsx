@@ -43,7 +43,7 @@ export const EstimatePaymentModal: React.FC<EstimatePaymentModalProps> = ({
   const [amount, setAmount] = useState<string>(remainingBalance > 0 ? (alreadyPaid === 0 ? halfDeposit.toString() : remainingBalance.toString()) : '50.00');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [notes, setNotes] = useState('Deposit received for materials & commencement');
-  const [receivedBy, setReceivedBy] = useState('Brianna Cronan - HR Mgr');
+  const [receivedBy, setReceivedBy] = useState('Charles Willis - Owner & Field Specialist');
   const [error, setError] = useState<string | null>(null);
 
   // Success state & receipt modal

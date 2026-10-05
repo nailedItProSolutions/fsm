@@ -43,10 +43,10 @@ export const INITIAL_USERS: UserProfile[] = [
   {
     uid: 'user-admin-1',
     email: 'admin@nailedit.com',
-    displayName: 'Brianna Cronan - HR Mgr',
+    displayName: 'Charles Willis - Owner & Field Specialist',
     role: 'admin',
-    phone: '(512) 555-0100',
-    employeeId: '1019974',
+    phone: '(706) 844-8193',
+    employeeId: '1014958',
     pin: '8572',
     active: true,
     createdAt: '2024-01-10T08:00:00Z',
@@ -827,7 +827,7 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
     netPay: 1120.0, // 1120 gross + 50 bonus - 50 deduction = 1120 net
     auditConfirmed: true,
     auditConfirmedAt: '2024-10-21T10:00:00Z',
-    auditConfirmedBy: 'Brianna Cronan - HR Mgr',
+    auditConfirmedBy: 'Charles Willis - Owner & Field Specialist',
     status: 'verified_paid',
     locked: true,
     paymentVerification: {
@@ -838,7 +838,7 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
       paymentMethod: 'check',
       checkImageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
       notes: 'Floyd County First National Bank Payroll Check #CHK-94821 issued to Charles Willis. Cleared on 10/22/2024.',
-      verifiedBy: 'Brianna Cronan - HR Mgr',
+      verifiedBy: 'Charles Willis - Owner & Field Specialist',
       verifiedAt: '2024-10-21T14:30:00Z',
     },
     createdAt: '2024-10-20T18:00:00Z',
@@ -872,8 +872,8 @@ export const INITIAL_WEEKLY_TIMESHEETS: WeeklyTimesheet[] = [
 export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'audit-seed-1',
-    employeeId: '1019974',
-    employeeName: 'Brianna Cronan - HR Mgr',
+    employeeId: '1014958',
+    employeeName: 'Charles Willis - Owner & Field Specialist',
     employeeRole: 'admin',
     actionType: 'payment_verify',
     entityType: 'timesheet',
@@ -887,7 +887,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'audit-seed-2',
     employeeId: '1014958',
-    employeeName: 'Charles Willis',
+    employeeName: 'Charles Willis - Owner & Field Specialist',
     employeeRole: 'technician',
     actionType: 'checklist_toggle',
     entityType: 'job',
@@ -900,8 +900,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'audit-seed-3',
-    employeeId: '1019974',
-    employeeName: 'Brianna Cronan - HR Mgr',
+    employeeId: '1014958',
+    employeeName: 'Charles Willis - Owner & Field Specialist',
     employeeRole: 'admin',
     actionType: 'status_change',
     entityType: 'job',
@@ -914,8 +914,8 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'audit-seed-4',
-    employeeId: '1019974',
-    employeeName: 'Brianna Cronan - HR Mgr',
+    employeeId: '1014958',
+    employeeName: 'Charles Willis - Owner & Field Specialist',
     employeeRole: 'admin',
     actionType: 'create',
     entityType: 'client',
@@ -971,18 +971,54 @@ export class FSMStore {
           this.weeklyTimesheets = parsed.weeklyTimesheets || INITIAL_WEEKLY_TIMESHEETS;
           // Load users and migrate old technician seeds
           const loadedUsers: UserProfile[] = parsed.users || INITIAL_USERS;
-          this.users = loadedUsers.filter(
+          const filteredUsers = loadedUsers.filter(
             (u) => u.employeeId !== 'TECH-101' && u.employeeId !== 'TECH-102' && u.displayName !== 'David Lopez' && u.displayName !== 'Mike Rivera'
           );
+          // Migrate any cached users from Brianna Cronan to Charles Willis - Owner & Field Specialist
+          this.users = filteredUsers.map((u) => {
+            if (u.displayName?.includes('Brianna') || u.uid === 'user-admin-1') {
+              return {
+                ...u,
+                displayName: 'Charles Willis - Owner & Field Specialist',
+                role: 'admin',
+                phone: '(706) 844-8193',
+                employeeId: '1014958',
+                pin: '8572',
+              };
+            }
+            return u;
+          });
+
           // Ensure Charles Willis (1014958) is always active in the roster
           const charlesExists = this.users.some((u) => u.employeeId === '1014958');
           if (!charlesExists) {
             const charlesDefault = INITIAL_USERS.find((u) => u.employeeId === '1014958');
             if (charlesDefault) {
-              this.users.splice(1, 0, { ...charlesDefault });
+              this.users.unshift({ ...charlesDefault });
             }
           }
-          this.auditLogs = parsed.auditLogs || INITIAL_AUDIT_LOGS;
+
+          // Migrate cached auth user in localStorage if previously Brianna
+          try {
+            const rawAuth = localStorage.getItem('nailed_it_auth_user');
+            if (rawAuth && rawAuth.includes('Brianna')) {
+              const parsedAuth = JSON.parse(rawAuth);
+              parsedAuth.displayName = 'Charles Willis - Owner & Field Specialist';
+              parsedAuth.role = 'admin';
+              parsedAuth.employeeId = '1014958';
+              parsedAuth.pin = '8572';
+              parsedAuth.phone = '(706) 844-8193';
+              localStorage.setItem('nailed_it_auth_user', JSON.stringify(parsedAuth));
+            }
+          } catch (e) {}
+
+          this.auditLogs = (parsed.auditLogs || INITIAL_AUDIT_LOGS).map((l: AuditLog) => {
+            if (l.employeeName?.includes('Brianna')) {
+              return { ...l, employeeName: 'Charles Willis - Owner & Field Specialist', employeeId: '1014958' };
+            }
+            return l;
+          });
+
           this.workAgreements = (parsed.workAgreements || []).map((a: WorkAgreement) => {
             if (a.contractorSignedBy && a.contractorSignedBy.includes('Brianna')) {
               return { ...a, contractorSignedBy: 'Charles Willis - Owner & Field Specialist' };
@@ -1249,8 +1285,8 @@ export class FSMStore {
       finalTitle = entityTitle;
     }
 
-    let employeeId = '1019974';
-    let employeeName = 'Brianna Cronan - HR Mgr';
+    let employeeId = '1014958';
+    let employeeName = 'Charles Willis - Owner & Field Specialist';
     let employeeRole: UserRole = 'admin';
 
     if (typeof window !== 'undefined') {
@@ -1325,6 +1361,71 @@ export class FSMStore {
     this.logActivity('status_change', 'client', id, 'Client restored from archive');
     this.persist();
     syncRecordInBackground('clients', clientToDb(client));
+  }
+
+  public clearClientHistory(clientId: string, authorizingUser?: UserProfile): boolean {
+    const client = this.clients.find((c) => c.id === clientId);
+    if (!client) return false;
+
+    const clientName = client.isCompany ? client.companyName : `${client.firstName} ${client.lastName}`;
+    const clientJobs = this.jobs.filter((j) => j.clientId === clientId);
+    const clientEstimates = this.estimates.filter((e) => e.clientId === clientId);
+    const clientInvoices = this.invoices.filter((i) => i.clientId === clientId);
+
+    // 1. Delete associated jobs in background
+    clientJobs.forEach((j) => deleteRecordInBackground('jobs', j.id));
+
+    // 2. Delete associated estimates and work agreements in background
+    clientEstimates.forEach((e) => {
+      if (e.workAgreementId) {
+        deleteRecordInBackground('work_agreements', e.workAgreementId);
+      }
+      deleteRecordInBackground('estimates', e.id);
+    });
+
+    // 3. Delete associated invoices in background
+    clientInvoices.forEach((i) => deleteRecordInBackground('invoices', i.id));
+
+    // 4. Remove work agreements linked to these estimates or client
+    const estIds = new Set(clientEstimates.map((e) => e.id));
+    this.workAgreements = this.workAgreements.filter(
+      (w) => !estIds.has(w.estimateId) && w.clientId !== clientId
+    );
+
+    // 5. Purge from local memory
+    this.jobs = this.jobs.filter((j) => j.clientId !== clientId);
+    this.estimates = this.estimates.filter((e) => e.clientId !== clientId);
+    this.invoices = this.invoices.filter((i) => i.clientId !== clientId);
+
+    // 6. Reset client lifetime counters
+    client.totalSpent = 0;
+    client.activeJobsCount = 0;
+    client.updatedAt = new Date().toISOString();
+    syncRecordInBackground('clients', clientToDb(client));
+
+    // 7. Clear service history references on properties
+    this.properties = this.properties.map((p) => {
+      if (p.clientId === clientId) {
+        const updated = { ...p, serviceHistoryJobIds: [] };
+        syncRecordInBackground('properties', propertyToDb(updated));
+        return updated;
+      }
+      return p;
+    });
+
+    this.persist();
+
+    // 8. Seal in immutable audit trail
+    this.logActivity(
+      'delete',
+      'client',
+      clientId,
+      `Purged all service history (${clientJobs.length} jobs, ${clientEstimates.length} estimates, ${clientInvoices.length} invoices) for client "${clientName}"${
+        authorizingUser ? ` [Strict PIN Authorized by ${authorizingUser.displayName} (Employee ID: ${authorizingUser.employeeId})]` : ''
+      }`
+    );
+
+    return true;
   }
 
 public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'totalSpent' | 'activeJobsCount' | 'propertyIds'>, initialProperty?: Omit<Property, 'id' | 'clientId' | 'createdAt' | 'serviceHistoryJobIds'>): Client {

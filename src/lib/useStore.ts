@@ -38,6 +38,7 @@ export function useFSMStore() {
     deleteWorkAgreement: (agreementId: string, authorizingUser?: any) => store.deleteWorkAgreement(agreementId, authorizingUser),
     deleteInvoice: (invoiceId: string, authorizingUser?: any) => store.deleteInvoice(invoiceId, authorizingUser),
     deleteJob: (jobId: string, authorizingUser?: any) => store.deleteJob(jobId, authorizingUser),
+    clearClientHistory: (clientId: string, authorizingUser?: any) => store.clearClientHistory(clientId, authorizingUser),
     getPropertiesByClientId: (clientId: string) => store.getPropertiesByClientId(clientId),
     getPropertyById: (id: string) => store.getPropertyById(id),
     getJobsByClientId: (clientId: string) => store.getJobsByClientId(clientId),

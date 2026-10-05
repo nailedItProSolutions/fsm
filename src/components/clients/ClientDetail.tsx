@@ -26,8 +26,10 @@ import {
   ShieldCheck,
   Sparkles,
   Check,
-  Activity
+  Activity,
+  Trash2
 } from 'lucide-react';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 import { DynamicSubscriptionCalculator } from '@/components/pricing/DynamicSubscriptionCalculator';
 import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
@@ -45,7 +47,8 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
     getSubscriptionsByClientId,
     createSubscription,
     cancelSubscription,
-    triggerSubscriptionRenewal
+    triggerSubscriptionRenewal,
+    clearClientHistory
   } = useFSMStore();
 
   const [activeTab, setActiveTab] = useState<'properties' | 'history' | 'billing' | 'subscriptions' | 'notes' | 'audit'>(initialTab || 'properties');
@@ -53,6 +56,15 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
   const [showNewSubModal, setShowNewSubModal] = useState(false);
   const [selectedPropIdForSub, setSelectedPropIdForSub] = useState('');
   const [renewalNotice, setRenewalNotice] = useState<{ jobNum: string; invNum: string; subId: string } | null>(null);
+  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
+  const [historyClearedNotice, setHistoryClearedNotice] = useState(false);
+
+  const handleConfirmClearHistory = (authorizingUser: any) => {
+    clearClientHistory(client.id, authorizingUser);
+    setShowClearHistoryModal(false);
+    setHistoryClearedNotice(true);
+    setTimeout(() => setHistoryClearedNotice(false), 5000);
+  };
 
   const properties = getPropertiesByClientId(client.id);
   const jobs = getJobsByClientId(client.id);
@@ -146,6 +158,14 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
           {/*  */}
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setShowClearHistoryModal(true)}
+              title="Clear all job and service history for this client (Requires PIN)"
+              className="bg-red-950/40 hover:bg-red-900/60 text-red-300 text-xs font-bold px-3.5 py-2.5 rounded-xl border border-red-800/50 transition flex items-center space-x-1.5 shadow-sm"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <span>Clear History</span>
+            </button>
+            <button
               onClick={() => setShowAddProperty(true)}
               className="bg-[#1e1e1e] hover:bg-[#282828] text-[#fdfbf7] text-xs font-bold px-3.5 py-2.5 rounded-xl border border-[#333333] transition flex items-center space-x-1.5 shadow-sm"
             >
@@ -161,6 +181,15 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
             </Link>
           </div>
         </div>
+
+        {historyClearedNotice && (
+          <div className="mt-4 bg-emerald-950/40 border border-emerald-600/50 p-3 rounded-xl flex items-center space-x-3 text-emerald-200 text-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <span className="font-bold">Client History Purged:</span> All past jobs, estimates, invoices, and service records were permanently removed with verified employee PIN authorization.
+            </div>
+          </div>
+        )}
 
         {/*  */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#222222]">
@@ -373,13 +402,24 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
               </h3>
               <p className="text-xs text-[#b8b0a5]">Detailed record of all maintenance and repair work orders</p>
             </div>
-            <Link
-              href={`/dashboard/schedule?clientId=${client.id}`}
-              className="bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold px-3.5 py-2 rounded-lg transition flex items-center space-x-1.5 shadow"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Schedule New Work Order</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              {jobs.length > 0 && (
+                <button
+                  onClick={() => setShowClearHistoryModal(true)}
+                  className="bg-red-950/40 hover:bg-red-900/60 text-red-300 text-xs font-bold px-3.5 py-2 rounded-lg border border-red-800/50 transition flex items-center space-x-1.5 shadow"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  <span>Clear Service History</span>
+                </button>
+              )}
+              <Link
+                href={`/dashboard/schedule?clientId=${client.id}`}
+                className="bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold px-3.5 py-2 rounded-lg transition flex items-center space-x-1.5 shadow"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Schedule New Work Order</span>
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -791,6 +831,19 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
         clientId={client.id}
         clientName={client.isCompany ? client.companyName || '' : `${client.firstName} ${client.lastName}`}
       />
+
+      {/* Clear Client History Confirmation Modal with Employee PIN Verification */}
+      {showClearHistoryModal && (
+        <DeleteWithPinModal
+          isOpen={showClearHistoryModal}
+          onClose={() => setShowClearHistoryModal(false)}
+          onConfirm={handleConfirmClearHistory}
+          title="Clear Client Service History"
+          itemName={`${client.isCompany ? client.companyName : `${client.firstName} ${client.lastName}`} (All Jobs, Invoices, & Service Logs)`}
+          itemType="client history"
+          warningMessage="DANGER: This will permanently delete all jobs, work orders, estimates, invoices, and service records associated with this client. The client profile will be retained, but all transaction history and spending counters will be reset to zero. This action is irreversible and requires strict employee PIN confirmation."
+        />
+      )}
     </div>
   );
 };

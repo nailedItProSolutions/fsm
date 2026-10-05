@@ -18,17 +18,26 @@ import {
   Calendar,
   Filter,
   DollarSign,
-  Briefcase
+  Briefcase,
+  Trash2
 } from 'lucide-react';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export const ClientList: React.FC = () => {
-  const { clients, properties, jobs, archiveClient, unarchiveClient } = useFSMStore();
+  const { clients, properties, jobs, archiveClient, unarchiveClient, clearClientHistory } = useFSMStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'company' | 'residential'>('all');
   const [filterArchived, setFilterArchived] = useState<'active' | 'archived'>('active');
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
   const [activeClientForProp, setActiveClientForProp] = useState<Client | null>(null);
+  const [clientToClearHistory, setClientToClearHistory] = useState<Client | null>(null);
+
+  const handleConfirmClearHistory = (authorizingUser: any) => {
+    if (!clientToClearHistory) return;
+    clearClientHistory(clientToClearHistory.id, authorizingUser);
+    setClientToClearHistory(null);
+  };
 
   // Filter clients based on query and type
   const filteredClients = useMemo(() => {
@@ -321,9 +330,16 @@ export const ClientList: React.FC = () => {
                             }
                           }
                         }}
-                        className={`inline-block border font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow ${client.isArchived ? 'bg-[#1a1a1a] hover:bg-[#252525] text-emerald-400 border-emerald-900/50' : 'bg-[#1a1a1a] hover:bg-red-950/40 text-red-400 border-[#333333] hover:border-red-900/50'}`}
+                        className={`inline-block border font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow ${client.isArchived ? 'bg-[#1a1a1a] hover:bg-[#252525] text-emerald-400 border-emerald-900/50' : 'bg-[#1a1a1a] hover:bg-red-950/40 text-[#b8b0a5] border-[#333333] hover:border-red-900/50'}`}
                       >
                         {client.isArchived ? 'Unarchive' : 'Archive'}
+                      </button>
+                      <button
+                        onClick={() => setClientToClearHistory(client)}
+                        title="Clear client service history (Requires PIN)"
+                        className="inline-block bg-[#1a1a1a] hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-[#333333] hover:border-red-900/50 font-bold text-[11px] px-2 py-1.5 rounded-lg transition shadow"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 inline" />
                       </button>
                     </td>
                   </tr>
@@ -362,6 +378,19 @@ export const ClientList: React.FC = () => {
           onClose={() => setActiveClientForProp(null)}
           clientId={activeClientForProp.id}
           clientName={activeClientForProp.isCompany ? activeClientForProp.companyName || '' : `${activeClientForProp.firstName} ${activeClientForProp.lastName}`}
+        />
+      )}
+
+      {/* Clear Client History Confirmation Modal with Employee PIN Verification */}
+      {clientToClearHistory && (
+        <DeleteWithPinModal
+          isOpen={!!clientToClearHistory}
+          onClose={() => setClientToClearHistory(null)}
+          onConfirm={handleConfirmClearHistory}
+          title="Clear Client Service History"
+          itemName={`${clientToClearHistory.isCompany ? clientToClearHistory.companyName : `${clientToClearHistory.firstName} ${clientToClearHistory.lastName}`} (All Jobs, Invoices, & Service Logs)`}
+          itemType="client history"
+          warningMessage="DANGER: This will permanently delete all jobs, work orders, estimates, invoices, and service records associated with this client. The client profile will be retained, but all transaction history and spending counters will be reset to zero. This action is irreversible and requires strict employee PIN confirmation."
         />
       )}
     </div>
