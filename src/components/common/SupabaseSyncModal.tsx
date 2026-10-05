@@ -27,7 +27,7 @@ import {
   testSupabaseConnection,
 } from '@/lib/supabase';
 import { useFSMStore } from '@/lib/useStore';
-import { SUPABASE_SCHEMA_SQL } from '@/lib/supabaseSchemaSql';
+import { SUPABASE_SCHEMA_SQL, SUPABASE_MIGRATION_ADD_PAYMENT_FIELDS_SQL } from '@/lib/supabaseSchemaSql';
 
 interface SupabaseSyncModalProps {
   isOpen: boolean;
@@ -65,7 +65,9 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({ isOpen, on
   } | null>(null);
 
   // Schema copy state
+  const [schemaView, setSchemaView] = useState<'migration' | 'full'>('migration');
   const [copiedSchema, setCopiedSchema] = useState(false);
+  const [copiedMigration, setCopiedMigration] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Load existing credentials on mount / open
@@ -174,6 +176,16 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({ isOpen, on
       setTimeout(() => setCopiedSchema(false), 3000);
     } catch (err) {
       console.error('Failed to copy schema:', err);
+    }
+  };
+
+  const handleCopyMigration = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPABASE_MIGRATION_ADD_PAYMENT_FIELDS_SQL);
+      setCopiedMigration(true);
+      setTimeout(() => setCopiedMigration(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy migration:', err);
     }
   };
 
@@ -580,71 +592,157 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({ isOpen, on
             </div>
           )}
 
-          {/* TAB 3: SCHEMA SQL */}
+          {/* TAB 3: SCHEMA SQL & MIGRATIONS */}
           {activeTab === 'schema' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-white text-sm">PostgreSQL Schema Definition</h4>
-                  <p className="text-[#b8b0a5] text-xs">
-                    Run this SQL script in your Supabase project&apos;s SQL Editor to create all 11 tables with Row-Level Security.
-                  </p>
+              {/* Sub-view toggle: Migration vs Full Schema */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#161616] p-2.5 rounded-xl border border-[#2a2a2a]">
+                <div className="flex items-center gap-1.5 p-1 bg-[#101010] border border-[#262626] rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setSchemaView('migration')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+                      schemaView === 'migration'
+                        ? 'bg-[#c5a059] text-black shadow'
+                        : 'text-[#b8b0a5] hover:text-white'
+                    }`}
+                  >
+                    <span>⚡ Run Migration (Add Payment Fields)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSchemaView('full')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 ${
+                      schemaView === 'full'
+                        ? 'bg-[#c5a059] text-black shadow'
+                        : 'text-[#b8b0a5] hover:text-white'
+                    }`}
+                  >
+                    <span>📦 Full Initial Schema (11 Tables)</span>
+                  </button>
                 </div>
+
                 <div className="flex items-center gap-2">
                   <a
                     href="https://supabase.com/dashboard"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-[#1e1e1e] hover:bg-[#282828] text-white border border-[#333] transition flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-[#1e1e1e] hover:bg-[#282828] text-white border border-[#333] transition flex items-center gap-1.5 text-xs"
                   >
                     <span>Supabase Dashboard</span>
                     <ExternalLink className="w-3.5 h-3.5 text-[#c5a059]" />
                   </a>
-                  <button
-                    onClick={handleCopySchema}
-                    className="px-3.5 py-1.5 rounded-lg bg-[#c5a059] hover:bg-[#b08d4b] text-black font-bold transition flex items-center gap-1.5 shadow"
-                  >
-                    {copiedSchema ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-black" />
-                        <span>Copied to Clipboard!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy SQL Script</span>
-                      </>
-                    )}
-                  </button>
+
+                  {schemaView === 'migration' ? (
+                    <button
+                      onClick={handleCopyMigration}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#c5a059] hover:bg-[#b08d4b] text-black font-bold transition flex items-center gap-1.5 shadow text-xs"
+                    >
+                      {copiedMigration ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-black" />
+                          <span>Copied Migration SQL!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Migration SQL</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleCopySchema}
+                      className="px-3.5 py-1.5 rounded-lg bg-[#c5a059] hover:bg-[#b08d4b] text-black font-bold transition flex items-center gap-1.5 shadow text-xs"
+                    >
+                      {copiedSchema ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-black" />
+                          <span>Copied Full Schema!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Full Schema SQL</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Instructions list */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
-                <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
-                  <span className="font-bold text-[#c5a059]">1. Create Project:</span>
-                  <p className="text-[#b8b0a5] mt-1">Create a free project at supabase.com.</p>
-                </div>
-                <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
-                  <span className="font-bold text-[#c5a059]">2. Open SQL Editor:</span>
-                  <p className="text-[#b8b0a5] mt-1">In the sidebar, click the SQL Editor icon.</p>
-                </div>
-                <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
-                  <span className="font-bold text-[#c5a059]">3. Paste &amp; Run:</span>
-                  <p className="text-[#b8b0a5] mt-1">Paste the script below and click &quot;Run&quot;.</p>
-                </div>
-                <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
-                  <span className="font-bold text-[#c5a059]">4. Push Data:</span>
-                  <p className="text-[#b8b0a5] mt-1">Return here and click &quot;Migrate Local Data&quot;.</p>
-                </div>
-              </div>
+              {schemaView === 'migration' ? (
+                <>
+                  <div>
+                    <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Incremental Migration: Add Payment Schedule Fields</span>
+                    </h4>
+                    <p className="text-[#b8b0a5] text-xs mt-0.5">
+                      Run this quick SQL script in your Supabase SQL Editor to add <code>amount_due_now</code>, <code>due_now_description</code>, and <code>balance_due_upon_completion</code> to the existing <code>work_agreements</code> table without altering existing data.
+                    </p>
+                  </div>
 
-              {/* SQL Code Block */}
-              <div className="relative">
-                <pre className="bg-[#0c0c0c] border border-[#2a2a2a] rounded-xl p-4 text-[11px] font-mono text-[#c5a059] overflow-x-auto max-h-[300px] leading-relaxed">
-                  {SUPABASE_SCHEMA_SQL}
-                </pre>
-              </div>
+                  {/* 3 Step Guide */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">1. Copy Script:</span>
+                      <p className="text-[#b8b0a5] mt-1">Click the &quot;Copy Migration SQL&quot; button above.</p>
+                    </div>
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">2. Open SQL Editor:</span>
+                      <p className="text-[#b8b0a5] mt-1">In Supabase Dashboard sidebar, click SQL Editor &rarr; New query.</p>
+                    </div>
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">3. Paste &amp; Run:</span>
+                      <p className="text-[#b8b0a5] mt-1">Paste the query and click &quot;Run&quot;. Completes in &lt;1 second.</p>
+                    </div>
+                  </div>
+
+                  {/* SQL Code Block */}
+                  <div className="relative">
+                    <pre className="bg-[#0c0c0c] border border-[#2a2a2a] rounded-xl p-4 text-[11px] font-mono text-emerald-400 overflow-x-auto max-h-[260px] leading-relaxed">
+                      {SUPABASE_MIGRATION_ADD_PAYMENT_FIELDS_SQL}
+                    </pre>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">PostgreSQL Full Initial Schema</h4>
+                    <p className="text-[#b8b0a5] text-xs mt-0.5">
+                      Use this comprehensive script when creating a fresh Supabase database. Configures all 11 tables, indexes, and Row-Level Security policies.
+                    </p>
+                  </div>
+
+                  {/* Instructions list */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">1. Create Project:</span>
+                      <p className="text-[#b8b0a5] mt-1">Create a free project at supabase.com.</p>
+                    </div>
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">2. Open SQL Editor:</span>
+                      <p className="text-[#b8b0a5] mt-1">In the sidebar, click the SQL Editor icon.</p>
+                    </div>
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">3. Paste &amp; Run:</span>
+                      <p className="text-[#b8b0a5] mt-1">Paste the script below and click &quot;Run&quot;.</p>
+                    </div>
+                    <div className="bg-[#181818] p-3 rounded-lg border border-[#282828]">
+                      <span className="font-bold text-[#c5a059]">4. Push Data:</span>
+                      <p className="text-[#b8b0a5] mt-1">Return here and click &quot;Migrate Local Data&quot;.</p>
+                    </div>
+                  </div>
+
+                  {/* SQL Code Block */}
+                  <div className="relative">
+                    <pre className="bg-[#0c0c0c] border border-[#2a2a2a] rounded-xl p-4 text-[11px] font-mono text-[#c5a059] overflow-x-auto max-h-[260px] leading-relaxed">
+                      {SUPABASE_SCHEMA_SQL}
+                    </pre>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

@@ -143,6 +143,9 @@ CREATE TABLE IF NOT EXISTS public.work_agreements (
     variance_amount NUMERIC(12, 2) DEFAULT 0,
     variance_reason TEXT DEFAULT '',
     deposit_paid NUMERIC(12, 2) DEFAULT 0,
+    amount_due_now NUMERIC(12, 2) DEFAULT 0,
+    due_now_description TEXT,
+    balance_due_upon_completion NUMERIC(12, 2) DEFAULT 0,
     balance_due NUMERIC(12, 2) DEFAULT 0,
     payment_method TEXT,
     payment_receipt_number TEXT,
@@ -152,7 +155,8 @@ CREATE TABLE IF NOT EXISTS public.work_agreements (
     contractor_signed_at TIMESTAMPTZ,
     client_signature_name TEXT,
     client_signed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_agreements_estimate_id ON public.work_agreements(estimate_id);
@@ -315,4 +319,49 @@ BEGIN
         ', t);
     END LOOP;
 END $$;
+
+-- ==============================================================================
+-- IDEMPOTENT INCREMENTAL MIGRATIONS (Safe for existing databases)
+-- ==============================================================================
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS amount_due_now NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS due_now_description TEXT;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS balance_due_upon_completion NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS raw JSONB;
+
+UPDATE public.work_agreements 
+SET balance_due_upon_completion = balance_due 
+WHERE balance_due_upon_completion IS NULL OR balance_due_upon_completion = 0;
+`;
+
+export const SUPABASE_MIGRATION_ADD_PAYMENT_FIELDS_SQL = `-- ==============================================================================
+-- NAILED IT PROPERTY SOLUTIONS - SUPABASE INCREMENTAL MIGRATION
+-- Run this in Supabase Project -> SQL Editor -> Run
+-- ==============================================================================
+
+-- 1. Add amount_due_now (Payment amount due upon contract execution)
+ALTER TABLE public.work_agreements 
+ADD COLUMN IF NOT EXISTS amount_due_now NUMERIC(12, 2) DEFAULT 0;
+
+-- 2. Add due_now_description (Optional note e.g. Upfront materials procurement)
+ALTER TABLE public.work_agreements 
+ADD COLUMN IF NOT EXISTS due_now_description TEXT;
+
+-- 3. Add balance_due_upon_completion (Remaining balance upon completion)
+ALTER TABLE public.work_agreements 
+ADD COLUMN IF NOT EXISTS balance_due_upon_completion NUMERIC(12, 2) DEFAULT 0;
+
+-- 4. Add raw JSONB payload column for future-proof sync
+ALTER TABLE public.work_agreements 
+ADD COLUMN IF NOT EXISTS raw JSONB;
+
+-- 5. Backfill existing agreements so balance_due_upon_completion = balance_due
+UPDATE public.work_agreements 
+SET balance_due_upon_completion = balance_due 
+WHERE balance_due_upon_completion IS NULL OR balance_due_upon_completion = 0;
+
+-- Verification
+SELECT column_name, data_type, column_default 
+FROM information_schema.columns 
+WHERE table_name = 'work_agreements' 
+  AND column_name IN ('amount_due_now', 'due_now_description', 'balance_due_upon_completion', 'raw');
 `;

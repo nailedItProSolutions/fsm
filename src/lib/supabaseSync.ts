@@ -662,7 +662,25 @@ function trackWrite(op: PromiseLike<any>, table: string, onFail?: () => void) {
 export function syncRecordInBackground(tableName: string, row: any, conflictKey = 'id') {
   const client = getSupabaseClient();
   if (!client) return;
-  trackWrite(client.from(tableName).upsert(row, { onConflict: conflictKey }), tableName);
+
+  const runUpsert = async () => {
+    let res = await client.from(tableName).upsert(row, { onConflict: conflictKey });
+    // If remote table lacks newly added columns (e.g. before user executes migration SQL), retry with stripped row
+    if (res?.error && tableName === 'work_agreements') {
+      const msg = res.error.message || '';
+      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
+        const fallback = { ...row };
+        delete fallback.amount_due_now;
+        delete fallback.due_now_description;
+        delete fallback.balance_due_upon_completion;
+        if (/raw/i.test(msg)) delete fallback.raw;
+        res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
+      }
+    }
+    return res;
+  };
+
+  trackWrite(runUpsert(), tableName);
 }
 
 export function deleteRecordInBackground(tableName: string, id: string, idKey = 'id') {
@@ -872,7 +890,20 @@ export async function pushAllLocalToSupabase(data: Partial<LocalSnapshot>): Prom
     for (let i = 0; i < task.rows.length; i += CHUNK) {
       const chunk = task.rows.slice(i, i + CHUNK);
       try {
-        const { error } = await client.from(task.name).upsert(chunk, { onConflict: task.key });
+        let { error } = await client.from(task.name).upsert(chunk, { onConflict: task.key });
+        if (error && task.name === 'work_agreements' && (error.code === 'PGRST204' || /column.*does not exist/i.test(error.message || ''))) {
+          // Schema column fallback retry
+          const fallbackChunk = chunk.map((r: any) => {
+            const copy = { ...r };
+            delete copy.amount_due_now;
+            delete copy.due_now_description;
+            delete copy.balance_due_upon_completion;
+            if (/raw/i.test(error?.message || '')) delete copy.raw;
+            return copy;
+          });
+          const retry = await client.from(task.name).upsert(fallbackChunk, { onConflict: task.key });
+          error = retry.error;
+        }
         if (error) {
           errors.push(describeSupabaseError(task.name, error));
           break;

@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "purge:dry-run": "npx ts-node scripts/purge_test_data.ts --dry-run",
-    "purge:execute": "npx ts-node scripts/purge_test_data.ts --confirm-purge"
+    "purge:execute": "npx ts-node scripts/purge_test_data.ts --confirm-purge",
+    "migrate:supabase": "npx ts-node scripts/run_supabase_migration.ts"
   },
   "dependencies": {
     "@google/genai": "^2.26.0",
