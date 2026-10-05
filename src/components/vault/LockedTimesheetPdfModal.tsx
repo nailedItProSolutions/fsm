@@ -108,7 +108,7 @@ export const LockedTimesheetPdfModal: React.FC<LockedTimesheetPdfModalProps> = (
                     NAILED IT PROPERTY SOLUTIONS
                   </h1>
                   <p className="text-[11px] text-[#78716c]">
-                    Floyd County Operations • Rome, GA 30165 • (706) 844-8193
+                    1600 Shorter Ave Ste H, Rome, GA 30165 • Office: (706) 237-8184
                   </p>
                 </div>
               </div>

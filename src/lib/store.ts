@@ -2062,6 +2062,112 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return { payment, estimate: est };
   }
 
+  public updateEstimatePayment(
+    estimateId: string,
+    paymentId: string,
+    updates: {
+      amount: number;
+      method: PaymentMethod;
+      referenceNumber?: string;
+      notes?: string;
+      receivedBy?: string;
+    },
+    authorizingUser?: UserProfile
+  ): { payment: EstimatePayment; estimate: Estimate } {
+    const est = this.estimates.find((e) => e.id === estimateId);
+    if (!est) throw new Error('Estimate not found');
+    if (!est.payments) throw new Error('No payments found on estimate');
+
+    const paymentIndex = est.payments.findIndex((p) => p.id === paymentId);
+    if (paymentIndex === -1) throw new Error('Payment not found');
+
+    const oldPayment = est.payments[paymentIndex];
+    const oldAmount = oldPayment.amount;
+    const newAmount = Number(updates.amount);
+    const amountDiff = newAmount - oldAmount;
+
+    const updatedPayment: EstimatePayment = {
+      ...oldPayment,
+      amount: newAmount,
+      method: updates.method,
+      referenceNumber: updates.referenceNumber !== undefined ? updates.referenceNumber.trim() : oldPayment.referenceNumber,
+      notes: updates.notes !== undefined ? updates.notes.trim() : oldPayment.notes,
+      receivedBy: updates.receivedBy?.trim() || oldPayment.receivedBy,
+      updatedAt: new Date().toISOString(),
+    };
+
+    est.payments[paymentIndex] = updatedPayment;
+    est.depositPaid = est.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    const client = this.clients.find((c) => c.id === est.clientId);
+    if (client) {
+      client.totalSpent = Math.max(0, (client.totalSpent || 0) + amountDiff);
+      syncRecordInBackground('clients', clientToDb(client));
+    }
+
+    const agreement = this.workAgreements.find((w) => w.estimateId === estimateId || w.id === est.workAgreementId);
+    if (agreement) {
+      agreement.depositPaid = est.depositPaid;
+      if (agreement.paymentReceiptNumber === oldPayment.receiptNumber) {
+        agreement.paymentMethod = updates.method;
+      }
+      syncRecordInBackground('work_agreements', workAgreementToDb(agreement));
+    }
+
+    const authName = authorizingUser ? authorizingUser.displayName || authorizingUser.email : 'Charles Willis - Owner & Field Specialist';
+    this.logActivity(
+      'payment_received',
+      'estimate',
+      est.id,
+      `Edited payment receipt #${updatedPayment.receiptNumber}: updated to $${newAmount.toFixed(2)} via ${updates.method} (prev: $${oldAmount.toFixed(2)}). Authorized by ${authName}.`
+    );
+
+    this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
+    return { payment: updatedPayment, estimate: est };
+  }
+
+  public deleteEstimatePayment(
+    estimateId: string,
+    paymentId: string,
+    authorizingUser?: UserProfile
+  ): Estimate {
+    const est = this.estimates.find((e) => e.id === estimateId);
+    if (!est) throw new Error('Estimate not found');
+    if (!est.payments) throw new Error('No payments found on estimate');
+
+    const payment = est.payments.find((p) => p.id === paymentId);
+    if (!payment) throw new Error('Payment not found');
+
+    est.payments = est.payments.filter((p) => p.id !== paymentId);
+    const removedAmount = payment.amount;
+    est.depositPaid = est.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    const client = this.clients.find((c) => c.id === est.clientId);
+    if (client) {
+      client.totalSpent = Math.max(0, (client.totalSpent || 0) - removedAmount);
+      syncRecordInBackground('clients', clientToDb(client));
+    }
+
+    const agreement = this.workAgreements.find((w) => w.estimateId === estimateId || w.id === est.workAgreementId);
+    if (agreement) {
+      agreement.depositPaid = est.depositPaid;
+      syncRecordInBackground('work_agreements', workAgreementToDb(agreement));
+    }
+
+    const authName = authorizingUser ? authorizingUser.displayName || authorizingUser.email : 'Charles Willis - Owner & Field Specialist';
+    this.logActivity(
+      'delete',
+      'estimate',
+      est.id,
+      `Deleted payment receipt #${payment.receiptNumber} ($${removedAmount.toFixed(2)}). Authorized by ${authName}.`
+    );
+
+    this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
+    return est;
+  }
+
   // --- Company Work Agreements ---
   public getWorkAgreements(): WorkAgreement[] {
     return [...this.workAgreements];
@@ -2287,6 +2393,56 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         inv.invoiceNumber
       );
     }
+  }
+
+  public updateInvoicePayment(
+    invoiceId: string,
+    updates: {
+      amountPaid: number;
+      status?: 'paid' | 'sent' | 'overdue' | 'draft';
+      notes?: string;
+    },
+    authorizingUser?: UserProfile
+  ): Invoice {
+    const inv = this.invoices.find((i) => i.id === invoiceId);
+    if (!inv) throw new Error('Invoice not found');
+
+    const prevStatus = inv.status;
+    const oldAmountPaid = Number(inv.amountPaid || 0);
+    const newAmountPaid = Number(updates.amountPaid);
+    const diff = newAmountPaid - oldAmountPaid;
+
+    inv.amountPaid = newAmountPaid;
+    inv.balanceDue = Math.max(0, inv.total - newAmountPaid);
+    if (updates.status) {
+      inv.status = updates.status;
+    } else if (inv.balanceDue <= 0.01) {
+      inv.status = 'paid';
+      if (!inv.paidAt) inv.paidAt = new Date().toISOString();
+    } else if (inv.status === 'paid' && inv.balanceDue > 0) {
+      inv.status = 'sent';
+    }
+
+    const client = this.clients.find((c) => c.id === inv.clientId);
+    if (client) {
+      client.totalSpent = Math.max(0, (client.totalSpent || 0) + diff);
+      syncRecordInBackground('clients', clientToDb(client));
+    }
+
+    const authName = authorizingUser ? authorizingUser.displayName || authorizingUser.email : 'Charles Willis - Owner & Field Specialist';
+    this.logActivity(
+      'payment_received',
+      'invoice',
+      inv.id,
+      `Updated payment for ${inv.invoiceNumber}: amount paid set to $${newAmountPaid.toFixed(2)} (status: ${inv.status}, balance: $${inv.balanceDue.toFixed(2)}). Authorized by ${authName}.`,
+      { status: prevStatus, amountPaid: oldAmountPaid },
+      { status: inv.status, amountPaid: newAmountPaid },
+      inv.invoiceNumber
+    );
+
+    this.persist();
+    syncRecordInBackground('invoices', invoiceToDb(inv));
+    return inv;
   }
 
   // --- Subscriptions (Module 1: Stripe Recurring Memberships) ---

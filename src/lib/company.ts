@@ -1,0 +1,16 @@
+export const COMPANY_INFO = {
+  name: 'Nailed It Property Solutions LLC',
+  shortName: 'Nailed It Property Solutions',
+  address: '1600 Shorter Ave Ste H, Rome, GA 30165',
+  street: '1600 Shorter Ave Ste H',
+  city: 'Rome',
+  state: 'GA',
+  zip: '30165',
+  phone: '(706) 237-8184',
+  officePhone: '(706) 237-8184',
+  website: 'naileditpropertysolutions.com',
+  websiteUrl: 'https://naileditpropertysolutions.com',
+  email: 'info@naileditpropertysolutions.com',
+  dispatchEmail: 'info@naileditpropertysolutions.com',
+  hub: 'Rome, GA Hub • Floyd County Operations',
+};

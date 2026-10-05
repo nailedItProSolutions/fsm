@@ -104,7 +104,10 @@ export default function CustomerInvoicePaymentPortal() {
               />
               <div className="text-xs text-[#b8b0a5] flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-[#FF8A00]" />
-                <span>PO Box 53, Rome, GA 30162 • (706) 844-8193</span>
+                <span>1600 Shorter Ave Ste H, Rome, GA 30165 • Office: (706) 237-8184</span>
+              </div>
+              <div className="text-[11px] text-[#78716c] mt-0.5">
+                naileditpropertysolutions.com • info@naileditpropertysolutions.com
               </div>
             </div>
 

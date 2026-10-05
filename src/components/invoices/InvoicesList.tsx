@@ -23,9 +23,11 @@ import {
   X,
   ShieldCheck,
   Check,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
+import { EditInvoicePaymentModal } from './EditInvoicePaymentModal';
 
 export const InvoicesList: React.FC = () => {
   const { invoices, markInvoicePaid, deleteInvoice } = useActiveFSMData();
@@ -35,6 +37,7 @@ export const InvoicesList: React.FC = () => {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
   const [selectedInvoiceForStripe, setSelectedInvoiceForStripe] = useState<Invoice | null>(null);
+  const [editingPaymentInvoice, setEditingPaymentInvoice] = useState<Invoice | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
 
@@ -341,6 +344,15 @@ export const InvoicesList: React.FC = () => {
                             </span>
                           )}
 
+                          {/* Edit Payment Button */}
+                          <button
+                            onClick={() => setEditingPaymentInvoice(invoice)}
+                            title="Edit Invoice Payment (Amount paid, status, notes)"
+                            className="p-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#252525] text-[#c5a059] hover:text-[#fdfbf7] border border-[#2c2c2c] transition"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Delete Invoice Button (PIN Protected) */}
                           <button
                             onClick={() => setDeletingInvoice(invoice)}
@@ -523,9 +535,10 @@ export const InvoicesList: React.FC = () => {
                     className="h-16 w-auto object-contain mb-2"
                   />
                   <p className="text-xs text-gray-600 font-medium">Nailed It Property Solutions LLC</p>
-                  <p className="text-xs text-gray-500">PO Box 53, Rome, GA 30162</p>
-                  <p className="text-xs text-gray-500">Phone: (706) 844-8193</p>
-                  <p className="text-xs text-gray-500">Email: dispatch@naileditpropertysolutions.com</p>
+                  <p className="text-xs text-gray-500">1600 Shorter Ave Ste H, Rome, GA 30165</p>
+                  <p className="text-xs text-gray-500">Office Phone: (706) 237-8184</p>
+                  <p className="text-xs text-gray-500">Email: info@naileditpropertysolutions.com</p>
+                  <p className="text-xs text-gray-500">Website: naileditpropertysolutions.com</p>
                 </div>
 
                 <div className="text-left sm:text-right">
@@ -653,6 +666,18 @@ export const InvoicesList: React.FC = () => {
           itemName={`Invoice ${deletingInvoice.invoiceNumber} - ${deletingInvoice.clientName} ($${Number(deletingInvoice.total).toFixed(2)})`}
           itemType="invoice"
           warningMessage="Deleting this invoice will permanently remove it from local and cloud databases. This action is irreversible and recorded in the audit log."
+        />
+      )}
+
+      {/* Edit Invoice Payment Modal */}
+      {editingPaymentInvoice && (
+        <EditInvoicePaymentModal
+          isOpen={!!editingPaymentInvoice}
+          onClose={() => setEditingPaymentInvoice(null)}
+          invoice={editingPaymentInvoice}
+          onPaymentUpdated={() => {
+            setEditingPaymentInvoice(null);
+          }}
         />
       )}
     </div>

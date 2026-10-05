@@ -195,6 +195,7 @@ export interface EstimatePayment {
   receiptNumber: string;
   receivedBy: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface WorkAgreementItem {

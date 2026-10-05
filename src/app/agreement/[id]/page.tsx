@@ -29,9 +29,11 @@ import {
   Copy,
   ExternalLink,
   Receipt,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
+import { EditPaymentModal } from '@/components/estimates/EditPaymentModal';
 
 export default function WorkAgreementPage() {
   const params = useParams();
@@ -51,6 +53,7 @@ export default function WorkAgreementPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [editingPayment, setEditingPayment] = useState<any | null>(null);
 
   // Fallback / stable Contract ID
   const contractId = useMemo(() => {
@@ -327,10 +330,10 @@ export default function WorkAgreementPage() {
             />
             <div className="text-xs text-[#b8b0a5] print:text-black flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-[#FF8A00] print:text-black" />
-              <span>PO Box 53, Rome, GA 30162 • (706) 844-8193</span>
+              <span>1600 Shorter Ave Ste H, Rome, GA 30165 • Office: (706) 237-8184</span>
             </div>
             <div className="text-[11px] text-[#78716c] print:text-zinc-600 mt-0.5">
-              General Maintenance, Remodeling & Property Solutions • Floyd County, GA
+              naileditpropertysolutions.com • info@naileditpropertysolutions.com • Floyd County, GA
             </div>
           </div>
 
@@ -640,6 +643,15 @@ export default function WorkAgreementPage() {
                         <span className="text-[10px] text-emerald-400 print:text-black font-mono">
                           ✓ Paid & Credited
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditingPayment(receipt)}
+                          className="print-hide ml-2 text-[10px] bg-[#222222] hover:bg-[#2e2e2e] text-[#c5a059] hover:text-[#fdfbf7] border border-[#333333] px-2 py-0.5 rounded font-mono font-bold transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
+                          title="Edit payment amount, tender method, reference number, or notes"
+                        >
+                          <Pencil className="w-2.5 h-2.5 text-[#c5a059]" />
+                          <span>Edit Payment</span>
+                        </button>
                       </div>
                       <div className="text-[10px] text-[#78716c] print:text-zinc-600 font-mono mt-0.5">
                         Processed on {new Date(receipt.createdAt).toLocaleString()} by {receipt.receivedBy}
@@ -686,7 +698,7 @@ export default function WorkAgreementPage() {
 
         {/* Document Footer */}
         <div className="mt-8 pt-4 border-t border-[#222222] print:border-black flex justify-between items-center text-[9px] font-mono text-[#78716c] print:text-zinc-600">
-          <span>Nailed It Property Solutions LLC • Rome, GA 30162</span>
+          <span>Nailed It Property Solutions LLC • 1600 Shorter Ave Ste H, Rome, GA 30165 • (706) 237-8184</span>
           <span>Contract ID: {contractId} • {isCompany ? 'Page 1 of 1 (Company Archive)' : 'Page 1 of 1 (Client Copy)'}</span>
         </div>
       </div>
@@ -1090,6 +1102,22 @@ export default function WorkAgreementPage() {
           itemName={`Agreement ${agreement.agreementNumber} (${contractId}) - ${agreement.clientName}`}
           itemType="agreement"
           warningMessage="Deleting this work agreement will permanently remove it from the system and restore the linked estimate to sent status. This action is irreversible and recorded in the audit log."
+        />
+      )}
+
+      {/* Edit Payment Modal */}
+      {editingPayment && (
+        <EditPaymentModal
+          isOpen={!!editingPayment}
+          onClose={() => setEditingPayment(null)}
+          payment={editingPayment}
+          estimateId={agreement.estimateId}
+          onPaymentUpdated={() => {
+            setEditingPayment(null);
+          }}
+          onPaymentDeleted={() => {
+            setEditingPayment(null);
+          }}
         />
       )}
 

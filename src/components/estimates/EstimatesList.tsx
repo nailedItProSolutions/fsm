@@ -22,7 +22,8 @@ import {
   Clock,
   ArrowRight, 
   Printer,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
@@ -235,8 +236,19 @@ export const EstimatesList: React.FC = () => {
                     ${Number(est.total).toFixed(2)}
                   </div>
                   {Number(est.depositPaid || 0) > 0 && (
-                    <div className="text-[10px] text-emerald-400 font-mono font-medium mt-0.5">
-                      Paid: ${Number(est.depositPaid).toFixed(2)}
+                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-emerald-400 font-mono font-medium">
+                        Paid: ${Number(est.depositPaid).toFixed(2)}
+                      </span>
+                      {est.payments && est.payments.length > 0 && (
+                        <button
+                          onClick={() => setPayingEstimate(est)}
+                          className="text-[#78716c] hover:text-[#c5a059] transition p-0.5"
+                          title="View & Edit Payments"
+                        >
+                          <Pencil className="w-2.5 h-2.5 inline" />
+                        </button>
+                      )}
                     </div>
                   )}
                   {est.workAgreementId && (
@@ -249,14 +261,14 @@ export const EstimatesList: React.FC = () => {
                 {/* Actions */}
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end space-x-1.5">
-                    {/* Record Manual Payment / Deposit */}
+                    {/* Record / Edit Payment & Deposits */}
                     <button
                       onClick={() => setPayingEstimate(est)}
                       className="bg-[#1c1c1c] hover:bg-[#252525] text-[#c5a059] hover:text-white border border-[#333333] px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center space-x-1"
-                      title="Record manual payment (CashApp, Zelle, Check, Cash, Card) & print receipt"
+                      title="Record or edit payment (CashApp, Zelle, Check, Cash, Card) & print receipts"
                     >
                       <DollarSign className="w-3.5 h-3.5 text-[#c5a059]" />
-                      <span>Payment</span>
+                      <span>{Number(est.depositPaid || 0) > 0 ? 'Payments' : 'Payment'}</span>
                     </button>
 
                     {/* Create Company Work Agreement / Convert */}

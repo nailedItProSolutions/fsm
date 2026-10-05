@@ -27,9 +27,11 @@ import {
   Sparkles,
   Check,
   Activity,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
+import { EditInvoicePaymentModal } from '@/components/invoices/EditInvoicePaymentModal';
 import { DynamicSubscriptionCalculator } from '@/components/pricing/DynamicSubscriptionCalculator';
 import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
@@ -58,6 +60,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
   const [renewalNotice, setRenewalNotice] = useState<{ jobNum: string; invNum: string; subId: string } | null>(null);
   const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
   const [historyClearedNotice, setHistoryClearedNotice] = useState(false);
+  const [editingInvoicePayment, setEditingInvoicePayment] = useState<Invoice | null>(null);
 
   const handleConfirmClearHistory = (authorizingUser: any) => {
     clearClientHistory(client.id, authorizingUser);
@@ -532,6 +535,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
                   <th className="px-6 py-3.5">Status</th>
                   <th className="px-6 py-3.5 text-right">Amount</th>
                   <th className="px-6 py-3.5 text-right">Balance Due</th>
+                  <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e1e1e]">
@@ -563,12 +567,23 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
                     <td className="px-6 py-4 text-right font-mono font-bold text-[#FF8A00]">
                       ${inv.balanceDue.toFixed(2)}
                     </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setEditingInvoicePayment(inv)}
+                        title="Edit payment & balance for this invoice"
+                        className="bg-[#1a1a1a] hover:bg-[#252525] text-[#c5a059] hover:text-[#fdfbf7] border border-[#2c2c2c] px-2.5 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 shadow-xs"
+                      >
+                        <Pencil className="w-3 h-3 text-[#c5a059]" />
+                        <span>Edit Payment</span>
+                      </button>
+                    </td>
                   </tr>
                 ))}
 
                 {invoices.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-[#78716c]">
+                    <td colSpan={7} className="px-6 py-8 text-center text-[#78716c]">
                       No invoices recorded for this client.
                     </td>
                   </tr>
@@ -842,6 +857,18 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
           itemName={`${client.isCompany ? client.companyName : `${client.firstName} ${client.lastName}`} (All Jobs, Invoices, & Service Logs)`}
           itemType="client history"
           warningMessage="DANGER: This will permanently delete all jobs, work orders, estimates, invoices, and service records associated with this client. The client profile will be retained, but all transaction history and spending counters will be reset to zero. This action is irreversible and requires strict employee PIN confirmation."
+        />
+      )}
+
+      {/* Edit Invoice Payment Modal */}
+      {editingInvoicePayment && (
+        <EditInvoicePaymentModal
+          isOpen={!!editingInvoicePayment}
+          onClose={() => setEditingInvoicePayment(null)}
+          invoice={editingInvoicePayment}
+          onPaymentUpdated={() => {
+            setEditingInvoicePayment(null);
+          }}
         />
       )}
     </div>

@@ -100,8 +100,9 @@ export const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
                 className="h-14 w-auto object-contain mb-1" 
               />
               <div className="text-[11px] text-[#b8b0a5] space-y-0.5">
-                <div>PO Box 53, Rome, GA 30162</div>
-                <div>Office: (706) 844-8193 • contact@naileditpropertysolutions.com</div>
+                <div>1600 Shorter Ave Ste H, Rome, GA 30165</div>
+                <div>Office: (706) 237-8184 • info@naileditpropertysolutions.com</div>
+                <div>naileditpropertysolutions.com</div>
               </div>
             </div>
 

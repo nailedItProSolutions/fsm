@@ -14,9 +14,11 @@ import {
   AlertCircle,
   FileCheck2,
   Calendar,
-  UserCheck
+  UserCheck,
+  Pencil
 } from 'lucide-react';
 import { PaymentReceiptModal } from './PaymentReceiptModal';
+import { EditPaymentModal } from './EditPaymentModal';
 
 interface EstimatePaymentModalProps {
   isOpen: boolean;
@@ -45,6 +47,11 @@ export const EstimatePaymentModal: React.FC<EstimatePaymentModalProps> = ({
   const [notes, setNotes] = useState('Deposit received for materials & commencement');
   const [receivedBy, setReceivedBy] = useState('Charles Willis - Owner & Field Specialist');
   const [error, setError] = useState<string | null>(null);
+
+  // View state & Edit modal
+  const existingPayments = estimate.payments || [];
+  const [activeTab, setActiveTab] = useState<'record' | 'history'>('record');
+  const [editingPayment, setEditingPayment] = useState<EstimatePayment | null>(null);
 
   // Success state & receipt modal
   const [recordedPayment, setRecordedPayment] = useState<EstimatePayment | null>(null);
@@ -118,29 +125,155 @@ export const EstimatePaymentModal: React.FC<EstimatePaymentModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-5 text-xs">
-            {error && (
-              <div className="p-3 bg-red-950/50 border border-red-500/50 rounded-xl text-red-300 flex items-center space-x-2">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+          {/* Tabs if there are existing payments */}
+          {existingPayments.length > 0 && (
+            <div className="bg-[#141414] px-6 pt-3 border-b border-[#262626] flex space-x-6">
+              <button
+                type="button"
+                onClick={() => setActiveTab('record')}
+                className={`pb-3 font-bold text-xs border-b-2 transition flex items-center gap-1.5 ${
+                  activeTab === 'record'
+                    ? 'border-[#c5a059] text-[#c5a059]'
+                    : 'border-transparent text-[#78716c] hover:text-[#fdfbf7]'
+                }`}
+              >
+                <DollarSign className="w-3.5 h-3.5" />
+                <span>Record New Payment</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className={`pb-3 font-bold text-xs border-b-2 transition flex items-center gap-1.5 ${
+                  activeTab === 'history'
+                    ? 'border-[#c5a059] text-[#c5a059]'
+                    : 'border-transparent text-[#78716c] hover:text-[#fdfbf7]'
+                }`}
+              >
+                <Receipt className="w-3.5 h-3.5" />
+                <span>Recorded Payments ({existingPayments.length})</span>
+              </button>
+            </div>
+          )}
 
-            {/* Financial Status Banner */}
-            <div className="grid grid-cols-3 gap-3 bg-[#181818] p-3.5 rounded-xl border border-[#262626]">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716c]">Quote Total</div>
-                <div className="font-mono font-bold text-sm text-[#fdfbf7] mt-0.5">${totalEstimate.toFixed(2)}</div>
+          {activeTab === 'history' ? (
+            <div className="p-6 space-y-4 text-xs">
+              <div className="flex justify-between items-center pb-2 border-b border-[#262626]">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#78716c]">
+                  All Payments Credited to Estimate {estimate.estimateNumber}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('record')}
+                  className="text-xs text-[#c5a059] hover:underline font-bold"
+                >
+                  + Add Another Payment
+                </button>
               </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716c]">Already Paid</div>
-                <div className="font-mono font-bold text-sm text-emerald-400 mt-0.5">${alreadyPaid.toFixed(2)}</div>
+
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                {existingPayments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-[#161616] border border-[#262626] rounded-xl p-4 space-y-3 hover:border-[#383838] transition"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-[#c5a059] text-sm">
+                            {p.receiptNumber}
+                          </span>
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#202020] text-[#fdfbf7] border border-[#333]">
+                            {p.method.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[#78716c] mt-0.5 font-mono">
+                          {new Date(p.createdAt).toLocaleString()} • Processed by {p.receivedBy}
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="font-mono font-bold text-emerald-400 text-base">
+                          ${Number(p.amount).toFixed(2)}
+                        </div>
+                        {p.referenceNumber && (
+                          <div className="text-[10px] text-[#78716c] font-mono">
+                            Ref: {p.referenceNumber}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {p.notes && (
+                      <div className="text-[11px] text-[#b8b0a5] bg-[#1a1a1a] p-2.5 rounded-lg border border-[#2a2a2a]">
+                        <span className="text-[#78716c]">Memo: </span>
+                        {p.notes}
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-[#262626] flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPayment(p)}
+                        className="bg-[#222222] hover:bg-[#2e2e2e] text-[#c5a059] hover:text-[#fdfbf7] border border-[#333333] px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit Payment</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716c]">Balance Remaining</div>
-                <div className="font-mono font-bold text-sm text-[#c5a059] mt-0.5">${remainingBalance.toFixed(2)}</div>
+
+              <div className="pt-4 border-t border-[#262626] flex justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-lg border border-[#333333] text-xs font-bold text-[#b8b0a5] hover:bg-[#1a1a1a]"
+                >
+                  Close
+                </button>
               </div>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="p-6 space-y-5 text-xs">
+              {error && (
+                <div className="p-3 bg-red-950/50 border border-red-500/50 rounded-xl text-red-300 flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Financial Status Banner */}
+              <div className="grid grid-cols-3 gap-3 bg-[#181818] p-3.5 rounded-xl border border-[#262626]">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716c]">Quote Total</div>
+                  <div className="font-mono font-bold text-sm text-[#fdfbf7] mt-0.5">${totalEstimate.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716c]">Already Paid</div>
+                  <div className="font-mono font-bold text-sm text-emerald-400 mt-0.5">${alreadyPaid.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716c]">Balance Remaining</div>
+                  <div className="font-mono font-bold text-sm text-[#c5a059] mt-0.5">${remainingBalance.toFixed(2)}</div>
+                </div>
+              </div>
+
+              {existingPayments.length > 0 && (
+                <div className="bg-[#181818] p-3 rounded-xl border border-[#2a2a2a] flex items-center justify-between text-[11px]">
+                  <span className="text-[#b8b0a5]">
+                    ✓ {existingPayments.length} recorded payment(s) on file (${alreadyPaid.toFixed(2)})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('history')}
+                    className="text-[#c5a059] hover:underline font-bold flex items-center gap-1"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    <span>Edit Payments →</span>
+                  </button>
+                </div>
+              )}
 
             {/* Payment Method Selector */}
             <div>
@@ -284,6 +417,7 @@ export const EstimatePaymentModal: React.FC<EstimatePaymentModalProps> = ({
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
 
@@ -297,6 +431,23 @@ export const EstimatePaymentModal: React.FC<EstimatePaymentModalProps> = ({
           }}
           payment={recordedPayment}
           estimate={estimate}
+        />
+      )}
+
+      {/* Edit Payment Modal */}
+      {editingPayment && (
+        <EditPaymentModal
+          isOpen={!!editingPayment}
+          onClose={() => setEditingPayment(null)}
+          payment={editingPayment}
+          estimateId={estimate.id}
+          estimateTotal={totalEstimate}
+          onPaymentUpdated={() => {
+            setEditingPayment(null);
+          }}
+          onPaymentDeleted={() => {
+            setEditingPayment(null);
+          }}
         />
       )}
     </>

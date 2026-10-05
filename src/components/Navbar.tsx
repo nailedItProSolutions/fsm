@@ -65,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 <MapPin className="w-3 h-3 text-[#FF8A00]" /> Rome, GA Operations
               </span>
               <span className="text-[10px] text-[#b8b0a5] flex items-center gap-1">
-                <Phone className="w-2.5 h-2.5 text-[#c5a059]" /> (706) 844-8193
+                <Phone className="w-2.5 h-2.5 text-[#c5a059]" /> (706) 237-8184
               </span>
             </div>
           </Link>
