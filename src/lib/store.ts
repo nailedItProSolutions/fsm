@@ -1025,6 +1025,29 @@ export class FSMStore {
             }
             return a;
           });
+
+          // Ensure estimates linked to active work agreements reflect the agreement's updated total & items
+          this.estimates.forEach((est) => {
+            const agr = this.workAgreements.find((w) => w.estimateId === est.id || w.id === est.workAgreementId);
+            if (agr && agr.updatedTotal && Math.abs(est.total - agr.updatedTotal) > 0.01) {
+              if (est.originalTotal === undefined) {
+                est.originalTotal = est.total;
+              }
+              est.total = agr.updatedTotal;
+              if (agr.items && agr.items.length > 0) {
+                est.subtotal = agr.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+                est.taxAmount = Math.round((agr.updatedTotal - est.subtotal) * 100) / 100;
+                est.items = agr.items.map((item) => ({
+                  id: item.id,
+                  type: item.type,
+                  description: item.description,
+                  quantity: Number(item.quantity) || 0,
+                  unitPrice: Number(item.unitPrice) || 0,
+                  total: Number(item.total) || 0,
+                }));
+              }
+            }
+          });
         }
       } catch (e) {
         console.error('Failed to load store from localStorage', e);
@@ -1131,6 +1154,29 @@ export class FSMStore {
       this.dailyWorkLogs = rLogs.result;
       this.weeklyTimesheets = rSheets.result;
       this.auditLogs = rAudit.result;
+
+      // Ensure estimates linked to active work agreements reflect the agreement's updated total & items
+      this.estimates.forEach((est) => {
+        const agr = this.workAgreements.find((w) => w.estimateId === est.id || w.id === est.workAgreementId);
+        if (agr && agr.updatedTotal && Math.abs(est.total - agr.updatedTotal) > 0.01) {
+          if (est.originalTotal === undefined) {
+            est.originalTotal = est.total;
+          }
+          est.total = agr.updatedTotal;
+          if (agr.items && agr.items.length > 0) {
+            est.subtotal = agr.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+            est.taxAmount = Math.round((agr.updatedTotal - est.subtotal) * 100) / 100;
+            est.items = agr.items.map((item) => ({
+              id: item.id,
+              type: item.type,
+              description: item.description,
+              quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.unitPrice) || 0,
+              total: Number(item.total) || 0,
+            }));
+          }
+        }
+      });
 
       // Check if any local records need to be pushed
       const hasItemsToPush =
@@ -1749,6 +1795,10 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     if (est) {
       est.workAgreementId = undefined;
       if (est.status === 'approved') est.status = 'sent';
+      if (est.originalTotal !== undefined) {
+        est.total = est.originalTotal;
+        est.originalTotal = undefined;
+      }
       syncRecordInBackground('estimates', estimateToDb(est));
     }
 
@@ -2057,6 +2107,14 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       syncRecordInBackground('clients', clientToDb(client));
     }
 
+    const agreement = this.workAgreements.find((w) => w.estimateId === estimateId || w.id === est.workAgreementId);
+    if (agreement) {
+      agreement.depositPaid = est.depositPaid;
+      agreement.balanceDueUponCompletion = Math.max(0, agreement.updatedTotal - agreement.depositPaid - (agreement.amountDueNow || 0));
+      agreement.balanceDue = agreement.balanceDueUponCompletion;
+      syncRecordInBackground('work_agreements', workAgreementToDb(agreement));
+    }
+
     this.persist();
     syncRecordInBackground('estimates', estimateToDb(est));
     return { payment, estimate: est };
@@ -2108,6 +2166,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const agreement = this.workAgreements.find((w) => w.estimateId === estimateId || w.id === est.workAgreementId);
     if (agreement) {
       agreement.depositPaid = est.depositPaid;
+      agreement.balanceDueUponCompletion = Math.max(0, agreement.updatedTotal - agreement.depositPaid - (agreement.amountDueNow || 0));
+      agreement.balanceDue = agreement.balanceDueUponCompletion;
       if (agreement.paymentReceiptNumber === oldPayment.receiptNumber) {
         agreement.paymentMethod = updates.method;
       }
@@ -2152,6 +2212,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const agreement = this.workAgreements.find((w) => w.estimateId === estimateId || w.id === est.workAgreementId);
     if (agreement) {
       agreement.depositPaid = est.depositPaid;
+      agreement.balanceDueUponCompletion = Math.max(0, agreement.updatedTotal - agreement.depositPaid - (agreement.amountDueNow || 0));
+      agreement.balanceDue = agreement.balanceDueUponCompletion;
       syncRecordInBackground('work_agreements', workAgreementToDb(agreement));
     }
 
@@ -2204,10 +2266,11 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const agreementNumber = `CWA-${est.estimateNumber.replace(/[^0-9]/g, '') || Math.floor(1000 + Math.random() * 9000)}`;
     const now = new Date().toISOString();
 
+    const originalQuoteTotal = est.originalTotal !== undefined ? est.originalTotal : est.total;
     const updatedSubtotal = agreementData.items.reduce((acc, i) => acc + (Number(i.total) || 0), 0);
     const taxAmount = updatedSubtotal * (est.taxRate || 0.08);
     const updatedTotal = updatedSubtotal + taxAmount;
-    const varianceAmount = updatedTotal - est.total;
+    const varianceAmount = updatedTotal - originalQuoteTotal;
     const deposit = agreementData.depositPaid !== undefined ? Number(agreementData.depositPaid) : (est.depositPaid || 0);
     const amountDueNow = agreementData.amountDueNow !== undefined ? Math.max(0, Number(agreementData.amountDueNow)) : 0;
     const dueNowDescription = agreementData.dueNowDescription?.trim();
@@ -2230,7 +2293,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       clientName: est.clientName,
       propertyId: est.propertyId,
       propertyAddress: est.propertyAddress,
-      originalEstimateTotal: est.total,
+      originalEstimateTotal: originalQuoteTotal,
       updatedTotal,
       varianceAmount,
       varianceReason: agreementData.varianceReason.trim() || 'Scope and materials updated for work execution',
@@ -2281,7 +2344,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       notes: `Company Work Agreement ${agreementNumber} active. Scope change variance: ${varianceAmount >= 0 ? '+' : ''}$${varianceAmount.toFixed(2)} (${agreement.varianceReason}). Deposit paid: $${deposit.toFixed(2)}.${amountDueNow > 0 ? ` Due now upon signing: $${amountDueNow.toFixed(2)}${dueNowDescription ? ` (${dueNowDescription})` : ''}.` : ''} Remaining balance upon completion: $${balanceDueUponCompletion.toFixed(2)}.`,
       totalAmount: updatedTotal,
       workAgreementId: agreement.id,
-      originalEstimateTotal: est.total,
+      originalEstimateTotal: originalQuoteTotal,
       varianceAmount,
       varianceReason: agreement.varianceReason,
     });
@@ -2290,9 +2353,26 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     agreement.jobNumber = newJob.jobNumber;
 
     this.workAgreements.push(agreement);
+
+    // Synchronize parent estimate: update overall total due, subtotal, tax, items, and deposit
+    if (est.originalTotal === undefined) {
+      est.originalTotal = originalQuoteTotal;
+    }
     est.status = 'approved';
     est.convertedToJobId = newJob.id;
     est.workAgreementId = agreement.id;
+    est.subtotal = updatedSubtotal;
+    est.taxAmount = Math.round(taxAmount * 100) / 100;
+    est.total = Math.round(updatedTotal * 100) / 100;
+    est.depositPaid = deposit;
+    est.items = agreementData.items.map((item) => ({
+      id: item.id,
+      type: item.type,
+      description: item.description,
+      quantity: Number(item.quantity) || 0,
+      unitPrice: Number(item.unitPrice) || 0,
+      total: Number(item.total) || 0,
+    }));
 
     this.logActivity(
       'agreement_created',

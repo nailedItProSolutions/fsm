@@ -161,6 +161,7 @@ export interface Estimate {
   taxRate: number;
   taxAmount: number;
   total: number;
+  originalTotal?: number;
   status: 'draft' | 'sent' | 'approved' | 'declined';
   convertedToJobId?: string;
   validUntil: string;

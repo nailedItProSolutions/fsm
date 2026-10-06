@@ -165,6 +165,7 @@ function estimateToDbBase(e: Estimate): any {
     tax_rate: e.taxRate || 0,
     tax_amount: e.taxAmount || 0,
     total: e.total || 0,
+    original_total: e.originalTotal || null,
     deposit_paid: e.depositPaid || 0,
     work_agreement_id: e.workAgreementId || null,
     payments: e.payments || [],
@@ -189,6 +190,7 @@ function dbToEstimateBase(r: any): Estimate {
     taxRate: Number(r.tax_rate || 0),
     taxAmount: Number(r.tax_amount || 0),
     total: Number(r.total || 0),
+    originalTotal: r.original_total ? Number(r.original_total) : undefined,
     depositPaid: Number(r.deposit_paid || 0),
     workAgreementId: r.work_agreement_id || undefined,
     payments: Array.isArray(r.payments) ? r.payments : [],
@@ -687,6 +689,15 @@ export function syncRecordInBackground(tableName: string, row: any, conflictKey 
         const fallback = { ...row };
         delete fallback.tax_exempt;
         delete fallback.tax_rate;
+        if (/raw/i.test(msg)) delete fallback.raw;
+        res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
+      }
+    }
+    if (res?.error && tableName === 'estimates') {
+      const msg = res.error.message || '';
+      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
+        const fallback = { ...row };
+        delete fallback.original_total;
         if (/raw/i.test(msg)) delete fallback.raw;
         res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
       }

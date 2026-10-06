@@ -28,7 +28,7 @@ import {
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export const EstimatesList: React.FC = () => {
-  const { estimates, updateEstimateStatus, convertEstimateToJob, deleteEstimate } = useActiveFSMData();
+  const { estimates, workAgreements, updateEstimateStatus, convertEstimateToJob, deleteEstimate } = useActiveFSMData();
 
   const [filterStatus, setFilterStatus] = useState<Estimate['status'] | 'all'>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
@@ -58,9 +58,17 @@ export const EstimatesList: React.FC = () => {
     return estimates.filter((e) => e.status === filterStatus);
   }, [estimates, filterStatus]);
 
-  const totalValue = estimates.reduce((acc, e) => acc + (e.total || 0), 0);
+  const totalValue = estimates.reduce((acc, e) => {
+    const agr = workAgreements?.find((w) => w.estimateId === e.id || w.id === e.workAgreementId);
+    return acc + (agr ? Number(agr.updatedTotal) : Number(e.total || 0));
+  }, 0);
   const approvedCount = estimates.filter((e) => e.status === 'approved').length;
-  const approvedValue = estimates.filter((e) => e.status === 'approved').reduce((acc, e) => acc + (e.total || 0), 0);
+  const approvedValue = estimates
+    .filter((e) => e.status === 'approved')
+    .reduce((acc, e) => {
+      const agr = workAgreements?.find((w) => w.estimateId === e.id || w.id === e.workAgreementId);
+      return acc + (agr ? Number(agr.updatedTotal) : Number(e.total || 0));
+    }, 0);
 
   const handleCopyLink = (id: string) => {
     const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://fsm.naileditpropertysolutions.com';
@@ -230,32 +238,63 @@ export const EstimatesList: React.FC = () => {
                   {getStatusBadge(est.status)}
                 </td>
 
-                {/* Total */}
+                {/* Total / Overall Total Due */}
                 <td className="px-6 py-4 text-right">
-                  <div className="font-mono font-bold text-sm text-[#fdfbf7]">
-                    ${Number(est.total).toFixed(2)}
-                  </div>
-                  {Number(est.depositPaid || 0) > 0 && (
-                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                      <span className="text-[10px] text-emerald-400 font-mono font-medium">
-                        Paid: ${Number(est.depositPaid).toFixed(2)}
-                      </span>
-                      {est.payments && est.payments.length > 0 && (
-                        <button
-                          onClick={() => setPayingEstimate(est)}
-                          className="text-[#78716c] hover:text-[#c5a059] transition p-0.5"
-                          title="View & Edit Payments"
-                        >
-                          <Pencil className="w-2.5 h-2.5 inline" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {est.workAgreementId && (
-                    <div className="text-[10px] text-[#c5a059] font-medium mt-0.5">
-                      ✓ Agreement Active
-                    </div>
-                  )}
+                  {(() => {
+                    const agreement = workAgreements?.find((w) => w.estimateId === est.id || w.id === est.workAgreementId);
+                    const overallTotal = agreement ? Number(agreement.updatedTotal) : Number(est.total);
+                    const effectiveDeposit = Number(est.depositPaid || agreement?.depositPaid || 0);
+                    const dueNow = Number(agreement?.amountDueNow || 0);
+                    const balanceDue = agreement
+                      ? (agreement.balanceDueUponCompletion !== undefined ? Number(agreement.balanceDueUponCompletion) : Number(agreement.balanceDue))
+                      : Math.max(0, overallTotal - effectiveDeposit);
+
+                    return (
+                      <div>
+                        <div className="font-mono font-bold text-sm text-[#fdfbf7]">
+                          ${overallTotal.toFixed(2)}
+                        </div>
+
+                        {agreement ? (
+                          <div className="text-[10px] text-[#c5a059] font-medium mt-0.5 flex items-center justify-end gap-1">
+                            <span>Contract Scope</span>
+                            {agreement.varianceAmount !== 0 && (
+                              <span className="font-mono text-[9px] text-[#b8b0a5]">
+                                ({agreement.varianceAmount > 0 ? '+' : ''}${agreement.varianceAmount.toFixed(2)})
+                              </span>
+                            )}
+                          </div>
+                        ) : null}
+
+                        {effectiveDeposit > 0 && (
+                          <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                            <span className="text-[10px] text-emerald-400 font-mono font-medium">
+                              Paid: ${effectiveDeposit.toFixed(2)}
+                            </span>
+                            {est.payments && est.payments.length > 0 && (
+                              <button
+                                onClick={() => setPayingEstimate(est)}
+                                className="text-[#78716c] hover:text-[#c5a059] transition p-0.5"
+                                title="View & Edit Payments"
+                              >
+                                <Pencil className="w-2.5 h-2.5 inline" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {agreement && dueNow > 0 && (
+                          <div className="text-[10px] text-[#c5a059] font-mono mt-0.5">
+                            Due Now: ${dueNow.toFixed(2)}
+                          </div>
+                        )}
+
+                        <div className="text-[10px] font-mono text-[#b8b0a5] mt-0.5">
+                          Balance: <span className="font-bold text-[#fdfbf7]">${balanceDue.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </td>
 
                 {/* Actions */}

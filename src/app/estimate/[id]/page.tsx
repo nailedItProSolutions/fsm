@@ -13,17 +13,22 @@ import {
   Clock, 
   Check, 
   AlertCircle,
-  Printer
+  Printer,
+  ExternalLink,
+  FileCheck2
 } from 'lucide-react';
 import { ValueProofComparison } from '@/components/estimates/ValueProofComparison';
 
 export default function CustomerEstimateApprovalPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const { getEstimateById, updateEstimateStatus } = useFSMStore();
+  const { getEstimateById, updateEstimateStatus, getWorkAgreementById, getWorkAgreementByEstimateId } = useFSMStore();
 
   const estimateId = params.id as string;
   const estimate = getEstimateById(estimateId);
+  const agreement = estimate?.workAgreementId 
+    ? getWorkAgreementById(estimate.workAgreementId) 
+    : (estimate ? getWorkAgreementByEstimateId(estimate.id) : undefined);
 
   const [signatureName, setSignatureName] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -67,6 +72,49 @@ export default function CustomerEstimateApprovalPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#fdfbf7] py-10 px-4 sm:px-6 lg:px-8 antialiased">
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Work Agreement Active Banner */}
+        {agreement && (
+          <div className="bg-gradient-to-r from-[#171410] via-[#211a12] to-[#171410] border border-[#c5a059]/40 rounded-2xl p-5 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:border-black">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 bg-[#c5a059]/15 text-[#c5a059] rounded-xl border border-[#c5a059]/30 shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#c5a059]">
+                    Official Work Agreement Finalized
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#111] text-[#e7e5e4] border border-[#333]">
+                    {agreement.agreementNumber}
+                  </span>
+                  {agreement.clientSignatureName && (
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
+                      Signed by Customer
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#b8b0a5] mt-1.5 leading-relaxed">
+                  This quotation has been officially finalized into a binding contract with detailed scope and agreed terms. Overall contract total is{' '}
+                  <strong className="text-[#fdfbf7] font-mono font-bold">${Number(agreement.updatedTotal).toFixed(2)}</strong>
+                  {estimate.originalTotal !== undefined && Math.abs(estimate.originalTotal - agreement.updatedTotal) > 0.009 && (
+                    <span className="text-amber-400/90 ml-1.5 font-medium">
+                      (Scope adjusted from original quote of ${Number(estimate.originalTotal).toFixed(2)}: {agreement.updatedTotal >= estimate.originalTotal ? '+' : '-'}${Math.abs(agreement.updatedTotal - estimate.originalTotal).toFixed(2)})
+                    </span>
+                  )}
+                  .
+                </p>
+              </div>
+            </div>
+            <a
+              href={`/agreement/${agreement.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#c5a059] hover:bg-[#b08d48] text-black font-bold text-xs rounded-xl transition shadow-lg shrink-0 print-hide"
+            >
+              <span>View Official Contract</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
+
         {/* Top Header Card with Logo */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/5 blur-[90px] pointer-events-none rounded-full print-hide" />
@@ -184,9 +232,41 @@ export default function CustomerEstimateApprovalPage() {
                     <td className="p-3 text-right font-mono font-bold text-[#fdfbf7]">${Number(estimate.taxAmount).toFixed(2)}</td>
                   </tr>
                   <tr className="bg-[#1c1c1c] text-[#c5a059] font-bold text-sm">
-                    <td colSpan={4} className="p-4 text-right">Total Quote Amount:</td>
+                    <td colSpan={4} className="p-4 text-right">
+                      {agreement ? 'Total Agreed Contract Amount:' : 'Total Quote Amount:'}
+                    </td>
                     <td className="p-4 text-right font-mono text-base font-black">${Number(estimate.total).toFixed(2)}</td>
                   </tr>
+                  {agreement && estimate.originalTotal !== undefined && Math.abs(estimate.originalTotal - estimate.total) > 0.009 && (
+                    <tr className="bg-[#141414] text-xs text-[#b8b0a5]">
+                      <td colSpan={4} className="px-4 py-2 text-right">
+                        Original Estimate Quote (${Number(estimate.originalTotal).toFixed(2)}):
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono font-semibold text-[#c5a059]">
+                        {estimate.total >= estimate.originalTotal ? '+' : '-'}${Math.abs(estimate.total - estimate.originalTotal).toFixed(2)} Scope Variance
+                      </td>
+                    </tr>
+                  )}
+                  {Number(estimate.depositPaid || 0) > 0 && (
+                    <tr className="bg-[#141414] text-xs text-emerald-400">
+                      <td colSpan={4} className="px-4 py-2 text-right font-medium">
+                        Payment / Deposit Credited:
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono font-bold">
+                        -${Number(estimate.depositPaid || 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  )}
+                  {agreement && (
+                    <tr className="bg-[#17130e] text-sm font-bold border-t border-[#333]">
+                      <td colSpan={4} className="p-3.5 text-right text-[#fdfbf7]">
+                        Remaining Balance Due Upon Completion:
+                      </td>
+                      <td className="p-3.5 text-right font-mono text-base font-black text-[#c5a059]">
+                        ${Math.max(0, Number(estimate.total) - Number(estimate.depositPaid || 0)).toFixed(2)}
+                      </td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>

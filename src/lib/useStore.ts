@@ -21,6 +21,7 @@ export function useFSMStore() {
     jobs: store.getJobs(),
     invoices: store.getInvoices(),
     estimates: store.getEstimates(),
+    workAgreements: store.getWorkAgreements(),
     subscriptions: store.getSubscriptions(),
     getClientById: (id: string) => store.getClientById(id),
     getJobById: (id: string) => store.getJobById(id),
@@ -105,5 +106,6 @@ export function useActiveFSMData() {
     jobs: store.jobs.filter(j => !archivedClientIds.has(j.clientId)),
     invoices: store.invoices.filter(i => !archivedClientIds.has(i.clientId)),
     estimates: store.estimates.filter(e => !archivedClientIds.has(e.clientId)),
+    workAgreements: store.workAgreements.filter(w => !archivedClientIds.has(w.clientId)),
   };
 }

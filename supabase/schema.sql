@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS public.estimates (
     tax_rate NUMERIC(6, 4) DEFAULT 0.08,
     tax_amount NUMERIC(12, 2) DEFAULT 0,
     total NUMERIC(12, 2) DEFAULT 0,
+    original_total NUMERIC(12, 2),
     deposit_paid NUMERIC(12, 2) DEFAULT 0,
     work_agreement_id TEXT,
     payments JSONB DEFAULT '[]'::jsonb,
@@ -335,3 +336,5 @@ WHERE balance_due_upon_completion IS NULL OR balance_due_upon_completion = 0;
 ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_exempt BOOLEAN DEFAULT false;
 ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(6, 4) DEFAULT 0.07;
 ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS raw JSONB;
+
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS original_total NUMERIC(12, 2);

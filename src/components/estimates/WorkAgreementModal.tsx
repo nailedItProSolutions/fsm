@@ -82,7 +82,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
   if (!isOpen) return null;
 
   // Real-time updated state math
-  const originalEstimateTotal = Number(estimate.total || 0);
+  const originalEstimateTotal = Number(estimate.originalTotal || estimate.total || 0);
   const updatedSubtotal = items.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
   const taxRate = Number(estimate.taxRate || 0.08);
   const updatedTax = updatedSubtotal * taxRate;
@@ -581,12 +581,17 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
                   <div>
                     <span>Remaining Balance Due upon Completion:</span>
                     <span className="block text-[10px] text-[#78716c] font-normal">
-                      Total (${updatedTotal.toFixed(2)}) - Credited Deposit (${depositPaid.toFixed(2)}){amountDueNow > 0 ? ` - Due Now ($${amountDueNow.toFixed(2)})` : ''}
+                      Overall Total (${updatedTotal.toFixed(2)}) - Credited Deposit (${depositPaid.toFixed(2)}){amountDueNow > 0 ? ` - Due Now ($${amountDueNow.toFixed(2)})` : ''}
                     </span>
                   </div>
                   <span className="font-mono text-base text-emerald-400 font-black">
                     ${balanceDueUponCompletion.toFixed(2)}
                   </span>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-[11px] text-emerald-300 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>The estimate overall total and balance due will update from ${originalEstimateTotal.toFixed(2)} to ${updatedTotal.toFixed(2)} automatically upon agreement confirmation.</span>
                 </div>
               </div>
             </div>
