@@ -144,6 +144,7 @@ export interface EstimateItem {
   id: string;
   type: 'labor' | 'material' | 'flat_rate';
   description: string;
+  details?: string;
   quantity: number;
   unitPrice: number;
   total: number;
@@ -203,6 +204,7 @@ export interface WorkAgreementItem {
   id: string;
   type: 'labor' | 'material' | 'flat_rate';
   description: string;
+  details?: string;
   quantity: number;
   unitPrice: number;
   total: number;

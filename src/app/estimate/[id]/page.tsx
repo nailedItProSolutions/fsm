@@ -213,7 +213,12 @@ export default function CustomerEstimateApprovalPage() {
                   {estimate.items.map((item) => (
                     <tr key={item.id} className="hover:bg-[#1a1a1a]">
                       <td className="p-3.5 font-semibold text-[#fdfbf7]">
-                        {item.description}
+                        <div>{item.description}</div>
+                        {item.details && (
+                          <div className="text-[11px] font-normal text-[#b8b0a5] mt-1 leading-relaxed">
+                            {item.details}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3.5 text-center">
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${

@@ -46,6 +46,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
       id: `item-${Date.now()}-${idx}`,
       type: item.type || 'labor',
       description: item.description,
+      details: item.details || '',
       quantity: Number(item.quantity) || 1,
       unitPrice: Number(item.unitPrice) || 0,
       total: Number(item.total) || 0,
@@ -134,6 +135,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
         id: `item-${Date.now()}-${prev.length}`,
         type,
         description: defaultDescriptions[type] || 'Additional Scope Item',
+        details: '',
         quantity: 1,
         unitPrice: defaultPrices[type] || 47.5,
         total: defaultPrices[type] || 47.5,
@@ -158,9 +160,14 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
 
     const finalReason = customVarianceReason.trim() || variancePreset;
 
+    const cleanedItems = items.map((it) => ({
+      ...it,
+      details: it.details?.trim() || undefined,
+    }));
+
     try {
       const agreement = createWorkAgreement(estimate.id, {
-        items,
+        items: cleanedItems,
         varianceReason: finalReason,
         depositPaid,
         amountDueNow,
@@ -309,8 +316,19 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
                             type="text"
                             value={item.description}
                             onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                            placeholder="Line item description"
                             className="w-full bg-[#181818] border border-[#2a2a2a] rounded px-2 py-1 text-xs text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
                           />
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <span className="text-[10px] text-[#78716c] font-medium shrink-0">↳ Note:</span>
+                            <input
+                              type="text"
+                              value={item.details || ''}
+                              onChange={(e) => handleItemChange(idx, 'details', e.target.value)}
+                              placeholder="Optional brief description / scope details"
+                              className="w-full bg-[#121212] border border-[#252525] rounded px-2 py-0.5 text-[11px] text-[#d6d3cd] placeholder-[#555] focus:outline-none focus:border-[#c5a059]"
+                            />
+                          </div>
                         </td>
                         <td className="p-2.5">
                           <input

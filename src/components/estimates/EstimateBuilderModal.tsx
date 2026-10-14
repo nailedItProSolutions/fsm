@@ -49,8 +49,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   const [showTaskCatalog, setShowTaskCatalog] = useState(false);
   const [marketComparisonData, setMarketComparisonData] = useState<any | null>(null);
   const [items, setItems] = useState<EstimateItem[]>([
-    { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
-    { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
+    { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', details: '', quantity: 2, unitPrice: 85, total: 170 },
+    { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', details: '', quantity: 1, unitPrice: 95, total: 95 },
   ]);
 
   useEffect(() => {
@@ -66,13 +66,14 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         estimateToEdit.items && estimateToEdit.items.length > 0
           ? estimateToEdit.items.map((it) => ({
               ...it,
+              details: it.details || '',
               quantity: Number(it.quantity) || 1,
               unitPrice: Number(it.unitPrice) || 0,
               total: Math.round((Number(it.quantity) || 1) * (Number(it.unitPrice) || 0) * 100) / 100,
             }))
           : [
-              { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
-              { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
+              { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', details: '', quantity: 2, unitPrice: 85, total: 170 },
+              { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', details: '', quantity: 1, unitPrice: 95, total: 95 },
             ]
       );
       setMarketComparisonData(estimateToEdit.marketComparison || null);
@@ -87,8 +88,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       setStatus('draft');
       setMarketComparisonData(null);
       setItems([
-        { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
-        { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
+        { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', details: '', quantity: 2, unitPrice: 85, total: 170 },
+        { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', details: '', quantity: 1, unitPrice: 95, total: 95 },
       ]);
     }
   }, [isOpen, estimateToEdit?.id]);
@@ -141,6 +142,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         id: `item-${Date.now()}`,
         type,
         description: type === 'labor' ? 'Additional Service Labor' : type === 'material' ? 'Materials & Parts' : 'Flat-rate Service Fee',
+        details: '',
         quantity: 1,
         unitPrice: type === 'labor' ? 85 : 50,
         total: type === 'labor' ? 85 : 50,
@@ -155,6 +157,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         id: `item-${Date.now()}-${Math.random()}`,
         type: 'labor',
         description: task.description,
+        details: '',
         quantity: task.estimatedHours,
         unitPrice: rate,
         total: task.estimatedHours * rate,
@@ -188,6 +191,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       const p = Number(it.unitPrice) || 0;
       return {
         ...it,
+        details: it.details?.trim() || undefined,
         quantity: q,
         unitPrice: p,
         total: Math.round(q * p * 100) / 100,
@@ -474,67 +478,81 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
 
             <div className="divide-y divide-[#222222] p-2 space-y-2">
               {items.map((item, idx) => (
-                <div key={item.id} className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-[#181818]">
-                  {/* Type */}
-                  <div className="col-span-2">
-                    <select
-                      value={item.type}
-                      onChange={(e) => handleItemChange(idx, 'type', e.target.value)}
-                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-[11px] text-[#fdfbf7] focus:outline-none"
-                    >
-                      <option value="labor">Labor</option>
-                      <option value="material">Materials</option>
-                      <option value="flat_rate">Flat Rate</option>
-                    </select>
-                  </div>
+                <div key={item.id} className="p-2.5 rounded-lg bg-[#181818] space-y-2">
+                  <div className="grid grid-cols-12 gap-2 items-center">
+                    {/* Type */}
+                    <div className="col-span-2">
+                      <select
+                        value={item.type}
+                        onChange={(e) => handleItemChange(idx, 'type', e.target.value)}
+                        className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-[11px] text-[#fdfbf7] focus:outline-none"
+                      >
+                        <option value="labor">Labor</option>
+                        <option value="material">Materials</option>
+                        <option value="flat_rate">Flat Rate</option>
+                      </select>
+                    </div>
 
-                  {/* Description */}
-                  <div className="col-span-5">
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                      placeholder="Line item description"
-                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-[#fdfbf7] focus:outline-none"
-                    />
-                  </div>
+                    {/* Description */}
+                    <div className="col-span-5">
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                        placeholder="Line item description"
+                        className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+                      />
+                    </div>
 
-                  {/* Quantity */}
-                  <div className="col-span-2">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-[#fdfbf7] text-center focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Unit Price */}
-                  <div className="col-span-2">
-                    <div className="relative">
-                      <span className="absolute left-2 top-1.5 text-[#78716c]">$</span>
+                    {/* Quantity */}
+                    <div className="col-span-2">
                       <input
                         type="number"
-                        step="0.01"
-                        value={item.unitPrice}
-                        onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
-                        className="w-full bg-[#111111] border border-[#2a2a2a] rounded pl-5 pr-2 py-1.5 text-xs text-[#fdfbf7] text-right font-mono focus:outline-none"
+                        step="any"
+                        min="0"
+                        value={item.quantity}
+                        onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                        className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-2 py-1.5 text-xs text-[#fdfbf7] text-center focus:outline-none"
                       />
+                    </div>
+
+                    {/* Unit Price */}
+                    <div className="col-span-2">
+                      <div className="relative">
+                        <span className="absolute left-2 top-1.5 text-[#78716c]">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
+                          className="w-full bg-[#111111] border border-[#2a2a2a] rounded pl-5 pr-2 py-1.5 text-xs text-[#fdfbf7] text-right font-mono focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-1 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(idx)}
+                        disabled={items.length <= 1}
+                        className="text-[#78716c] hover:text-red-400 disabled:opacity-30 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="col-span-1 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(idx)}
-                      disabled={items.length <= 1}
-                      className="text-[#78716c] hover:text-red-400 disabled:opacity-30 p-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Optional Description / Scope Details Line Beneath Item */}
+                  <div className="pl-1 pr-1 flex items-center gap-2">
+                    <span className="text-[10px] text-[#78716c] shrink-0 font-medium">↳ Note:</span>
+                    <input
+                      type="text"
+                      value={item.details || ''}
+                      onChange={(e) => handleItemChange(idx, 'details', e.target.value)}
+                      placeholder="Optional brief description / scope details (e.g. brand, model, room, or procedure)"
+                      className="w-full bg-[#111111] border border-[#262626] rounded px-2.5 py-1 text-[11px] text-[#d6d3cd] placeholder-[#555] focus:outline-none focus:border-[#c5a059]"
+                    />
                   </div>
                 </div>
               ))}

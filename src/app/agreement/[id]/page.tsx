@@ -410,6 +410,11 @@ export default function WorkAgreementPage() {
                     </td>
                     <td className="p-3 text-[#fdfbf7] print:text-black">
                       <div className="font-medium">{item.description}</div>
+                      {item.details && (
+                        <div className="text-[11px] font-normal text-[#b8b0a5] print:text-zinc-600 mt-0.5 leading-relaxed">
+                          {item.details}
+                        </div>
+                      )}
                       {item.varianceNote && (
                         <div className="text-[10px] text-[#c5a059] print:text-zinc-700 italic mt-0.5">
                           Note: {item.varianceNote}
