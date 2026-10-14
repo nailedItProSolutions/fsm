@@ -291,7 +291,7 @@ export default function CustomerEstimateApprovalPage() {
             <div className="mt-6 pt-5 border-t border-[#262626] text-[11px] text-[#888] space-y-2 leading-relaxed">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs font-bold text-[#b8b0a5] gap-1 pb-1">
                 <span className="uppercase tracking-wider text-[#c5a059]">Quotation Terms & Standard Protections</span>
-                <span className="text-[#78716c] font-normal">Fully Licensed & Insured • Floyd County, GA</span>
+                <span className="text-[#78716c] font-normal">Fully Insured — Commercial Liability • Floyd County, GA</span>
               </div>
               <ul className="space-y-1 text-[#999]">
                 <li>• <strong className="text-[#d6d3cd]">Validity:</strong> Quote valid for 30 calendar days from issuance due to material price fluctuations.</li>

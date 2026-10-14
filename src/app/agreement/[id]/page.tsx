@@ -380,6 +380,7 @@ export default function WorkAgreementPage() {
             </div>
             <div className="text-[#b8b0a5] print:text-black mt-0.5">
               Service Contractor: <span className="font-medium text-white print:text-black">Nailed It Property Solutions LLC</span>
+              <div className="text-[10px] text-[#78716c] print:text-zinc-600 mt-0.5">Fully Insured — Commercial General Liability</div>
             </div>
           </div>
         </div>
