@@ -2003,6 +2003,40 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     }
   }
 
+  public updateEstimate(id: string, updates: Partial<Omit<Estimate, 'id' | 'createdAt' | 'estimateNumber'>>): Estimate | undefined {
+    const est = this.estimates.find((e) => e.id === id);
+    if (!est) return undefined;
+
+    const prevSnapshot = { ...est };
+
+    // Apply updates
+    Object.assign(est, updates);
+
+    // If items or taxRate were updated, recalculate subtotal, taxAmount, total
+    if (updates.items || updates.taxRate !== undefined) {
+      const subtotal = est.items.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
+      const taxRate = est.taxRate ?? 0.07;
+      const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
+      est.subtotal = subtotal;
+      est.taxAmount = taxAmount;
+      est.total = subtotal + taxAmount;
+    }
+
+    this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
+    this.logActivity(
+      'update',
+      'estimate',
+      est.id,
+      `Updated estimate quote ${est.estimateNumber} for ${est.clientName} (Total: $${est.total.toFixed(2)})`,
+      prevSnapshot,
+      est,
+      est.estimateNumber
+    );
+
+    return est;
+  }
+
   public convertEstimateToJob(estimateId: string, scheduledDate?: string, techId?: string): Job | undefined {
     const est = this.estimates.find((e) => e.id === estimateId);
     if (!est) return undefined;

@@ -15,9 +15,10 @@ import {
   AlertCircle,
   Printer,
   ExternalLink,
-  FileCheck2
+  FileCheck2,
+  Pencil
 } from 'lucide-react';
-import { ValueProofComparison } from '@/components/estimates/ValueProofComparison';
+import { EstimateBuilderModal } from '@/components/estimates/EstimateBuilderModal';
 
 export default function CustomerEstimateApprovalPage() {
   const params = useParams();
@@ -34,6 +35,7 @@ export default function CustomerEstimateApprovalPage() {
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [approvedSuccess, setApprovedSuccess] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('print') === 'true') {
@@ -119,14 +121,26 @@ export default function CustomerEstimateApprovalPage() {
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/5 blur-[90px] pointer-events-none rounded-full print-hide" />
           
-          {/* Print Action */}
-          <button 
-            onClick={() => window.print()}
-            className="print-hide absolute top-6 right-6 p-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#333] rounded-lg text-[#b8b0a5] hover:text-[#fdfbf7] transition"
-            title="Print Estimate"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
+          {/* Actions: Edit (if pending signature) & Print */}
+          <div className="print-hide absolute top-6 right-6 flex items-center gap-2">
+            {!isAlreadyApproved && (
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-amber-500/40 hover:border-amber-400 rounded-lg text-amber-400 hover:text-amber-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                title="Edit Estimate (Correct line items, prices, or details before signing)"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>Edit Estimate</span>
+              </button>
+            )}
+            <button 
+              onClick={() => window.print()}
+              className="p-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#333] rounded-lg text-[#b8b0a5] hover:text-[#fdfbf7] transition"
+              title="Print Estimate"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+          </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pb-6 border-b border-[#222222] mt-4 sm:mt-0 pr-12">
             <div>
@@ -273,17 +287,6 @@ export default function CustomerEstimateApprovalPage() {
           </div>
         </div>
 
-        {/* The Value Proof™ Rome, GA Market Pegging Visual Component */}
-        <ValueProofComparison
-          nailedItTotal={estimate.total}
-          tradeLabel={estimate.marketComparison?.tradeLabel || estimate.items[0]?.description}
-          romeLow={estimate.marketComparison?.romeLowEstimate}
-          romeMedian={estimate.marketComparison?.romeMedianEstimate}
-          romeHigh={estimate.marketComparison?.romeHighEstimate}
-          clientSavings={estimate.marketComparison?.customerDollarSavings}
-          percentBelowMedian={estimate.marketComparison?.percentBelowMedian}
-        />
-
         {/* Digital Approval Card */}
         {!isAlreadyApproved ? (
           <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8 shadow-2xl print-hide">
@@ -347,6 +350,16 @@ export default function CustomerEstimateApprovalPage() {
               Questions? Call our Rome, GA office at <span className="text-[#c5a059] font-bold">(706) 237-8184</span> or email <span className="text-[#c5a059] font-bold">info@naileditpropertysolutions.com</span>.
             </div>
           </div>
+        )}
+
+        {/* Modal for editing estimate if input errors were made before signing */}
+        {isEditModalOpen && (
+          <EstimateBuilderModal
+            isOpen={isEditModalOpen}
+            estimateToEdit={estimate}
+            onClose={() => setIsEditModalOpen(false)}
+            onSuccess={() => setIsEditModalOpen(false)}
+          />
         )}
       </div>
     </div>

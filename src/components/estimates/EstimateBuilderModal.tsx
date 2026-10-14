@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useActiveFSMData } from '@/lib/useStore';
-import { EstimateItem } from '@/types';
+import { Estimate, EstimateItem } from '@/types';
 import { 
   X, 
   FileText, 
@@ -15,7 +15,8 @@ import {
   CheckCircle2, 
   Send,
   Calculator,
-  Sparkles
+  Sparkles,
+  Pencil
 } from 'lucide-react';
 import { DynamicRepairEstimator } from './DynamicRepairEstimator';
 import { StandardTaskCatalog } from './StandardTaskCatalog';
@@ -24,14 +25,16 @@ interface EstimateBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (estimateId: string) => void;
+  estimateToEdit?: Estimate | null;
 }
 
 export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  estimateToEdit,
 }) => {
-  const { clients, properties, addEstimate } = useActiveFSMData();
+  const { clients, properties, addEstimate, updateEstimate } = useActiveFSMData();
 
   const [clientId, setClientId] = useState('');
   const [propertyId, setPropertyId] = useState('');
@@ -50,10 +53,28 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   ]);
 
   useEffect(() => {
-    if (!clientId && clients.length > 0) {
-      setClientId(clients[0].id);
+    if (estimateToEdit) {
+      setClientId(estimateToEdit.clientId);
+      setPropertyId(estimateToEdit.propertyId);
+      setValidUntil(estimateToEdit.validUntil);
+      setTaxRate(estimateToEdit.taxRate ?? 0.07);
+      setItems(estimateToEdit.items ? JSON.parse(JSON.stringify(estimateToEdit.items)) : []);
+      setMarketComparisonData(estimateToEdit.marketComparison || null);
+    } else if (isOpen) {
+      if (clients.length > 0) {
+        setClientId((prev) => prev || clients[0].id);
+      }
+      const d = new Date();
+      d.setDate(d.getDate() + 30);
+      setValidUntil(d.toISOString().split('T')[0]);
+      setTaxRate(0.07);
+      setMarketComparisonData(null);
+      setItems([
+        { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
+        { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
+      ]);
     }
-  }, [clients, clientId]);
+  }, [estimateToEdit, isOpen, clients]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -128,7 +149,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = subtotal + taxAmount;
 
-  const handleSave = (status: 'draft' | 'sent') => {
+  const handleSave = (status: Estimate['status'] = 'draft') => {
     if (!selectedClient || !selectedProperty) {
       alert('Please select a client and service property address.');
       return;
@@ -140,6 +161,27 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
 
     const propAddressString = `${selectedProperty.street} ${selectedProperty.unit ? `(${selectedProperty.unit})` : ''}, ${selectedProperty.city}, ${selectedProperty.state}`;
 
+    if (estimateToEdit) {
+      updateEstimate(estimateToEdit.id, {
+        clientId: selectedClient.id,
+        clientName: clientDisplayName,
+        propertyId: selectedProperty.id,
+        propertyAddress: propAddressString,
+        items,
+        subtotal,
+        taxRate,
+        taxAmount,
+        total,
+        status: status || estimateToEdit.status,
+        validUntil,
+        marketComparison: marketComparisonData || undefined,
+      });
+
+      if (onSuccess) onSuccess(estimateToEdit.id);
+      onClose();
+      return;
+    }
+
     const created = addEstimate({
       clientId: selectedClient.id,
       clientName: clientDisplayName,
@@ -150,7 +192,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       taxRate,
       taxAmount,
       total,
-      status,
+      status: (status === 'draft' || status === 'sent') ? status : 'draft',
       validUntil,
       marketComparison: marketComparisonData || undefined,
     });
@@ -166,11 +208,17 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#c5a059] flex items-center justify-center text-black font-bold">
-              <FileText className="w-4 h-4" />
+              {estimateToEdit ? <Pencil className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
             </div>
             <div>
-              <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">Create Line-Item Estimate</h3>
-              <p className="text-xs text-[#b8b0a5]">Build quotation with labor, materials, and one-click conversion</p>
+              <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">
+                {estimateToEdit ? `Edit Estimate ${estimateToEdit.estimateNumber}` : 'Create Line-Item Estimate'}
+              </h3>
+              <p className="text-xs text-[#b8b0a5]">
+                {estimateToEdit 
+                  ? 'Correct line items, prices, quantities, or property address before customer digital signing' 
+                  : 'Build quotation with labor, materials, and one-click conversion'}
+              </p>
             </div>
           </div>
           <button 
@@ -461,23 +509,36 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
             >
               Cancel
             </button>
-            <div className="flex space-x-3">
-              <button
-                type="button"
-                onClick={() => handleSave('draft')}
-                className="px-4 py-2 rounded-lg bg-[#222222] hover:bg-[#2a2a2a] text-[#fdfbf7] text-xs font-bold border border-[#333333]"
-              >
-                Save as Draft
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSave('sent')}
-                className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-lg transition flex items-center space-x-1.5"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Send to Customer for Approval</span>
-              </button>
-            </div>
+            {estimateToEdit ? (
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => handleSave(estimateToEdit.status)}
+                  className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-lg transition flex items-center space-x-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Save & Update Estimate</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => handleSave('draft')}
+                  className="px-4 py-2 rounded-lg bg-[#222222] hover:bg-[#2a2a2a] text-[#fdfbf7] text-xs font-bold border border-[#333333]"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSave('sent')}
+                  className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-lg transition flex items-center space-x-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send to Customer for Approval</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

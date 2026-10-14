@@ -57,6 +57,7 @@ export function useFSMStore() {
     toggleChecklistItem: (jobId: string, itemId: string) => store.toggleChecklistItem(jobId, itemId),
     addJobPhoto: (jobId: string, type: 'before' | 'after', photoUrl: string) => store.addJobPhoto(jobId, type, photoUrl),
     addEstimate: (estimateData: any) => store.addEstimate(estimateData),
+    updateEstimate: (id: string, updates: any) => store.updateEstimate(id, updates),
     updateEstimateStatus: (id: string, status: any) => store.updateEstimateStatus(id, status),
     convertEstimateToJob: (estimateId: string, date?: string, techId?: string) => store.convertEstimateToJob(estimateId, date, techId),
     recordEstimatePayment: (estimateId: string, paymentData: any) => store.recordEstimatePayment(estimateId, paymentData),

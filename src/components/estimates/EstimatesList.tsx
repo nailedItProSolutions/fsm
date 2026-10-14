@@ -32,6 +32,7 @@ export const EstimatesList: React.FC = () => {
 
   const [filterStatus, setFilterStatus] = useState<Estimate['status'] | 'all'>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [editingEstimate, setEditingEstimate] = useState<Estimate | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [payingEstimate, setPayingEstimate] = useState<Estimate | null>(null);
   const [agreeingEstimate, setAgreeingEstimate] = useState<Estimate | null>(null);
@@ -50,8 +51,13 @@ export const EstimatesList: React.FC = () => {
       if (sp.get('new') === 'true') {
         setIsBuilderOpen(true);
       }
+      const editId = sp.get('edit');
+      if (editId) {
+        const found = estimates.find((e) => e.id === editId);
+        if (found) setEditingEstimate(found);
+      }
     }
-  }, []);
+  }, [estimates]);
 
   const filteredEstimates = useMemo(() => {
     if (filterStatus === 'all') return estimates;
@@ -95,7 +101,7 @@ export const EstimatesList: React.FC = () => {
       case 'approved':
         return <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Approved</span>;
       case 'sent':
-        return <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Sent to Customer</span>;
+        return <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Pending Digital Signature</span>;
       case 'declined':
         return <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Declined</span>;
       default:
@@ -300,6 +306,18 @@ export const EstimatesList: React.FC = () => {
                 {/* Actions */}
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end space-x-1.5">
+                    {/* Edit Estimate (if pending digital signature) */}
+                    {est.status !== 'approved' && !est.convertedToJobId && (
+                      <button
+                        onClick={() => setEditingEstimate(est)}
+                        className="bg-[#1c1c1c] hover:bg-[#252525] text-amber-400 hover:text-amber-300 border border-amber-500/40 hover:border-amber-400 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center space-x-1 shadow-sm"
+                        title="Edit Estimate (Fix input errors prior to customer digital signing)"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Edit</span>
+                      </button>
+                    )}
+
                     {/* Record / Edit Payment & Deposits */}
                     <button
                       onClick={() => setPayingEstimate(est)}
@@ -417,10 +435,18 @@ export const EstimatesList: React.FC = () => {
         />
       )}
 
-      {/* New Estimate Builder Modal */}
+      {/* Estimate Builder / Editor Modal */}
       <EstimateBuilderModal
-        isOpen={isBuilderOpen}
-        onClose={() => setIsBuilderOpen(false)}
+        isOpen={isBuilderOpen || !!editingEstimate}
+        estimateToEdit={editingEstimate}
+        onClose={() => {
+          setIsBuilderOpen(false);
+          setEditingEstimate(null);
+        }}
+        onSuccess={() => {
+          setIsBuilderOpen(false);
+          setEditingEstimate(null);
+        }}
       />
     </div>
   );
