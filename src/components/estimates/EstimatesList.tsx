@@ -441,18 +441,20 @@ export const EstimatesList: React.FC = () => {
       )}
 
       {/* Estimate Builder / Editor Modal */}
-      <EstimateBuilderModal
-        isOpen={isBuilderOpen || !!editingEstimate}
-        estimateToEdit={editingEstimate}
-        onClose={() => {
-          setIsBuilderOpen(false);
-          setEditingEstimate(null);
-        }}
-        onSuccess={() => {
-          setIsBuilderOpen(false);
-          setEditingEstimate(null);
-        }}
-      />
+      {(isBuilderOpen || !!editingEstimate) && (
+        <EstimateBuilderModal
+          isOpen={true}
+          estimateToEdit={editingEstimate}
+          onClose={() => {
+            setIsBuilderOpen(false);
+            setEditingEstimate(null);
+          }}
+          onSuccess={() => {
+            setIsBuilderOpen(false);
+            setEditingEstimate(null);
+          }}
+        />
+      )}
     </div>
   );
 };

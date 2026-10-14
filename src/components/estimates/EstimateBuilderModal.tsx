@@ -54,17 +54,31 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   ]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (estimateToEdit) {
       setClientId(estimateToEdit.clientId);
       setPropertyId(estimateToEdit.propertyId);
       setValidUntil(estimateToEdit.validUntil);
       setTaxRate(estimateToEdit.taxRate ?? 0.07);
       setStatus(estimateToEdit.status || 'draft');
-      setItems(estimateToEdit.items ? JSON.parse(JSON.stringify(estimateToEdit.items)) : []);
+      setItems(
+        estimateToEdit.items && estimateToEdit.items.length > 0
+          ? estimateToEdit.items.map((it) => ({
+              ...it,
+              quantity: Number(it.quantity) || 1,
+              unitPrice: Number(it.unitPrice) || 0,
+              total: Math.round((Number(it.quantity) || 1) * (Number(it.unitPrice) || 0) * 100) / 100,
+            }))
+          : [
+              { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
+              { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
+            ]
+      );
       setMarketComparisonData(estimateToEdit.marketComparison || null);
-    } else if (isOpen) {
+    } else {
       if (clients.length > 0) {
-        setClientId((prev) => prev || clients[0].id);
+        setClientId(clients[0].id);
       }
       const d = new Date();
       d.setDate(d.getDate() + 30);
@@ -77,7 +91,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', quantity: 1, unitPrice: 95, total: 95 },
       ]);
     }
-  }, [estimateToEdit, isOpen, clients]);
+  }, [isOpen, estimateToEdit?.id]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -169,17 +183,32 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
 
     const propAddressString = `${selectedProperty.street} ${selectedProperty.unit ? `(${selectedProperty.unit})` : ''}, ${selectedProperty.city}, ${selectedProperty.state}`;
 
+    const cleanedItems = items.map((it) => {
+      const q = Number(it.quantity) || 0;
+      const p = Number(it.unitPrice) || 0;
+      return {
+        ...it,
+        quantity: q,
+        unitPrice: p,
+        total: Math.round(q * p * 100) / 100,
+      };
+    });
+
+    const computedSubtotal = cleanedItems.reduce((acc, it) => acc + it.total, 0);
+    const computedTaxAmount = Math.round(computedSubtotal * taxRate * 100) / 100;
+    const computedTotal = Math.round((computedSubtotal + computedTaxAmount) * 100) / 100;
+
     if (estimateToEdit) {
       updateEstimate(estimateToEdit.id, {
         clientId: selectedClient.id,
         clientName: clientDisplayName,
         propertyId: selectedProperty.id,
         propertyAddress: propAddressString,
-        items,
-        subtotal,
+        items: cleanedItems,
+        subtotal: computedSubtotal,
         taxRate,
-        taxAmount,
-        total,
+        taxAmount: computedTaxAmount,
+        total: computedTotal,
         status: status || estimateToEdit.status,
         validUntil,
         marketComparison: marketComparisonData || undefined,
@@ -195,11 +224,11 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       clientName: clientDisplayName,
       propertyId: selectedProperty.id,
       propertyAddress: propAddressString,
-      items,
-      subtotal,
+      items: cleanedItems,
+      subtotal: computedSubtotal,
       taxRate,
-      taxAmount,
-      total,
+      taxAmount: computedTaxAmount,
+      total: computedTotal,
       status: (status === 'draft' || status === 'sent') ? status : 'draft',
       validUntil,
       marketComparison: marketComparisonData || undefined,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FSMStore } from './store';
 import { Client, Property, Job, Invoice, Estimate } from '@/types';
 
@@ -98,15 +98,43 @@ export function useFSMStore() {
 
 export function useActiveFSMData() {
   const store = useFSMStore();
-  const archivedClientIds = new Set(store.clients.filter(c => c.isArchived).map(c => c.id));
   
+  const archivedClientIds = useMemo(() => {
+    return new Set(store.clients.filter((c) => c.isArchived).map((c) => c.id));
+  }, [store.clients]);
+
+  const activeClients = useMemo(
+    () => store.clients.filter((c) => !c.isArchived),
+    [store.clients]
+  );
+  const activeProperties = useMemo(
+    () => store.properties.filter((p) => !archivedClientIds.has(p.clientId)),
+    [store.properties, archivedClientIds]
+  );
+  const activeJobs = useMemo(
+    () => store.jobs.filter((j) => !archivedClientIds.has(j.clientId)),
+    [store.jobs, archivedClientIds]
+  );
+  const activeInvoices = useMemo(
+    () => store.invoices.filter((i) => !archivedClientIds.has(i.clientId)),
+    [store.invoices, archivedClientIds]
+  );
+  const activeEstimates = useMemo(
+    () => store.estimates.filter((e) => !archivedClientIds.has(e.clientId)),
+    [store.estimates, archivedClientIds]
+  );
+  const activeAgreements = useMemo(
+    () => store.workAgreements.filter((w) => !archivedClientIds.has(w.clientId)),
+    [store.workAgreements, archivedClientIds]
+  );
+
   return {
     ...store,
-    clients: store.clients.filter(c => !c.isArchived),
-    properties: store.properties.filter(p => !archivedClientIds.has(p.clientId)),
-    jobs: store.jobs.filter(j => !archivedClientIds.has(j.clientId)),
-    invoices: store.invoices.filter(i => !archivedClientIds.has(i.clientId)),
-    estimates: store.estimates.filter(e => !archivedClientIds.has(e.clientId)),
-    workAgreements: store.workAgreements.filter(w => !archivedClientIds.has(w.clientId)),
+    clients: activeClients,
+    properties: activeProperties,
+    jobs: activeJobs,
+    invoices: activeInvoices,
+    estimates: activeEstimates,
+    workAgreements: activeAgreements,
   };
 }
