@@ -51,7 +51,7 @@ export const LockedTimesheetPdfModal: React.FC<LockedTimesheetPdfModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-[#121212] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-3xl w-full border border-[#2a2a2a] overflow-hidden my-6 flex flex-col max-h-[92vh]">
+      <div className="bg-[#121212] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-5xl w-full border border-[#2a2a2a] overflow-hidden my-6 flex flex-col max-h-[92vh]">
         {/* Top Control Bar */}
         <div className="bg-[#1a1a1a] p-4 border-b border-[#292929] flex items-center justify-between">
           <div className="flex items-center space-x-2">

@@ -58,7 +58,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-3xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
           <div className="flex items-center space-x-3">

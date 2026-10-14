@@ -28,7 +28,7 @@ function VaultContent() {
       <Navbar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
       <div className="flex-1 flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-y-auto bg-[#0a0a0a]">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full overflow-y-auto bg-[#0a0a0a]">
           {/* Role-Based Rendering */}
           {showAdmin && <AdminVaultView />}
 

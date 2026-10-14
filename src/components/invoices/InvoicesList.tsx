@@ -105,7 +105,7 @@ export const InvoicesList: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 w-full">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -259,7 +259,7 @@ export const InvoicesList: React.FC = () => {
                         <div className="font-semibold text-[#fdfbf7]">{invoice.clientName}</div>
                         <div className="text-[11px] text-[#78716c] flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-[#FF8A00]" />
-                          <span className="truncate max-w-xs">{invoice.propertyAddress}</span>
+                          <span className="truncate">{invoice.propertyAddress}</span>
                         </div>
                       </td>
 

@@ -193,7 +193,7 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({ isOpen, on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-[#111111] border border-amber-500/40 rounded-2xl shadow-2xl text-[#fdfbf7] overflow-hidden">
+      <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#111111] border border-amber-500/40 rounded-2xl shadow-2xl text-[#fdfbf7] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#222222] bg-[#161616]">
           <div className="flex items-center space-x-3">

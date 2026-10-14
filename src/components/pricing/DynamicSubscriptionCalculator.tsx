@@ -168,7 +168,7 @@ export const DynamicSubscriptionCalculator: React.FC<DynamicSubscriptionCalculat
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#100f0f] text-[#fdfbf7] rounded-3xl shadow-2xl max-w-4xl w-full border border-[#2a2a2a] overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-[#100f0f] text-[#fdfbf7] rounded-3xl shadow-2xl max-w-5xl w-full border border-[#2a2a2a] overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
         {/* Header Bar */}
         <div className="bg-gradient-to-r from-[#181818] via-[#1c1813] to-[#181818] p-5 sm:p-6 border-b border-[#262626] flex items-center justify-between">
           <div className="flex items-center space-x-3">

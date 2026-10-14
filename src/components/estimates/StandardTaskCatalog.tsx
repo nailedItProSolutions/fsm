@@ -61,7 +61,7 @@ export const StandardTaskCatalog: React.FC<StandardTaskCatalogProps> = ({ onSele
         </div>
       </div>
 
-      <div className="max-h-72 overflow-y-auto">
+      <div className="max-h-[500px] overflow-y-auto">
         {filteredTasks.length === 0 ? (
           <div className="p-8 text-center text-[#78716c] text-sm">
             No matching tasks found. Try adjusting your search.

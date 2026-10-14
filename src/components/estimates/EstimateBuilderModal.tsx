@@ -161,7 +161,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-3xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-5xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
@@ -181,7 +181,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-6 text-xs max-h-[78vh] overflow-y-auto">
+        <div className="p-6 space-y-6 text-xs max-h-[85vh] overflow-y-auto">
           {/* Client & Property Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

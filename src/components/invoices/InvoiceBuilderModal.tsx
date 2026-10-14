@@ -192,7 +192,7 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-[#111111] border border-[#262626] rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl my-8">
+      <div className="bg-[#111111] border border-[#262626] rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl my-8">
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#222222] bg-[#141414]">
           <div className="flex items-center space-x-3">

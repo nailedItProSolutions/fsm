@@ -804,7 +804,7 @@ export const InvestorPortal: React.FC = () => {
       {/* PHOTO LIGHTBOX MODAL */}
       {activePhotoModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#141414] border border-[#333333] rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in fade-in">
+          <div className="bg-[#141414] border border-[#333333] rounded-2xl max-w-5xl w-full overflow-hidden shadow-2xl animate-in fade-in">
             <div className="bg-[#18181b] border-b border-[#262626] p-4 flex items-center justify-between">
               <div>
                 <span
@@ -856,7 +856,7 @@ export const InvestorPortal: React.FC = () => {
       {/* INVOICE RECEIPT MODAL */}
       {activeInvoiceModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#141414] border border-[#333333] rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl animate-in fade-in">
+          <div className="bg-[#141414] border border-[#333333] rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in fade-in">
             {/* Modal Header */}
             <div className="bg-[#18181b] border-b border-[#262626] p-4 flex items-center justify-between">
               <div className="flex items-center space-x-2">

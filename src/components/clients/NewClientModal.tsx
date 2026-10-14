@@ -89,7 +89,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-2xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-4xl w-full border border-[#2a2a2a] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
         {/*  */}
         <div className="bg-[#181818] border-b border-[#262626] text-[#fdfbf7] p-5 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">

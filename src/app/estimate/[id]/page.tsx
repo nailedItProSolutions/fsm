@@ -71,7 +71,7 @@ export default function CustomerEstimateApprovalPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#fdfbf7] py-10 px-4 sm:px-6 lg:px-8 antialiased">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Work Agreement Active Banner */}
         {agreement && (
           <div className="bg-gradient-to-r from-[#171410] via-[#211a12] to-[#171410] border border-[#c5a059]/40 rounded-2xl p-5 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:border-black">

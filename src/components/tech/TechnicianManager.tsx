@@ -372,7 +372,7 @@ export const TechnicianManager: React.FC = () => {
                         )}
                         <div className="flex items-center space-x-1.5">
                           <Mail className="w-3 h-3 text-[#78716c]" />
-                          <span className="truncate max-w-[180px]">{tech.email}</span>
+                          <span className="truncate">{tech.email}</span>
                         </div>
                         {tech.telegramChatId && (
                           <div className="flex items-center space-x-1.5 text-[11px] text-[#FF8A00]">
@@ -445,7 +445,7 @@ export const TechnicianManager: React.FC = () => {
       {/* Add Technician Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-lg w-full border border-[#2a2a2a] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-2xl w-full border border-[#2a2a2a] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#c5a059] flex items-center justify-center text-black font-bold">
@@ -591,7 +591,7 @@ export const TechnicianManager: React.FC = () => {
       {/* Edit Technician Modal */}
       {editingTech && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-lg w-full border border-[#2a2a2a] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-2xl w-full border border-[#2a2a2a] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#c5a059] flex items-center justify-center text-black font-bold">

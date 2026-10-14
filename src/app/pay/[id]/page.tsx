@@ -81,7 +81,7 @@ export default function CustomerInvoicePaymentPortal() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#fdfbf7] py-8 px-4 sm:px-6 lg:px-8 antialiased">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Top Header Card */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/5 blur-[90px] pointer-events-none rounded-full print-hide" />

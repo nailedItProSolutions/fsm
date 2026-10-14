@@ -220,7 +220,7 @@ export const EstimatesList: React.FC = () => {
                 {/* Client & Property */}
                 <td className="px-6 py-4">
                   <div className="font-bold text-sm text-[#fdfbf7]">{est.clientName}</div>
-                  <div className="text-[11px] text-[#b8b0a5] truncate max-w-xs">{est.propertyAddress}</div>
+                  <div className="text-[11px] text-[#b8b0a5] truncate">{est.propertyAddress}</div>
                 </td>
 
                 {/* Items Summary */}
@@ -228,7 +228,7 @@ export const EstimatesList: React.FC = () => {
                   <span className="bg-[#1a1a1a] text-[#fdfbf7] px-2.5 py-1 rounded border border-[#262626] font-semibold">
                     {est.items.length} Line {est.items.length === 1 ? 'Item' : 'Items'}
                   </span>
-                  <div className="text-[10px] text-[#78716c] mt-1 truncate max-w-xs">
+                  <div className="text-[10px] text-[#78716c] mt-1 truncate">
                     {est.items[0]?.description}
                   </div>
                 </td>

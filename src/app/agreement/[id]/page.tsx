@@ -707,7 +707,7 @@ export default function WorkAgreementPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#fdfbf7] py-6 sm:py-10 px-4 sm:px-6 lg:px-8 antialiased">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
 
         {/* Top Control Bar (Hidden on Print) */}
         <div className="print-hide bg-[#111111] border border-[#222222] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
@@ -918,7 +918,7 @@ export default function WorkAgreementPage() {
       {/* Tamper-Free Verification Certificate & Document Audit Trail Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8 max-h-[92vh] flex flex-col">
+          <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-5 my-8 max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-[#222] pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">

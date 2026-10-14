@@ -133,7 +133,7 @@ export const TechnicianMobilePortal: React.FC = () => {
     <div className="min-h-screen bg-[#0a0a0a] text-[#fdfbf7] pb-24 md:pb-12">
       {/* Mobile Sticky Header */}
       <header className="sticky top-0 z-40 bg-[#111111]/95 backdrop-blur-md border-b border-[#222222] px-4 py-3">
-        <div className="max-w-xl mx-auto flex items-center justify-between">
+        <div className="w-full flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 rounded-xl bg-[#FF8A00]/20 text-[#FF8A00] border border-[#FF8A00]/30">
               <Smartphone className="w-5 h-5" />
@@ -166,8 +166,8 @@ export const TechnicianMobilePortal: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Container (Mobile-first width) */}
-      <main className="max-w-xl mx-auto p-4 space-y-4">
+      {/* Main Content Container */}
+      <main className="w-full p-4 space-y-4">
         {/* Daily Route Status Card */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-4 shadow-xl relative overflow-hidden">
           <div className="flex items-center justify-between text-xs mb-2">

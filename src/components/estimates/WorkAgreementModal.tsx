@@ -181,7 +181,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-4xl w-full border border-[#2a2a2a] overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-[#111111] text-[#fdfbf7] rounded-2xl shadow-2xl max-w-6xl w-full border border-[#2a2a2a] overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
         <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
@@ -210,7 +210,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
         </div>
 
         {!createdAgreement ? (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-xs">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[88vh] overflow-y-auto text-xs">
             {error && (
               <div className="p-3 bg-red-950/50 border border-red-500/50 rounded-xl text-red-300 flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
