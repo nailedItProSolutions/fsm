@@ -15,9 +15,11 @@ import {
   DollarSign,
   ExternalLink,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -30,13 +32,20 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { updateJobStatus, toggleChecklistItem, getTechnicians } = useFSMStore();
+  const { updateJobStatus, toggleChecklistItem, getTechnicians, deleteJob } = useFSMStore();
   const technicians = getTechnicians();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   if (!isOpen || !job) return null;
 
   const handleStatusChange = (newStatus: JobStatus) => {
     updateJobStatus(job.id, newStatus);
+  };
+
+  const handleConfirmDelete = async (authorizingUser: any) => {
+    deleteJob(job.id, authorizingUser);
+    setIsDeleteModalOpen(false);
+    onClose();
   };
 
   const getStatusColor = (status: JobStatus) => {
@@ -195,10 +204,21 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             />
           </div>
 
-          {/* Value & Notes */}
-          <div className="flex justify-between items-center pt-2 border-t border-[#222222]">
-            <div className="text-xs text-[#b8b0a5]">
-              Total Value: <span className="font-mono font-bold text-[#c5a059]">${(job.totalAmount || 0).toFixed(2)}</span>
+          {/* Value, Delete & Actions */}
+          <div className="flex justify-between items-center pt-3 border-t border-[#222222]">
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="px-2.5 py-1.5 rounded-lg border border-red-800/40 bg-red-950/20 text-red-400 hover:bg-red-900/30 text-xs font-semibold transition flex items-center space-x-1"
+                title="Permanently Delete Job (Requires Employee PIN)"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                <span>Delete Job</span>
+              </button>
+              <div className="text-xs text-[#b8b0a5]">
+                Total Value: <span className="font-mono font-bold text-[#c5a059]">${(job.totalAmount || 0).toFixed(2)}</span>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -209,6 +229,20 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Job Modal with Employee PIN Verification */}
+      {isDeleteModalOpen && (
+        <DeleteWithPinModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleConfirmDelete}
+          title="Delete Work Order / Job"
+          itemName={`Job ${job.jobNumber} (${job.title})`}
+          itemType="job"
+          targetId={job.id}
+          warningMessage={`Permanently deleting Job ${job.jobNumber} will remove it from the dispatch board and schedule. This action requires verified employee PIN confirmation.`}
+        />
+      )}
     </div>
   );
 };

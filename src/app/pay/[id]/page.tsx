@@ -221,7 +221,7 @@ export default function CustomerInvoicePaymentPortal() {
             </div>
 
             <h2 className="text-xl font-bold font-heading text-[#fdfbf7] mb-1">
-              Pay ${Number(invoice.balanceDue).toFixed(2)} Securely
+              Pay ${Number(invoice.balanceDue ?? invoice.total ?? 0).toFixed(2)} Securely
             </h2>
             <p className="text-xs text-[#b8b0a5] mb-6">
               Payment will be processed instantly and an electronic receipt sent to your email on file.
@@ -315,7 +315,7 @@ export default function CustomerInvoicePaymentPortal() {
                 <span>
                   {isProcessing
                     ? 'Processing Payment with Stripe...'
-                    : `Authorize Payment of $${Number(invoice.balanceDue).toFixed(2)}`}
+                    : `Authorize Payment of $${Number(invoice.balanceDue ?? invoice.total ?? 0).toFixed(2)}`}
                 </span>
               </button>
             </form>

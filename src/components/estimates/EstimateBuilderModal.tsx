@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useActiveFSMData } from '@/lib/useStore';
 import { Estimate, EstimateItem } from '@/types';
 import { 
@@ -85,11 +85,16 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     }
   }, []);
 
-  const clientProperties = properties.filter((p) => p.clientId === clientId);
+  const clientProperties = useMemo(() => properties.filter((p) => p.clientId === clientId), [properties, clientId]);
 
   useEffect(() => {
     if (clientProperties.length > 0) {
-      setPropertyId(clientProperties[0].id);
+      setPropertyId((prev) => {
+        if (prev && clientProperties.some((p) => p.id === prev)) {
+          return prev;
+        }
+        return clientProperties[0].id;
+      });
     } else {
       setPropertyId('');
     }

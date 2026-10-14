@@ -2302,8 +2302,9 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     const originalQuoteTotal = est.originalTotal !== undefined ? est.originalTotal : est.total;
     const updatedSubtotal = agreementData.items.reduce((acc, i) => acc + (Number(i.total) || 0), 0);
-    const taxAmount = updatedSubtotal * (est.taxRate || 0.08);
-    const updatedTotal = updatedSubtotal + taxAmount;
+    const effectiveTaxRate = est.taxRate !== undefined ? est.taxRate : 0.07;
+    const taxAmount = Math.round(updatedSubtotal * effectiveTaxRate * 100) / 100;
+    const updatedTotal = Math.round((updatedSubtotal + taxAmount) * 100) / 100;
     const varianceAmount = updatedTotal - originalQuoteTotal;
     const deposit = agreementData.depositPaid !== undefined ? Number(agreementData.depositPaid) : (est.depositPaid || 0);
     const amountDueNow = agreementData.amountDueNow !== undefined ? Math.max(0, Number(agreementData.amountDueNow)) : 0;

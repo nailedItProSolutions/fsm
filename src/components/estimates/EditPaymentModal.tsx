@@ -15,6 +15,7 @@ import {
   Building2
 } from 'lucide-react';
 import { PaymentReceiptModal } from './PaymentReceiptModal';
+import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 interface EditPaymentModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   const [receivedBy, setReceivedBy] = useState<string>(payment.receivedBy || 'Charles Willis - Owner & Field Specialist');
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isDeletePinOpen, setIsDeletePinOpen] = useState<boolean>(false);
   const [showUpdatedReceipt, setShowUpdatedReceipt] = useState<EstimatePayment | null>(null);
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
       setReceivedBy(payment.receivedBy || 'Charles Willis - Owner & Field Specialist');
       setError(null);
       setIsDeleting(false);
+      setIsDeletePinOpen(false);
     }
   }, [payment]);
 
@@ -101,18 +104,20 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
   };
 
   const handleDelete = () => {
-    if (!window.confirm(`Are you sure you want to permanently delete payment receipt ${payment.receiptNumber} ($${payment.amount.toFixed(2)})? This will remove the credited deposit balance.`)) {
-      return;
-    }
+    setIsDeletePinOpen(true);
+  };
 
+  const handleConfirmDelete = async (authorizingUser: any) => {
     try {
-      deleteEstimatePayment(estId, payment.id);
+      deleteEstimatePayment(estId, payment.id, authorizingUser);
       if (onPaymentDeleted) {
         onPaymentDeleted(payment.id);
       }
+      setIsDeletePinOpen(false);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to delete payment');
+      setIsDeletePinOpen(false);
     }
   };
 
@@ -312,6 +317,20 @@ export const EditPaymentModal: React.FC<EditPaymentModalProps> = ({
           }}
           payment={showUpdatedReceipt}
           estimate={estimate}
+        />
+      )}
+
+      {/* Delete Payment Modal with Employee PIN Verification */}
+      {isDeletePinOpen && (
+        <DeleteWithPinModal
+          isOpen={isDeletePinOpen}
+          onClose={() => setIsDeletePinOpen(false)}
+          onConfirm={handleConfirmDelete}
+          title="Delete Payment Record"
+          itemName={`Receipt #${payment.receiptNumber} ($${payment.amount.toFixed(2)})`}
+          itemType="payment"
+          targetId={payment.id}
+          warningMessage={`Permanently deleting receipt #${payment.receiptNumber} will reduce the client's credited deposit balance by $${payment.amount.toFixed(2)}. This action requires verified employee PIN confirmation.`}
         />
       )}
     </>
