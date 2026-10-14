@@ -216,7 +216,14 @@ export const EstimatesList: React.FC = () => {
               <tr key={est.id} className="hover:bg-[#161616] transition">
                 {/* Estimate Number */}
                 <td className="px-6 py-4">
-                  <div className="font-mono font-bold text-sm text-[#c5a059]">{est.estimateNumber}</div>
+                  <button
+                    onClick={() => setEditingEstimate(est)}
+                    className="font-mono font-bold text-sm text-[#c5a059] hover:text-amber-300 hover:underline flex items-center gap-1.5 text-left"
+                    title="Click to Edit Estimate"
+                  >
+                    <span>{est.estimateNumber}</span>
+                    <Pencil className="w-3 h-3 opacity-60" />
+                  </button>
                   <div className="text-[10px] text-[#78716c] flex items-center gap-1 mt-0.5">
                     <Clock className="w-3 h-3" />
                     <span>Valid until {est.validUntil}</span>
@@ -306,17 +313,15 @@ export const EstimatesList: React.FC = () => {
                 {/* Actions */}
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end space-x-1.5">
-                    {/* Edit Estimate (if pending digital signature) */}
-                    {est.status !== 'approved' && !est.convertedToJobId && (
-                      <button
-                        onClick={() => setEditingEstimate(est)}
-                        className="bg-[#1c1c1c] hover:bg-[#252525] text-amber-400 hover:text-amber-300 border border-amber-500/40 hover:border-amber-400 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center space-x-1 shadow-sm"
-                        title="Edit Estimate (Fix input errors prior to customer digital signing)"
-                      >
-                        <Pencil className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Edit</span>
-                      </button>
-                    )}
+                    {/* Edit Estimate (Enabled for all estimates) */}
+                    <button
+                      onClick={() => setEditingEstimate(est)}
+                      className="bg-[#1c1c1c] hover:bg-[#252525] text-amber-400 hover:text-amber-300 border border-amber-500/40 hover:border-amber-400 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition flex items-center space-x-1 shadow-sm"
+                      title="Edit Estimate (Update line items, pricing, client, property, or status)"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Edit</span>
+                    </button>
 
                     {/* Record / Edit Payment & Deposits */}
                     <button

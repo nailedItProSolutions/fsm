@@ -44,6 +44,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     return d.toISOString().split('T')[0];
   });
   const [taxRate, setTaxRate] = useState(0.07); // 7% Floyd County GA
+  const [status, setStatus] = useState<Estimate['status']>('draft');
   const [showRomeCalculator, setShowRomeCalculator] = useState(false);
   const [showTaskCatalog, setShowTaskCatalog] = useState(false);
   const [marketComparisonData, setMarketComparisonData] = useState<any | null>(null);
@@ -58,6 +59,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       setPropertyId(estimateToEdit.propertyId);
       setValidUntil(estimateToEdit.validUntil);
       setTaxRate(estimateToEdit.taxRate ?? 0.07);
+      setStatus(estimateToEdit.status || 'draft');
       setItems(estimateToEdit.items ? JSON.parse(JSON.stringify(estimateToEdit.items)) : []);
       setMarketComparisonData(estimateToEdit.marketComparison || null);
     } else if (isOpen) {
@@ -68,6 +70,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       d.setDate(d.getDate() + 30);
       setValidUntil(d.toISOString().split('T')[0]);
       setTaxRate(0.07);
+      setStatus('draft');
       setMarketComparisonData(null);
       setItems([
         { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', quantity: 2, unitPrice: 85, total: 170 },
@@ -274,8 +277,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
             </div>
           </div>
 
-          {/* Expiration Date */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Expiration Date, Tax Rate & Status */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1 flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-[#c5a059]" />
@@ -300,6 +303,23 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                 onChange={(e) => setTaxRate((parseFloat(e.target.value) || 0) / 100)}
                 className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
               />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-[#c5a059]" />
+                <span>Estimate Status</span>
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as any)}
+                className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+              >
+                <option value="draft">Draft (Internal)</option>
+                <option value="sent">Pending Digital Signature</option>
+                <option value="approved">Approved</option>
+                <option value="declined">Declined</option>
+              </select>
             </div>
           </div>
 
@@ -518,7 +538,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
               <div className="flex space-x-3">
                 <button
                   type="button"
-                  onClick={() => handleSave(estimateToEdit.status)}
+                  onClick={() => handleSave(status)}
                   className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-lg transition flex items-center space-x-1.5"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />

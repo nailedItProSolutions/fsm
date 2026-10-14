@@ -2022,6 +2022,24 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       est.total = subtotal + taxAmount;
     }
 
+    // Synchronize linked job if estimate was already converted
+    if (est.convertedToJobId) {
+      const job = this.jobs.find((j) => j.id === est.convertedToJobId);
+      if (job) {
+        job.totalAmount = est.total;
+        syncRecordInBackground('jobs', jobToDb(job));
+      }
+    }
+
+    // Synchronize linked company work agreement if present
+    const agreement = this.workAgreements.find((w) => w.estimateId === est.id || w.id === est.workAgreementId);
+    if (agreement) {
+      agreement.updatedTotal = est.total;
+      agreement.balanceDueUponCompletion = Math.max(0, agreement.updatedTotal - (agreement.depositPaid || 0) - (agreement.amountDueNow || 0));
+      agreement.balanceDue = agreement.balanceDueUponCompletion;
+      syncRecordInBackground('work_agreements', workAgreementToDb(agreement));
+    }
+
     this.persist();
     syncRecordInBackground('estimates', estimateToDb(est));
     this.logActivity(

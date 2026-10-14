@@ -121,18 +121,16 @@ export default function CustomerEstimateApprovalPage() {
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#c5a059]/5 blur-[90px] pointer-events-none rounded-full print-hide" />
           
-          {/* Actions: Edit (if pending signature) & Print */}
+          {/* Actions: Edit & Print */}
           <div className="print-hide absolute top-6 right-6 flex items-center gap-2">
-            {!isAlreadyApproved && (
-              <button 
-                onClick={() => setIsEditModalOpen(true)}
-                className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-amber-500/40 hover:border-amber-400 rounded-lg text-amber-400 hover:text-amber-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-                title="Edit Estimate (Correct line items, prices, or details before signing)"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                <span>Edit Estimate</span>
-              </button>
-            )}
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#252525] border border-amber-500/40 hover:border-amber-400 rounded-lg text-amber-400 hover:text-amber-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              title="Edit Estimate (Update line items, prices, quantities, client, or details)"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>Edit Estimate</span>
+            </button>
             <button 
               onClick={() => window.print()}
               className="p-2 bg-[#1a1a1a] hover:bg-[#222] border border-[#333] rounded-lg text-[#b8b0a5] hover:text-[#fdfbf7] transition"
