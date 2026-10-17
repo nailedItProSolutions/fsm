@@ -288,15 +288,26 @@ export default function CustomerEstimateApprovalPage() {
               </table>
             </div>
             {/* Estimate Terms & Standard Protections */}
-            <div className="mt-6 pt-5 border-t border-[#262626] text-[11px] text-[#888] space-y-2 leading-relaxed">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs font-bold text-[#b8b0a5] gap-1 pb-1">
-                <span className="uppercase tracking-wider text-[#c5a059]">Quotation Terms & Standard Protections</span>
-                <span className="text-[#78716c] font-normal">Fully Insured — Commercial Liability • Floyd County, GA</span>
+            <div className="mt-6 pt-5 border-t border-[#262626] print:border-black text-[11px] text-[#888] print:text-black space-y-2 leading-relaxed">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs font-bold text-[#b8b0a5] print:text-black gap-1 pb-1">
+                <span className="uppercase tracking-wider text-[#c5a059] print:text-black">Quotation Terms &amp; Standard Protections</span>
+                <span className="text-[#78716c] print:text-zinc-600 font-normal">Fully Insured — Commercial Liability • Floyd County, GA</span>
               </div>
-              <ul className="space-y-1 text-[#999]">
-                <li>• <strong className="text-[#d6d3cd]">Validity:</strong> Quote valid for 30 calendar days from issuance due to material price fluctuations.</li>
-                <li>• <strong className="text-[#d6d3cd]">Payment Terms:</strong> 50% deposit due upfront upon approval to schedule project and procure materials; remaining balance is due upon receipt of final invoice upon substantial completion.</li>
-                <li>• <strong className="text-[#d6d3cd]">Scope & Unforeseen Conditions:</strong> Work is strictly limited to itemized scope above. Unforeseen structural, plumbing, or subfloor defects discovered during execution pause work for written Change Order approval prior to proceeding.</li>
+              <ul className="space-y-1.5 text-[#a39e93] print:text-black">
+                {(estimate.terms && Array.isArray(estimate.terms) && estimate.terms.length > 0
+                  ? estimate.terms
+                  : [
+                      'Quote valid for 30 calendar days from issuance due to material price fluctuations.',
+                      '50% deposit due upfront upon approval to schedule project and procure materials; remaining balance is due upon receipt of final invoice upon substantial completion.',
+                      'Work is strictly limited to itemized scope above. Unforeseen structural, plumbing, or subfloor defects discovered during execution pause work for written Change Order approval prior to proceeding.',
+                      'Fully Insured — Operations are protected under Nailed It Property Solutions\' Commercial General Liability policy.'
+                    ]
+                ).map((t, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-[#c5a059] print:text-black font-bold shrink-0 mt-0.5">•</span>
+                    <span>{t}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -313,7 +324,7 @@ export default function CustomerEstimateApprovalPage() {
               Approve This Estimate & Schedule Work
             </h2>
             <p className="text-xs text-[#b8b0a5] mt-1 mb-6">
-              By typing your name below, you authorize Nailed It Property Solutions to proceed with the specified service scope under the terms above (50% upfront deposit to schedule, balance due upon receipt).
+              By typing your name below, you authorize Nailed It Property Solutions to proceed with the specified service scope under the terms and payment conditions outlined above.
             </p>
 
             <form onSubmit={handleApprove} className="space-y-4">

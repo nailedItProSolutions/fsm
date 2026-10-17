@@ -170,6 +170,7 @@ export interface Estimate {
   payments?: EstimatePayment[];
   depositPaid?: number;
   workAgreementId?: string;
+  terms?: string[];
   marketComparison?: {
     trade: string;
     tradeLabel: string;

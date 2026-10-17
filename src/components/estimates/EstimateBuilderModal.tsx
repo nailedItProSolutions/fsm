@@ -16,10 +16,99 @@ import {
   Send,
   Calculator,
   Sparkles,
-  Pencil
+  Pencil,
+  CheckSquare,
+  Square,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { DynamicRepairEstimator } from './DynamicRepairEstimator';
 import { StandardTaskCatalog } from './StandardTaskCatalog';
+
+export interface PresetTerm {
+  id: string;
+  label: string;
+  text: string;
+}
+
+export const PRESET_PAYMENT_TERMS: PresetTerm[] = [
+  {
+    id: 'pay_50_upfront',
+    label: '50% Due Upfront, Balance Due Upon Receipt',
+    text: '50% deposit due upfront upon approval to schedule project and procure materials; remaining balance is due upon receipt of final invoice upon substantial completion.',
+  },
+  {
+    id: 'pay_100_upfront',
+    label: 'Total Amount Due to Begin (100% Upfront)',
+    text: 'Total estimated amount due in full upfront prior to commencement of work and material procurement.',
+  },
+  {
+    id: 'pay_30_upfront',
+    label: '30% Deposit to Schedule, Balance Due Upon Completion',
+    text: '30% deposit required to schedule project and order materials; remaining balance due upon certified substantial completion.',
+  },
+  {
+    id: 'pay_due_receipt',
+    label: 'Due in Full Upon Receipt (Net 0)',
+    text: 'Payment due in full upon receipt of final invoice immediately following substantial completion.',
+  },
+  {
+    id: 'pay_net_15',
+    label: 'Net 15 Terms',
+    text: 'Net 15 terms: Remaining balance due within 15 calendar days of invoice issuance.',
+  },
+  {
+    id: 'pay_net_30',
+    label: 'Net 30 Terms (Commercial / Property Mgmt)',
+    text: 'Net 30 terms: Balance payable within 30 days of invoice receipt for approved commercial and property management accounts.',
+  },
+];
+
+export const PRESET_PROTECTION_TERMS: PresetTerm[] = [
+  {
+    id: 'prot_valid_30',
+    label: 'Quote Valid for 30 Days',
+    text: 'Quote valid for 30 calendar days from issuance due to material price fluctuations.',
+  },
+  {
+    id: 'prot_insured',
+    label: 'Fully Insured — Commercial Liability Protection',
+    text: 'Fully Insured — Operations are protected under Nailed It Property Solutions\' Commercial General Liability policy.',
+  },
+  {
+    id: 'prot_hidden_conditions',
+    label: 'Unforeseen / Hidden Conditions Clause',
+    text: 'Estimate is based on visual inspection. Hidden defects, structural rot, or non-code wiring/plumbing uncovered during work pause operations for written Change Order approval prior to proceeding.',
+  },
+  {
+    id: 'prot_change_order',
+    label: 'Written Change Order Policy',
+    text: 'Any additions, deviations, or scope modifications will be executed only upon written authorization and will adjust the final total accordingly.',
+  },
+  {
+    id: 'prot_warranty',
+    label: '1-Year Workmanship Warranty',
+    text: 'All installation labor is backed by Nailed It Property Solutions\' 1-Year Workmanship Warranty.',
+  },
+  {
+    id: 'scope_materials_allowance',
+    label: 'Material Allowance Policy',
+    text: 'Pricing reflects standard builder-grade material allowance; client-selected fixtures or finishes exceeding allowance will be billed via Change Order.',
+  },
+  {
+    id: 'scope_exclusions',
+    label: 'Excludes Drywall Patching / Painting Unless Itemized',
+    text: 'Does not include drywall repair, texturing, painting, or moving personal property unless specifically itemized.',
+  },
+];
+
+export const DEFAULT_ESTIMATE_TERMS: string[] = [
+  PRESET_PAYMENT_TERMS[0].text,
+  PRESET_PROTECTION_TERMS[0].text,
+  PRESET_PROTECTION_TERMS[1].text,
+  PRESET_PROTECTION_TERMS[2].text,
+];
 
 interface EstimateBuilderModalProps {
   isOpen: boolean;
@@ -52,6 +141,9 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', details: '', quantity: 2, unitPrice: 85, total: 170 },
     { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', details: '', quantity: 1, unitPrice: 95, total: 95 },
   ]);
+  const [selectedTerms, setSelectedTerms] = useState<string[]>(DEFAULT_ESTIMATE_TERMS);
+  const [customTermText, setCustomTermText] = useState('');
+  const [showTermsSection, setShowTermsSection] = useState(true);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -77,6 +169,11 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
             ]
       );
       setMarketComparisonData(estimateToEdit.marketComparison || null);
+      if (estimateToEdit.terms && Array.isArray(estimateToEdit.terms) && estimateToEdit.terms.length > 0) {
+        setSelectedTerms(estimateToEdit.terms);
+      } else {
+        setSelectedTerms(DEFAULT_ESTIMATE_TERMS);
+      }
     } else {
       if (clients.length > 0) {
         setClientId(clients[0].id);
@@ -87,6 +184,8 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       setTaxRate(0.07);
       setStatus('draft');
       setMarketComparisonData(null);
+      setSelectedTerms(DEFAULT_ESTIMATE_TERMS);
+      setCustomTermText('');
       setItems([
         { id: '1', type: 'labor', description: 'Technician Labor (Hourly)', details: '', quantity: 2, unitPrice: 85, total: 170 },
         { id: '2', type: 'material', description: 'Commercial Replacement Hardware / Fixtures', details: '', quantity: 1, unitPrice: 95, total: 95 },
@@ -170,6 +269,36 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
     setItems(items.filter((_, i) => i !== index));
   };
 
+  const togglePaymentTerm = (termText: string) => {
+    setSelectedTerms((prev) => {
+      if (prev.includes(termText)) {
+        return prev.filter((t) => t !== termText);
+      }
+      const paymentTexts = PRESET_PAYMENT_TERMS.map((p) => p.text);
+      const withoutPayment = prev.filter((t) => !paymentTexts.includes(t));
+      return [termText, ...withoutPayment];
+    });
+  };
+
+  const toggleTerm = (termText: string) => {
+    setSelectedTerms((prev) =>
+      prev.includes(termText) ? prev.filter((t) => t !== termText) : [...prev, termText]
+    );
+  };
+
+  const handleAddCustomTerm = () => {
+    const trimmed = customTermText.trim();
+    if (!trimmed) return;
+    if (!selectedTerms.includes(trimmed)) {
+      setSelectedTerms((prev) => [...prev, trimmed]);
+    }
+    setCustomTermText('');
+  };
+
+  const handleRemoveCustomTerm = (termText: string) => {
+    setSelectedTerms((prev) => prev.filter((t) => t !== termText));
+  };
+
   const subtotal = items.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = subtotal + taxAmount;
@@ -216,6 +345,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
         status: status || estimateToEdit.status,
         validUntil,
         marketComparison: marketComparisonData || undefined,
+        terms: selectedTerms,
       });
 
       if (onSuccess) onSuccess(estimateToEdit.id);
@@ -236,6 +366,7 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
       status: (status === 'draft' || status === 'sent') ? status : 'draft',
       validUntil,
       marketComparison: marketComparisonData || undefined,
+      terms: selectedTerms,
     });
 
     if (onSuccess) onSuccess(created.id);
@@ -570,6 +701,191 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                 Grand Total: <span className="font-mono text-base ml-2">${Number(total).toFixed(2)}</span>
               </div>
             </div>
+          </div>
+
+          {/* Terms & Conditions Selection Card */}
+          <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 space-y-3">
+            <div 
+              className="flex items-center justify-between cursor-pointer select-none" 
+              onClick={() => setShowTermsSection(!showTermsSection)}
+            >
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-[#c5a059]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[#fdfbf7]">
+                  Quotation Terms &amp; Conditions
+                </span>
+                <span className="bg-[#1e1e1e] border border-[#333] text-[#c5a059] text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
+                  {selectedTerms.length} Selected
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedTerms(DEFAULT_ESTIMATE_TERMS);
+                  }}
+                  className="text-[10px] text-[#78716c] hover:text-[#c5a059] underline font-medium"
+                >
+                  Reset Defaults
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedTerms([]);
+                  }}
+                  className="text-[10px] text-[#78716c] hover:text-red-400 underline font-medium"
+                >
+                  Clear All
+                </button>
+                {showTermsSection ? (
+                  <ChevronUp className="w-4 h-4 text-[#78716c]" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-[#78716c]" />
+                )}
+              </div>
+            </div>
+
+            {showTermsSection && (
+              <div className="space-y-4 pt-2 border-t border-[#222222]">
+                {/* Payment Terms Section */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b8b0a5] mb-2 flex items-center justify-between">
+                    <span>1. Payment Terms (Select to Apply)</span>
+                    <span className="text-[10px] text-[#78716c] font-normal">Click to switch or toggle</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {PRESET_PAYMENT_TERMS.map((pt) => {
+                      const isChecked = selectedTerms.includes(pt.text);
+                      return (
+                        <div
+                          key={pt.id}
+                          onClick={() => togglePaymentTerm(pt.text)}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-left cursor-pointer transition select-none ${
+                            isChecked
+                              ? 'bg-[#c5a059]/10 border-[#c5a059] text-[#fdfbf7]'
+                              : 'bg-[#181818] border-[#262626] text-[#888] hover:border-[#333] hover:text-[#b8b0a5]'
+                          }`}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {isChecked ? (
+                              <CheckSquare className="w-4 h-4 text-[#c5a059]" />
+                            ) : (
+                              <Square className="w-4 h-4 text-[#555]" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs font-semibold ${isChecked ? 'text-[#c5a059]' : 'text-[#d6d3cd]'}`}>
+                              {pt.label}
+                            </div>
+                            <div className="text-[10px] text-[#78716c] leading-relaxed mt-0.5">
+                              {pt.text}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Protection & Scope Clauses */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b8b0a5] mb-2">
+                    2. Protection &amp; Scope Clauses (Check all that apply)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {PRESET_PROTECTION_TERMS.map((pt) => {
+                      const isChecked = selectedTerms.includes(pt.text);
+                      return (
+                        <div
+                          key={pt.id}
+                          onClick={() => toggleTerm(pt.text)}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-left cursor-pointer transition select-none ${
+                            isChecked
+                              ? 'bg-[#c5a059]/10 border-[#c5a059] text-[#fdfbf7]'
+                              : 'bg-[#181818] border-[#262626] text-[#888] hover:border-[#333] hover:text-[#b8b0a5]'
+                          }`}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {isChecked ? (
+                              <CheckSquare className="w-4 h-4 text-[#c5a059]" />
+                            ) : (
+                              <Square className="w-4 h-4 text-[#555]" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-xs font-semibold ${isChecked ? 'text-[#c5a059]' : 'text-[#d6d3cd]'}`}>
+                              {pt.label}
+                            </div>
+                            <div className="text-[10px] text-[#78716c] leading-relaxed mt-0.5">
+                              {pt.text}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Terms & Summary */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b8b0a5] mb-1.5">
+                    3. Custom Condition / Specific Scope Note
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customTermText}
+                      onChange={(e) => setCustomTermText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomTerm();
+                        }
+                      }}
+                      placeholder="e.g. Client provides vanity hardware; work performed between 9am-2pm only..."
+                      className="flex-1 bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-xs text-[#fdfbf7] placeholder-[#555] focus:outline-none focus:border-[#c5a059]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomTerm}
+                      disabled={!customTermText.trim()}
+                      className="bg-[#222222] hover:bg-[#2c2c2c] disabled:opacity-40 text-[#c5a059] font-bold text-xs px-3 py-1.5 rounded-lg border border-[#333] transition flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Term</span>
+                    </button>
+                  </div>
+
+                  {/* Non-preset custom terms list */}
+                  {selectedTerms.filter(t => 
+                    !PRESET_PAYMENT_TERMS.some(p => p.text === t) && 
+                    !PRESET_PROTECTION_TERMS.some(p => p.text === t)
+                  ).length > 0 && (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="text-[10px] font-bold text-[#b8b0a5] uppercase">Active Custom Conditions:</div>
+                      {selectedTerms.filter(t => 
+                        !PRESET_PAYMENT_TERMS.some(p => p.text === t) && 
+                        !PRESET_PROTECTION_TERMS.some(p => p.text === t)
+                      ).map((ct, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 rounded bg-[#181818] border border-[#333] text-xs text-[#fdfbf7]">
+                          <span className="flex-1 mr-2 text-[11px]">• {ct}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomTerm(ct)}
+                            className="text-[#78716c] hover:text-red-400 p-0.5"
+                            title="Remove custom term"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Modal Actions */}

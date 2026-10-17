@@ -173,6 +173,7 @@ function estimateToDbBase(e: Estimate): any {
     valid_until: e.validUntil || '',
     converted_to_job_id: e.convertedToJobId || null,
     market_comparison: e.marketComparison || null,
+    terms: e.terms || null,
     created_at: e.createdAt || new Date().toISOString(),
   };
 }
@@ -198,6 +199,7 @@ function dbToEstimateBase(r: any): Estimate {
     validUntil: r.valid_until || '',
     convertedToJobId: r.converted_to_job_id || undefined,
     marketComparison: r.market_comparison || undefined,
+    terms: Array.isArray(r.terms) ? r.terms : (Array.isArray(r.raw?.terms) ? r.raw.terms : undefined),
     createdAt: r.created_at,
   };
 }
@@ -698,6 +700,7 @@ export function syncRecordInBackground(tableName: string, row: any, conflictKey 
       if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
         const fallback = { ...row };
         delete fallback.original_total;
+        delete fallback.terms;
         if (/raw/i.test(msg)) delete fallback.raw;
         res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
       }
