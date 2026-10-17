@@ -57,4 +57,16 @@ export const STANDARD_TASKS: StandardTask[] = [
   { id: 'turn-3', category: 'Turnover & Exterior', description: 'Pressure Wash Driveway (Standard 2-Car)', estimatedHours: 2.5 },
   { id: 'turn-4', category: 'Turnover & Exterior', description: 'Clean Gutters (Standard 1-Story)', estimatedHours: 2.0 },
   { id: 'turn-5', category: 'Turnover & Exterior', description: 'Replace Exterior Weather Stripping', estimatedHours: 1.0 },
+
+  // Carpet Restoration
+  { id: 'carpet-1', category: 'Carpet Restoration', description: 'Carpet Restoration', estimatedHours: 2.5 },
+  { id: 'carpet-2', category: 'Carpet Restoration', description: 'Carpet Restoration - Heavy Pet Odor & Deep Extraction', estimatedHours: 3.5 },
+  { id: 'carpet-3', category: 'Carpet Restoration', description: 'Carpet Restoration - Multi-Room Revitalization (Up to 3 Rooms)', estimatedHours: 5.0 },
+];
+
+export const CARPET_DISCLAIMER_TERMS: string[] = [
+  'Stains & Wear: While Nailed It Property Solutions utilizes professional-grade extraction methods, complete removal of all stains, dyes, or deep discolorations cannot be guaranteed. Cleaning removes soil but cannot repair crushed fibers, fraying, or permanent "traffic lane" wear.',
+  'Pet Odors & Pad Damage: Surface cleaning treats the carpet fibers but does not penetrate the underlying pad or subfloor. Severe odors (such as pet urine) that have soaked into the padding may require full replacement and subfloor treatment to fully eliminate.',
+  'Safety & Drying: Please allow 6 to 24 hours for carpets to fully dry. Exercise extreme caution when walking from damp carpet onto hard flooring (like tile or wood), as shoes and feet will be slippery.',
+  'Acceptance: By approving this estimate, the client acknowledges that this service is a maintenance cleaning in lieu of carpet replacement, and Nailed It Property Solutions is not liable for pre-existing conditions, permanent stains, or structural wear.',
 ];

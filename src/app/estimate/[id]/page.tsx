@@ -302,12 +302,27 @@ export default function CustomerEstimateApprovalPage() {
                       'Work is strictly limited to itemized scope above. Unforeseen structural, plumbing, or subfloor defects discovered during execution pause work for written Change Order approval prior to proceeding.',
                       'Fully Insured — Operations are protected under Nailed It Property Solutions\' Commercial General Liability policy.'
                     ]
-                ).map((t, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-[#c5a059] print:text-black font-bold shrink-0 mt-0.5">•</span>
-                    <span>{t}</span>
-                  </li>
-                ))}
+                ).map((t, i) => {
+                  const colonIndex = t.indexOf(':');
+                  const hasLabel = colonIndex > 0 && colonIndex < 45;
+                  return (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-[#c5a059] print:text-black font-bold shrink-0 mt-0.5">•</span>
+                      <span>
+                        {hasLabel ? (
+                          <>
+                            <strong className="text-[#fdfbf7] print:text-black font-semibold">
+                              {t.slice(0, colonIndex + 1)}
+                            </strong>{' '}
+                            {t.slice(colonIndex + 1).trim()}
+                          </>
+                        ) : (
+                          t
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>

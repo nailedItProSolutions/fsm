@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { DynamicRepairEstimator } from './DynamicRepairEstimator';
 import { StandardTaskCatalog } from './StandardTaskCatalog';
+import { CARPET_DISCLAIMER_TERMS } from '@/lib/standardTasks';
 
 export interface PresetTerm {
   id: string;
@@ -250,23 +251,45 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
   };
 
   const handleSelectStandardTask = (task: any, rate: number) => {
-    setItems([
-      ...items,
+    setItems((prev) => [
+      ...prev,
       {
         id: `item-${Date.now()}-${Math.random()}`,
         type: 'labor',
         description: task.description,
-        details: '',
+        details: task.category === 'Carpet Restoration' ? 'Hot-water extraction & restorative fiber maintenance' : '',
         quantity: task.estimatedHours,
         unitPrice: rate,
-        total: task.estimatedHours * rate,
+        total: Math.round(task.estimatedHours * rate * 100) / 100,
       }
     ]);
+
+    // If Carpet Restoration is chosen, automatically activate Carpet Cleaning Service Limitations & Disclaimer
+    if (task.category === 'Carpet Restoration' || /carpet/i.test(task.description)) {
+      setSelectedTerms((prev) => {
+        const toAdd = CARPET_DISCLAIMER_TERMS.filter((t) => !prev.includes(t));
+        return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+      });
+      setShowTermsSection(true);
+    }
   };
 
   const handleRemoveItem = (index: number) => {
     if (items.length <= 1) return;
     setItems(items.filter((_, i) => i !== index));
+  };
+
+  const isCarpetDisclaimerActive = CARPET_DISCLAIMER_TERMS.every((t) => selectedTerms.includes(t));
+
+  const toggleCarpetDisclaimer = () => {
+    if (isCarpetDisclaimerActive) {
+      setSelectedTerms((prev) => prev.filter((t) => !CARPET_DISCLAIMER_TERMS.includes(t)));
+    } else {
+      setSelectedTerms((prev) => {
+        const toAdd = CARPET_DISCLAIMER_TERMS.filter((t) => !prev.includes(t));
+        return [...prev, ...toAdd];
+      });
+    }
   };
 
   const togglePaymentTerm = (termText: string) => {
@@ -828,10 +851,62 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                   </div>
                 </div>
 
+                {/* Specialized Service Disclaimers */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b8b0a5] mb-2 flex items-center justify-between">
+                    <span>3. Specialized Service Disclaimers</span>
+                    <span className="text-[10px] text-[#c5a059] font-normal">Auto-attaches when selecting Carpet Restoration</span>
+                  </label>
+                  <div
+                    onClick={toggleCarpetDisclaimer}
+                    className={`p-3 rounded-xl border text-left cursor-pointer transition select-none ${
+                      isCarpetDisclaimerActive
+                        ? 'bg-amber-950/20 border-[#c5a059] text-[#fdfbf7]'
+                        : 'bg-[#181818] border-[#262626] text-[#888] hover:border-[#333] hover:text-[#b8b0a5]'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 shrink-0">
+                        {isCarpetDisclaimerActive ? (
+                          <CheckSquare className="w-4 h-4 text-[#c5a059]" />
+                        ) : (
+                          <Square className="w-4 h-4 text-[#555]" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${isCarpetDisclaimerActive ? 'text-[#c5a059]' : 'text-[#d6d3cd]'}`}>
+                            Carpet Cleaning Service Limitations &amp; Disclaimer
+                          </span>
+                          <span className={`text-[9px] uppercase font-mono px-1.5 py-0.5 rounded font-bold ${
+                            isCarpetDisclaimerActive ? 'bg-[#c5a059] text-black' : 'bg-[#222] text-[#888]'
+                          }`}>
+                            4 Protection Clauses
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[#888] mt-2 space-y-1.5 leading-relaxed">
+                          <div>
+                            <strong className="text-[#d6d3cd]">Stains &amp; Wear:</strong> Professional-grade extraction used; complete removal of all stains, dyes, or deep discolorations cannot be guaranteed. Cleaning removes soil but cannot repair crushed fibers, fraying, or traffic lane wear.
+                          </div>
+                          <div>
+                            <strong className="text-[#d6d3cd]">Pet Odors &amp; Pad Damage:</strong> Surface cleaning treats carpet fibers but does not penetrate the underlying pad or subfloor. Severe odors (such as pet urine) in padding may require full replacement and subfloor treatment.
+                          </div>
+                          <div>
+                            <strong className="text-[#d6d3cd]">Safety &amp; Drying:</strong> Please allow 6 to 24 hours for carpets to fully dry. Exercise extreme caution walking from damp carpet onto hard flooring (tile or wood), as footwear will be slippery.
+                          </div>
+                          <div>
+                            <strong className="text-[#d6d3cd]">Acceptance:</strong> By approving this estimate, client acknowledges this is maintenance cleaning in lieu of carpet replacement; contractor is not liable for pre-existing conditions, permanent stains, or structural wear.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Custom Terms & Summary */}
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#b8b0a5] mb-1.5">
-                    3. Custom Condition / Specific Scope Note
+                    4. Custom Condition / Specific Scope Note
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -861,13 +936,15 @@ export const EstimateBuilderModal: React.FC<EstimateBuilderModalProps> = ({
                   {/* Non-preset custom terms list */}
                   {selectedTerms.filter(t => 
                     !PRESET_PAYMENT_TERMS.some(p => p.text === t) && 
-                    !PRESET_PROTECTION_TERMS.some(p => p.text === t)
+                    !PRESET_PROTECTION_TERMS.some(p => p.text === t) &&
+                    !CARPET_DISCLAIMER_TERMS.includes(t)
                   ).length > 0 && (
                     <div className="mt-2 space-y-1.5">
                       <div className="text-[10px] font-bold text-[#b8b0a5] uppercase">Active Custom Conditions:</div>
                       {selectedTerms.filter(t => 
                         !PRESET_PAYMENT_TERMS.some(p => p.text === t) && 
-                        !PRESET_PROTECTION_TERMS.some(p => p.text === t)
+                        !PRESET_PROTECTION_TERMS.some(p => p.text === t) &&
+                        !CARPET_DISCLAIMER_TERMS.includes(t)
                       ).map((ct, idx) => (
                         <div key={idx} className="flex items-center justify-between p-2 rounded bg-[#181818] border border-[#333] text-xs text-[#fdfbf7]">
                           <span className="flex-1 mr-2 text-[11px]">• {ct}</span>
