@@ -85,13 +85,15 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
   // Real-time updated state math
   const originalEstimateTotal = Number(estimate.originalTotal || estimate.total || 0);
   const updatedSubtotal = items.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
-  const taxRate = Number(estimate.taxRate || 0.08);
+  const taxRate = Number(estimate.taxRate !== undefined ? estimate.taxRate : 0.07);
   const updatedTax = updatedSubtotal * taxRate;
   const updatedTotal = updatedSubtotal + updatedTax;
   const varianceAmount = updatedTotal - originalEstimateTotal;
   const variancePercent = originalEstimateTotal > 0 ? (varianceAmount / originalEstimateTotal) * 100 : 0;
-  const balanceDueUponCompletion = Math.max(0, updatedTotal - depositPaid - amountDueNow);
-  const balanceDue = balanceDueUponCompletion;
+  const remainingDueNow = Math.max(0, Math.round((amountDueNow - depositPaid) * 100) / 100);
+  const totalRemainingBalance = Math.max(0, Math.round((updatedTotal - depositPaid) * 100) / 100);
+  const balanceDueUponCompletion = Math.max(0, Math.round((totalRemainingBalance - remainingDueNow) * 100) / 100);
+  const balanceDue = totalRemainingBalance;
 
   const handleItemChange = (index: number, field: keyof WorkAgreementItem, value: any) => {
     setItems((prev) => {
@@ -599,7 +601,7 @@ export const WorkAgreementModal: React.FC<WorkAgreementModalProps> = ({
                   <div>
                     <span>Remaining Balance Due upon Completion:</span>
                     <span className="block text-[10px] text-[#78716c] font-normal">
-                      Overall Total (${updatedTotal.toFixed(2)}) - Credited Deposit (${depositPaid.toFixed(2)}){amountDueNow > 0 ? ` - Due Now ($${amountDueNow.toFixed(2)})` : ''}
+                      Overall Total (${updatedTotal.toFixed(2)}) - Credited Deposit (${depositPaid.toFixed(2)}){remainingDueNow > 0 ? ` - Due Now ($${remainingDueNow.toFixed(2)})` : ''}
                     </span>
                   </div>
                   <span className="font-mono text-base text-emerald-400 font-black">
