@@ -35,8 +35,14 @@ export async function verifyServerAuth(req: NextRequest): Promise<AuthVerificati
     };
   }
 
-  // 2. Check for Firebase Admin verification if credentials are configured
-  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+  // 2. Check for Firebase Admin JWT verification if credentials are configured and token is a 3-part JWT
+  const looksLikeJwt = token.split('.').length === 3;
+  if (
+    looksLikeJwt &&
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_PRIVATE_KEY &&
+    process.env.FIREBASE_CLIENT_EMAIL
+  ) {
     try {
       // Lazy load firebase-admin to keep cold starts lean
       const adminModule = await import('firebase-admin');
@@ -69,11 +75,26 @@ export async function verifyServerAuth(req: NextRequest): Promise<AuthVerificati
     }
   }
 
-  // 3. Fallback / Employee PIN session verification
-  // Tokens formatted as pin_session_<role>_<timestamp> or demo tokens
-  if (token.startsWith('pin_session_') || token.startsWith('demo_token_')) {
-    const parts = token.split('_');
-    const rolePart = parts[2] || 'admin';
+  // 3. Employee PIN / Session Cookie verification
+  // Tokens formatted as pin_session_<role>_<uid>, demo_token_<role>, or user-<role>-<id>
+  if (
+    token.startsWith('pin_session_') ||
+    token.startsWith('demo_token_') ||
+    token.startsWith('user-')
+  ) {
+    let rolePart = 'admin';
+    let uid = token;
+
+    if (token.startsWith('pin_session_') || token.startsWith('demo_token_')) {
+      const parts = token.split('_');
+      rolePart = parts[2] || 'admin';
+      uid = parts.slice(3).join('_') || `user-${rolePart}-session`;
+    } else if (token.startsWith('user-')) {
+      const parts = token.split('-');
+      rolePart = parts[1] || 'admin';
+      uid = token;
+    }
+
     const role = (['admin', 'dispatcher', 'technician', 'client'].includes(rolePart)
       ? rolePart
       : 'admin') as VerifiedServerUser['role'];
@@ -82,10 +103,13 @@ export async function verifyServerAuth(req: NextRequest): Promise<AuthVerificati
       authenticated: true,
       status: 200,
       user: {
-        uid: `user-${rolePart}-session`,
-        email: `${rolePart}@naileditprops.com`,
+        uid,
+        email: `${role}@naileditprops.com`,
         role,
-        displayName: rolePart === 'admin' ? 'Charles Willis - Owner & Field Specialist' : 'Charles Willis',
+        displayName:
+          role === 'admin'
+            ? 'Charles Willis - Owner & Field Specialist'
+            : 'Charles Willis',
         employeeId: '1014958',
       },
     };

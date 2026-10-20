@@ -666,6 +666,28 @@ function trackWrite(op: PromiseLike<any>, table: string, onFail?: () => void) {
   );
 }
 
+// Helper to strip newly added / optional columns when syncing against an older Supabase table schema
+function stripFallbackColumns(tableName: string, row: any, errorMessage: string): any {
+  const fallback = { ...row };
+  if (tableName === 'work_agreements') {
+    delete fallback.amount_due_now;
+    delete fallback.due_now_description;
+    delete fallback.balance_due_upon_completion;
+  }
+  if (tableName === 'invoices') {
+    delete fallback.tax_exempt;
+    delete fallback.tax_rate;
+  }
+  if (tableName === 'estimates') {
+    delete fallback.original_total;
+    delete fallback.terms;
+  }
+  if (/raw|column.*does not exist|schema cache/i.test(errorMessage)) {
+    delete fallback.raw;
+  }
+  return fallback;
+}
+
 // Single-record background sync helper functions
 export function syncRecordInBackground(tableName: string, row: any, conflictKey = 'id') {
   const client = getSupabaseClient();
@@ -674,34 +696,10 @@ export function syncRecordInBackground(tableName: string, row: any, conflictKey 
   const runUpsert = async () => {
     let res = await client.from(tableName).upsert(row, { onConflict: conflictKey });
     // If remote table lacks newly added columns (e.g. before user executes migration SQL), retry with stripped row
-    if (res?.error && tableName === 'work_agreements') {
+    if (res?.error) {
       const msg = res.error.message || '';
-      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
-        const fallback = { ...row };
-        delete fallback.amount_due_now;
-        delete fallback.due_now_description;
-        delete fallback.balance_due_upon_completion;
-        if (/raw/i.test(msg)) delete fallback.raw;
-        res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
-      }
-    }
-    if (res?.error && tableName === 'invoices') {
-      const msg = res.error.message || '';
-      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
-        const fallback = { ...row };
-        delete fallback.tax_exempt;
-        delete fallback.tax_rate;
-        if (/raw/i.test(msg)) delete fallback.raw;
-        res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
-      }
-    }
-    if (res?.error && tableName === 'estimates') {
-      const msg = res.error.message || '';
-      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache/i.test(msg)) {
-        const fallback = { ...row };
-        delete fallback.original_total;
-        delete fallback.terms;
-        if (/raw/i.test(msg)) delete fallback.raw;
+      if (res.error.code === 'PGRST204' || /column.*does not exist|schema cache|\braw\b/i.test(msg)) {
+        const fallback = stripFallbackColumns(tableName, row, msg);
         res = await client.from(tableName).upsert(fallback, { onConflict: conflictKey });
       }
     }
@@ -919,16 +917,10 @@ export async function pushAllLocalToSupabase(data: Partial<LocalSnapshot>): Prom
       const chunk = task.rows.slice(i, i + CHUNK);
       try {
         let { error } = await client.from(task.name).upsert(chunk, { onConflict: task.key });
-        if (error && task.name === 'work_agreements' && (error.code === 'PGRST204' || /column.*does not exist/i.test(error.message || ''))) {
-          // Schema column fallback retry
-          const fallbackChunk = chunk.map((r: any) => {
-            const copy = { ...r };
-            delete copy.amount_due_now;
-            delete copy.due_now_description;
-            delete copy.balance_due_upon_completion;
-            if (/raw/i.test(error?.message || '')) delete copy.raw;
-            return copy;
-          });
+        if (error && (error.code === 'PGRST204' || /column.*does not exist|schema cache|\braw\b/i.test(error.message || ''))) {
+          // Schema column fallback retry across any table
+          const msg = error.message || '';
+          const fallbackChunk = chunk.map((r: any) => stripFallbackColumns(task.name, r, msg));
           const retry = await client.from(task.name).upsert(fallbackChunk, { onConflict: task.key });
           error = retry.error;
         }

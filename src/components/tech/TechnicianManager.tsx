@@ -188,10 +188,10 @@ export const TechnicianManager: React.FC = () => {
         <div>
           <div className="flex items-center space-x-2 text-xs text-[#c5a059] font-bold uppercase tracking-wider mb-1">
             <Wrench className="w-3.5 h-3.5 text-[#c5a059]" />
-            <span>Field Staffing & Operations ? Rome, GA</span>
+            <span>Field Staffing &amp; Operations • Rome, GA</span>
           </div>
           <h1 className="text-2xl font-bold font-heading text-[#fdfbf7]">
-            Technician Roster & Credentials
+            Technician Roster &amp; Credentials
           </h1>
           <p className="text-xs text-[#b8b0a5] mt-1">
             Manage field service personnel, employee IDs, authentication PINs, and Telegram push dispatch profiles.
@@ -296,10 +296,10 @@ export const TechnicianManager: React.FC = () => {
           <table className="min-w-full divide-y divide-[#222222] text-xs">
             <thead className="bg-[#161616] text-[#b8b0a5] font-semibold text-left">
               <tr>
-                <th className="px-6 py-4">Technician Name & Role</th>
+                <th className="px-6 py-4">Technician Name &amp; Role</th>
                 <th className="px-6 py-4">Employee ID</th>
                 <th className="px-6 py-4">Security PIN</th>
-                <th className="px-6 py-4">Contact & Telegram</th>
+                <th className="px-6 py-4">Contact &amp; Telegram</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -330,7 +330,7 @@ export const TechnicianManager: React.FC = () => {
                           <div className="text-[11px] text-[#78716c] flex items-center gap-2 mt-0.5">
                             <span>Field Technician</span>
                             {tech.createdAt && (
-                              <span>? Enrolled {new Date(tech.createdAt).toLocaleDateString()}</span>
+                              <span>✓ Enrolled {new Date(tech.createdAt).toLocaleDateString()}</span>
                             )}
                           </div>
                         </div>

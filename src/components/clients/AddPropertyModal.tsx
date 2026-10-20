@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Property } from '@/types';
 import { useFSMStore } from '@/lib/useStore';
-import { X, Building2, MapPin, Key, Plus, CheckCircle2 } from 'lucide-react';
+import { X, Building2, MapPin, Key, Plus, CheckCircle2, Pencil } from 'lucide-react';
 
 interface AddPropertyModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface AddPropertyModalProps {
   clientId: string;
   clientName: string;
   onSuccess?: () => void;
+  initialProperty?: Property | null;
 }
 
 export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
@@ -18,8 +20,9 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
   clientId,
   clientName,
   onSuccess,
+  initialProperty,
 }) => {
-  const { addProperty } = useFSMStore();
+  const { addProperty, updateProperty } = useFSMStore();
 
   const [label, setLabel] = useState('');
   const [street, setStreet] = useState('');
@@ -30,22 +33,58 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
   const [gateCode, setGateCode] = useState('');
   const [accessInstructions, setAccessInstructions] = useState('');
 
+  useEffect(() => {
+    if (!isOpen) return;
+    if (initialProperty) {
+      setLabel(initialProperty.label || '');
+      setStreet(initialProperty.street || '');
+      setUnit(initialProperty.unit || '');
+      setCity(initialProperty.city || 'Rome');
+      setState(initialProperty.state || 'GA');
+      setZip(initialProperty.zip || '30161');
+      setGateCode(initialProperty.gateCode || '');
+      setAccessInstructions(initialProperty.accessInstructions || '');
+    } else {
+      setLabel('');
+      setStreet('');
+      setUnit('');
+      setCity('Rome');
+      setState('GA');
+      setZip('30161');
+      setGateCode('');
+      setAccessInstructions('');
+    }
+  }, [isOpen, initialProperty]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    addProperty({
-      clientId,
-      label: label || 'Additional Property',
-      street,
-      unit,
-      city,
-      state,
-      zip,
-      gateCode,
-      accessInstructions,
-    });
+    if (initialProperty) {
+      updateProperty(initialProperty.id, {
+        label: label || 'Property Unit',
+        street,
+        unit,
+        city,
+        state,
+        zip,
+        gateCode,
+        accessInstructions,
+      });
+    } else {
+      addProperty({
+        clientId,
+        label: label || 'Additional Property',
+        street,
+        unit,
+        city,
+        state,
+        zip,
+        gateCode,
+        accessInstructions,
+      });
+    }
 
     if (onSuccess) onSuccess();
     onClose();
@@ -58,11 +97,15 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
         <div className="bg-[#181818] p-5 border-b border-[#262626] flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#c5a059] flex items-center justify-center text-black font-bold">
-              <Building2 className="w-4 h-4" />
+              {initialProperty ? <Pencil className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
             </div>
             <div>
-              <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">Add Property to Portfolio</h3>
-              <p className="text-xs text-[#b8b0a5]">Linking new address to {clientName}</p>
+              <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">
+                {initialProperty ? 'Edit Property Details' : 'Add Property to Portfolio'}
+              </h3>
+              <p className="text-xs text-[#b8b0a5]">
+                {initialProperty ? `Updating property for ${clientName}` : `Linking new address to ${clientName}`}
+              </p>
             </div>
           </div>
           <button 
@@ -187,8 +230,8 @@ export const AddPropertyModal: React.FC<AddPropertyModalProps> = ({
               type="submit"
               className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-md transition flex items-center space-x-1.5"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Save Property</span>
+              {initialProperty ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              <span>{initialProperty ? 'Update Property' : 'Save Property'}</span>
             </button>
           </div>
         </form>

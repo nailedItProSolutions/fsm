@@ -35,6 +35,7 @@ export const InvoicesList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'sent' | 'paid' | 'overdue'>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
   const [selectedInvoiceForStripe, setSelectedInvoiceForStripe] = useState<Invoice | null>(null);
   const [editingPaymentInvoice, setEditingPaymentInvoice] = useState<Invoice | null>(null);
@@ -122,7 +123,10 @@ export const InvoicesList: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsBuilderOpen(true)}
+          onClick={() => {
+            setEditingInvoice(null);
+            setIsBuilderOpen(true);
+          }}
           className="bg-[#c5a059] hover:bg-[#d4b068] text-black font-bold text-xs px-4 py-3 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -304,6 +308,16 @@ export const InvoicesList: React.FC = () => {
 
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
+                          {/* Edit Invoice (Line Items, Client, Property, Tax) */}
+                          <button
+                            onClick={() => setEditingInvoice(invoice)}
+                            title="Edit Invoice (Update line items, client, property, due date, tax)"
+                            className="px-2.5 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#252525] text-amber-400 hover:text-amber-300 border border-amber-500/40 hover:border-amber-400 text-[11px] font-bold transition flex items-center space-x-1"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            <span>Edit Invoice</span>
+                          </button>
+
                           {/* Print / PDF preview */}
                           <button
                             onClick={() => setSelectedInvoiceForPrint(invoice)}
@@ -357,7 +371,7 @@ export const InvoicesList: React.FC = () => {
                             title="Edit Invoice Payment (Amount paid, status, notes)"
                             className="p-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#252525] text-[#c5a059] hover:text-[#fdfbf7] border border-[#2c2c2c] transition"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <DollarSign className="w-3.5 h-3.5" />
                           </button>
 
                           {/* Delete Invoice Button (PIN Protected) */}
@@ -379,10 +393,14 @@ export const InvoicesList: React.FC = () => {
         </div>
       </div>
 
-      {/* Invoice Builder Modal */}
+      {/* Invoice Builder / Editor Modal */}
       <InvoiceBuilderModal
-        isOpen={isBuilderOpen}
-        onClose={() => setIsBuilderOpen(false)}
+        isOpen={isBuilderOpen || !!editingInvoice}
+        initialInvoice={editingInvoice}
+        onClose={() => {
+          setIsBuilderOpen(false);
+          setEditingInvoice(null);
+        }}
       />
 
       {/* Stripe Payment Checkout Modal */}

@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import QRCode from 'qrcode';
 import { useFSMStore } from '@/lib/useStore';
+import { useAuth } from '@/lib/authContext';
 import { WorkAgreement, Estimate, EstimatePayment } from '@/types';
 import { 
   Printer, 
@@ -30,15 +31,19 @@ import {
   ExternalLink,
   Receipt,
   Trash2,
-  Pencil
+  Pencil,
+  Gavel
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 import { EditPaymentModal } from '@/components/estimates/EditPaymentModal';
+import { CancellationAgreementModal } from '@/components/estimates/CancellationAgreementModal';
 
 export default function WorkAgreementPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
   const { getWorkAgreementById, getEstimateById, signWorkAgreementClient, getAuditLogs, deleteWorkAgreement } = useFSMStore();
 
   const agreementId = params.id as string;
@@ -53,6 +58,7 @@ export default function WorkAgreementPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [editingPayment, setEditingPayment] = useState<any | null>(null);
 
   // Fallback / stable Contract ID
@@ -99,24 +105,7 @@ export default function WorkAgreementPage() {
 
     const rawDueNow = Math.max(0, Number(agreement.amountDueNow) || 0);
     const remainingDueNow = Math.max(0, Math.round((rawDueNow - totalPaid) * 100) / 100);
-    let totalRemainingBalance = Math.max(0, Math.round((contractTotal - totalPaid) * 100) / 100);
-
-    // Edge-case resolution for legacy double-subtraction bug where balance was stored as $82:
-    if (
-      Math.abs((agreement.balanceDueUponCompletion ?? 0) - 82) < 0.05 ||
-      Math.abs((agreement.balanceDue ?? 0) - 82) < 0.05
-    ) {
-      const origTotal = Number(agreement.originalEstimateTotal) || Number(linkedEstimate?.originalTotal) || 0;
-      if (origTotal > 0 && Math.abs(origTotal - totalPaid - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      } else if (Math.abs(contractTotal - totalPaid - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      } else if (Math.abs(totalPaid - 800.34) < 0.05 || Math.abs(rawDueNow - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      } else if (Math.abs(contractTotal - 82 - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      }
-    }
+    const totalRemainingBalance = Math.max(0, Math.round((contractTotal - totalPaid) * 100) / 100);
 
     const balanceDueUponCompletion = Math.max(0, Math.round((totalRemainingBalance - remainingDueNow) * 100) / 100);
 
@@ -716,15 +705,17 @@ export default function WorkAgreementPage() {
                         <span className="text-[10px] text-emerald-400 print:text-black font-mono">
                           ✓ Paid & Credited
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setEditingPayment(receipt)}
-                          className="print-hide ml-2 text-[10px] bg-[#222222] hover:bg-[#2e2e2e] text-[#c5a059] hover:text-[#fdfbf7] border border-[#333333] px-2 py-0.5 rounded font-mono font-bold transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
-                          title="Edit payment amount, tender method, reference number, or notes"
-                        >
-                          <Pencil className="w-2.5 h-2.5 text-[#c5a059]" />
-                          <span>Edit Payment</span>
-                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingPayment(receipt)}
+                            className="print-hide ml-2 text-[10px] bg-[#222222] hover:bg-[#2e2e2e] text-[#c5a059] hover:text-[#fdfbf7] border border-[#333333] px-2 py-0.5 rounded font-mono font-bold transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
+                            title="Edit payment amount, tender method, reference number, or notes"
+                          >
+                            <Pencil className="w-2.5 h-2.5 text-[#c5a059]" />
+                            <span>Edit Payment</span>
+                          </button>
+                        )}
                       </div>
                       <div className="text-[10px] text-[#78716c] print:text-zinc-600 font-mono mt-0.5">
                         Processed on {new Date(receipt.createdAt).toLocaleString()} by {receipt.receivedBy}
@@ -832,7 +823,7 @@ export default function WorkAgreementPage() {
                   <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Sign Digitally</span>
                 </button>
-              ) : (
+              ) : isAdmin ? (
                 <button
                   onClick={handleClearSignature}
                   className="px-3 py-1.5 bg-[#181818] hover:bg-[#222] border border-[#333] rounded-lg text-[#b8b0a5] hover:text-white text-xs font-medium transition flex items-center gap-1.5"
@@ -841,7 +832,27 @@ export default function WorkAgreementPage() {
                   <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Clear Signature</span>
                 </button>
-              )}
+              ) : null}
+
+              {/* Georgia Service Contract Cancellation & Stop-Work Agreement */}
+              {(agreement.cancellationAgreementId || linkedEstimate?.cancellationAgreementId) ? (
+                <Link
+                  href={`/cancellation/${agreement.cancellationAgreementId || linkedEstimate?.cancellationAgreementId}`}
+                  className="px-3.5 py-2 bg-rose-950/60 hover:bg-rose-900/70 border border-rose-700/60 text-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                >
+                  <Gavel className="w-4 h-4 text-rose-400" />
+                  <span>View Cancellation Agreement</span>
+                </Link>
+              ) : isAdmin && linkedEstimate ? (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="px-3.5 py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                  title="Issue Rome, Floyd County, GA Legally Protected Service Contract Cancellation & Stop-Work Agreement"
+                >
+                  <Gavel className="w-4 h-4 text-rose-400" />
+                  <span>Cancel / Stop-Work Agreement</span>
+                </button>
+              ) : null}
 
               {/* Main Print Button */}
               <button
@@ -854,14 +865,16 @@ export default function WorkAgreementPage() {
               </button>
 
               {/* Delete Agreement Button */}
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="px-3 py-2 bg-[#181818] hover:bg-red-950/60 border border-[#333] hover:border-red-800/60 text-[#78716c] hover:text-red-400 text-xs font-bold rounded-xl transition flex items-center gap-1.5"
-                title="Delete Work Agreement (Requires Employee PIN)"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete</span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="px-3 py-2 bg-[#181818] hover:bg-red-950/60 border border-[#333] hover:border-red-800/60 text-[#78716c] hover:text-red-400 text-xs font-bold rounded-xl transition flex items-center gap-1.5"
+                  title="Delete Work Agreement (Requires Employee PIN)"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1191,6 +1204,16 @@ export default function WorkAgreementPage() {
           onPaymentDeleted={() => {
             setEditingPayment(null);
           }}
+        />
+      )}
+
+      {/* Georgia Service Contract Cancellation & Stop-Work Agreement Modal */}
+      {showCancelModal && linkedEstimate && (
+        <CancellationAgreementModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          estimate={linkedEstimate}
+          agreement={agreement}
         />
       )}
 

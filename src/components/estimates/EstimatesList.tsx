@@ -7,6 +7,7 @@ import { Estimate } from '@/types';
 import { EstimateBuilderModal } from './EstimateBuilderModal';
 import { EstimatePaymentModal } from './EstimatePaymentModal';
 import { WorkAgreementModal } from './WorkAgreementModal';
+import { CancellationAgreementModal } from './CancellationAgreementModal';
 import { 
   FileText, 
   Plus, 
@@ -23,7 +24,8 @@ import {
   ArrowRight, 
   Printer,
   Trash2,
-  Pencil
+  Pencil,
+  Gavel
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
@@ -36,6 +38,7 @@ export const EstimatesList: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [payingEstimate, setPayingEstimate] = useState<Estimate | null>(null);
   const [agreeingEstimate, setAgreeingEstimate] = useState<Estimate | null>(null);
+  const [cancellingEstimate, setCancellingEstimate] = useState<Estimate | null>(null);
   const [deletingEstimate, setDeletingEstimate] = useState<Estimate | null>(null);
   const [convertedJobAlert, setConvertedJobAlert] = useState<{ estNum: string; jobNum: string } | null>(null);
 
@@ -264,25 +267,7 @@ export const EstimatesList: React.FC = () => {
                     const rawDueNow = Number(agreement?.amountDueNow || 0);
                     const remainingDueNow = Math.max(0, Math.round((rawDueNow - effectiveDeposit) * 100) / 100);
 
-                    let balanceDue = Math.max(0, Math.round((overallTotal - effectiveDeposit) * 100) / 100);
-
-                    // Edge-case resolution for legacy double-subtraction bug where balance was stored as $82:
-                    if (
-                      agreement &&
-                      (Math.abs((agreement.balanceDueUponCompletion ?? 0) - 82) < 0.05 ||
-                       Math.abs((agreement.balanceDue ?? 0) - 82) < 0.05)
-                    ) {
-                      const origTotal = Number(agreement.originalEstimateTotal) || Number(est.originalTotal) || 0;
-                      if (origTotal > 0 && Math.abs(origTotal - effectiveDeposit - 800.34) < 0.05) {
-                        balanceDue = 800.34;
-                      } else if (Math.abs(overallTotal - effectiveDeposit - 800.34) < 0.05) {
-                        balanceDue = 800.34;
-                      } else if (Math.abs(effectiveDeposit - 800.34) < 0.05 || Math.abs(rawDueNow - 800.34) < 0.05) {
-                        balanceDue = 800.34;
-                      } else if (Math.abs(overallTotal - 82 - 800.34) < 0.05) {
-                        balanceDue = 800.34;
-                      }
-                    }
+                    const balanceDue = Math.max(0, Math.round((overallTotal - effectiveDeposit) * 100) / 100);
 
                     return (
                       <div>
@@ -377,6 +362,28 @@ export const EstimatesList: React.FC = () => {
                       </Link>
                     )}
 
+                    {/* Georgia Service Contract Cancellation & Stop-Work Agreement */}
+                    {est.cancellationAgreementId ? (
+                      <Link
+                        href={`/cancellation/${est.cancellationAgreementId}`}
+                        target="_blank"
+                        className="bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-700/50 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                        title="Open Georgia Service Contract Cancellation & Stop-Work Agreement"
+                      >
+                        <Gavel className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Cancellation Active</span>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => setCancellingEstimate(est)}
+                        className="bg-rose-950/30 hover:bg-rose-950/60 text-rose-300 border border-rose-800/40 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1"
+                        title="Issue Rome, Floyd County, GA Legally Protected Service Contract Cancellation & Stop-Work Agreement"
+                      >
+                        <Gavel className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Cancel / Stop-Work</span>
+                      </button>
+                    )}
+
                     {/* Print Document */}
                     <Link
                       href={`/estimate/${est.id}?print=true`}
@@ -446,6 +453,15 @@ export const EstimatesList: React.FC = () => {
           isOpen={true}
           onClose={() => setAgreeingEstimate(null)}
           estimate={agreeingEstimate}
+        />
+      )}
+
+      {/* Georgia Service Contract Cancellation & Stop-Work Agreement Modal */}
+      {cancellingEstimate && (
+        <CancellationAgreementModal
+          isOpen={true}
+          onClose={() => setCancellingEstimate(null)}
+          estimate={cancellingEstimate}
         />
       )}
 

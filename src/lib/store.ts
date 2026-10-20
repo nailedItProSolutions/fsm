@@ -1,4 +1,4 @@
-import { Client, Property, Job, Estimate, Invoice, UserProfile, UserRole, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification, TimesheetBonus, TimesheetDeduction, AuditLog, AuditActionType, AuditEntityType, PaymentMethod, EstimatePayment, WorkAgreementItem, WorkAgreement } from '@/types';
+import { Client, Property, Job, Estimate, Invoice, UserProfile, UserRole, Subscription, DailyWorkLog, WeeklyTimesheet, PaymentVerification, TimesheetBonus, TimesheetDeduction, AuditLog, AuditActionType, AuditEntityType, PaymentMethod, EstimatePayment, WorkAgreementItem, WorkAgreement, ContractCancellation, CancellationSettlementItem, CancellationStage, CancellationClientAcknowledgments } from '@/types';
 import { sortWorkLogsChronologically, aggregateWeeklyTimesheet, verifyWeeklyTimesheet, updateTimesheetAudit, groupWorkLogsByCalendarWeek } from './ocrEngine';
 import {
   fetchAllFromSupabase,
@@ -943,6 +943,7 @@ export class FSMStore {
   private users: UserProfile[] = INITIAL_USERS;
   private auditLogs: AuditLog[] = INITIAL_AUDIT_LOGS;
   private workAgreements: WorkAgreement[] = [];
+  private contractCancellations: ContractCancellation[] = [];
   private listeners: Array<() => void> = [];
   private applyingCloud: boolean = false;
   private mutationCount: number = 0;
@@ -1033,6 +1034,8 @@ export class FSMStore {
             };
           });
 
+          this.contractCancellations = parsed.contractCancellations || [];
+
           // Ensure estimates linked to active work agreements reflect the agreement's updated total & items
           this.estimates.forEach((est) => {
             const agr = this.workAgreements.find((w) => w.estimateId === est.id || w.id === est.workAgreementId);
@@ -1053,6 +1056,12 @@ export class FSMStore {
                   unitPrice: Number(item.unitPrice) || 0,
                   total: Number(item.total) || 0,
                 }));
+              }
+            }
+            if ((est as any).cancellationSnapshot) {
+              const snap = (est as any).cancellationSnapshot as ContractCancellation;
+              if (snap?.id && !this.contractCancellations.some((c) => c.id === snap.id)) {
+                this.contractCancellations.push(snap);
               }
             }
           });
@@ -1193,6 +1202,17 @@ export class FSMStore {
             }));
           }
         }
+        if ((est as any).cancellationSnapshot) {
+          const snap = (est as any).cancellationSnapshot as ContractCancellation;
+          if (snap?.id) {
+            const existingIdx = this.contractCancellations.findIndex((c) => c.id === snap.id);
+            if (existingIdx >= 0) {
+              this.contractCancellations[existingIdx] = snap;
+            } else {
+              this.contractCancellations.push(snap);
+            }
+          }
+        }
       });
 
       // Check if any local records need to be pushed
@@ -1287,6 +1307,7 @@ export class FSMStore {
             users: this.users,
             auditLogs: this.auditLogs,
             workAgreements: this.workAgreements,
+            contractCancellations: this.contractCancellations,
           })
         );
       } catch (e) {
@@ -1538,6 +1559,96 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return newClient;
   }
 
+  public updateClient(clientId: string, updates: Partial<Omit<Client, 'id' | 'createdAt'>>): Client | undefined {
+    const client = this.clients.find((c) => c.id === clientId);
+    if (!client) return undefined;
+
+    const prevSnapshot = { ...client };
+    Object.assign(client, updates, { updatedAt: new Date().toISOString() });
+
+    // Propagate updated client name to linked jobs, estimates, work agreements, invoices, subscriptions
+    const newDisplayName = client.isCompany && client.companyName
+      ? client.companyName
+      : `${client.firstName} ${client.lastName}`.trim();
+
+    this.jobs.forEach((j) => {
+      if (j.clientId === clientId && j.clientName !== newDisplayName) {
+        j.clientName = newDisplayName;
+        syncRecordInBackground('jobs', jobToDb(j));
+      }
+    });
+    this.estimates.forEach((e) => {
+      if (e.clientId === clientId && e.clientName !== newDisplayName) {
+        e.clientName = newDisplayName;
+        syncRecordInBackground('estimates', estimateToDb(e));
+      }
+    });
+    this.workAgreements.forEach((w) => {
+      if (w.clientId === clientId && w.clientName !== newDisplayName) {
+        w.clientName = newDisplayName;
+        syncRecordInBackground('work_agreements', workAgreementToDb(w));
+      }
+    });
+    this.invoices.forEach((i) => {
+      if (i.clientId === clientId && i.clientName !== newDisplayName) {
+        i.clientName = newDisplayName;
+        syncRecordInBackground('invoices', invoiceToDb(i));
+      }
+    });
+    this.subscriptions.forEach((s) => {
+      if (s.clientId === clientId && s.clientName !== newDisplayName) {
+        s.clientName = newDisplayName;
+        syncRecordInBackground('subscriptions', subscriptionToDb(s));
+      }
+    });
+
+    this.persist();
+    syncRecordInBackground('clients', clientToDb(client));
+    this.logActivity(
+      'update',
+      'client',
+      clientId,
+      `Updated client profile for ${newDisplayName}`,
+      prevSnapshot,
+      client,
+      newDisplayName
+    );
+    return client;
+  }
+
+  public deleteClient(clientId: string, authorizingUser?: UserProfile): boolean {
+    const client = this.clients.find((c) => c.id === clientId);
+    if (!client) return false;
+
+    const clientName = client.isCompany && client.companyName
+      ? client.companyName
+      : `${client.firstName} ${client.lastName}`.trim();
+
+    // First purge all child history & properties
+    this.clearClientHistory(clientId, authorizingUser);
+    const clientProps = this.properties.filter((p) => p.clientId === clientId);
+    clientProps.forEach((p) => deleteRecordInBackground('properties', p.id));
+    this.properties = this.properties.filter((p) => p.clientId !== clientId);
+
+    const clientSubs = this.subscriptions.filter((s) => s.clientId === clientId);
+    clientSubs.forEach((s) => deleteRecordInBackground('subscriptions', s.id));
+    this.subscriptions = this.subscriptions.filter((s) => s.clientId !== clientId);
+
+    this.clients = this.clients.filter((c) => c.id !== clientId);
+    this.persist();
+    deleteRecordInBackground('clients', clientId);
+
+    this.logActivity(
+      'delete',
+      'client',
+      clientId,
+      `Permanently deleted client "${clientName}" and ${clientProps.length} associated properties${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
+    );
+    return true;
+  }
+
   // --- Properties ---
   public getProperties(): Property[] {
     return [...this.properties];
@@ -1584,6 +1695,66 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return newProp;
   }
 
+  public updateProperty(propertyId: string, updates: Partial<Omit<Property, 'id' | 'clientId' | 'createdAt'>>): Property | undefined {
+    const prop = this.properties.find((p) => p.id === propertyId);
+    if (!prop) return undefined;
+
+    const prevSnapshot = { ...prop };
+    Object.assign(prop, updates);
+
+    const formattedAddr = `${prop.street}${prop.unit ? `, ${prop.unit}` : ''}, ${prop.city}, ${prop.state} ${prop.zip}`;
+    this.jobs.forEach((j) => {
+      if (j.propertyId === propertyId) {
+        j.propertyAddress = formattedAddr;
+        syncRecordInBackground('jobs', jobToDb(j));
+      }
+    });
+    this.estimates.forEach((e) => {
+      if (e.propertyId === propertyId) {
+        e.propertyAddress = formattedAddr;
+        syncRecordInBackground('estimates', estimateToDb(e));
+      }
+    });
+
+    this.persist();
+    syncRecordInBackground('properties', propertyToDb(prop));
+    this.logActivity(
+      'update',
+      'property',
+      propertyId,
+      `Updated property details for ${prop.street} (${prop.label || 'Property'})`,
+      prevSnapshot,
+      prop,
+      prop.street
+    );
+    return prop;
+  }
+
+  public deleteProperty(propertyId: string, authorizingUser?: UserProfile): boolean {
+    const prop = this.properties.find((p) => p.id === propertyId);
+    if (!prop) return false;
+
+    this.properties = this.properties.filter((p) => p.id !== propertyId);
+    const client = this.clients.find((c) => c.id === prop.clientId);
+    if (client) {
+      client.propertyIds = (client.propertyIds || []).filter((id) => id !== propertyId);
+      client.updatedAt = new Date().toISOString();
+      syncRecordInBackground('clients', clientToDb(client));
+    }
+
+    this.persist();
+    deleteRecordInBackground('properties', propertyId);
+    this.logActivity(
+      'delete',
+      'property',
+      propertyId,
+      `Deleted property ${prop.street} (${prop.label || 'Property'})${
+        authorizingUser ? ` [PIN Authorized by ${authorizingUser.displayName} (${authorizingUser.employeeId})]` : ''
+      }`
+    );
+    return true;
+  }
+
   // --- Jobs ---
   public getJobs(): Job[] {
     return [...this.jobs];
@@ -1617,12 +1788,14 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const client = this.clients.find((c) => c.id === jobData.clientId);
     if (client && jobData.status !== 'completed' && jobData.status !== 'canceled') {
       client.activeJobsCount = (client.activeJobsCount || 0) + 1;
+      syncRecordInBackground('clients', clientToDb(client));
     }
 
     // Update property service history
     const property = this.properties.find((p) => p.id === jobData.propertyId);
     if (property) {
       property.serviceHistoryJobIds.push(jobId);
+      syncRecordInBackground('properties', propertyToDb(property));
     }
 
     this.persist();
@@ -1928,10 +2101,31 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         jobId,
         `Added ${type} work verification photo to ${job.jobNumber}`,
         undefined,
-        { type, photoUrl },
+        { type, photoUrl: photoUrl.startsWith('data:') ? '[Data URL Image]' : photoUrl },
         `${job.jobNumber}: ${job.title}`
       );
     }
+  }
+
+  public removeJobPhoto(jobId: string, type: 'before' | 'after', photoIndex: number) {
+    const job = this.jobs.find((j) => j.id === jobId);
+    if (!job) return;
+    if (type === 'before' && Array.isArray(job.photosBefore)) {
+      job.photosBefore = job.photosBefore.filter((_, idx) => idx !== photoIndex);
+    } else if (type === 'after' && Array.isArray(job.photosAfter)) {
+      job.photosAfter = job.photosAfter.filter((_, idx) => idx !== photoIndex);
+    }
+    this.persist();
+    syncRecordInBackground('jobs', jobToDb(job));
+    this.logActivity(
+      'update',
+      'job',
+      jobId,
+      `Removed ${type} photo #${photoIndex + 1} from ${job.jobNumber}`,
+      undefined,
+      { type, photoIndex },
+      `${job.jobNumber}: ${job.title}`
+    );
   }
 
   public updateJobStatus(jobId: string, status: Job['status'], completedAt?: string) {
@@ -2019,6 +2213,50 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         est.estimateNumber
       );
     }
+  }
+
+  public approveEstimateClient(id: string, signatureName: string): Estimate | undefined {
+    const est = this.estimates.find((e) => e.id === id);
+    if (!est) return undefined;
+    const prevStatus = est.status;
+    est.status = 'approved';
+    est.clientSignatureName = signatureName.trim();
+    est.clientSignedAt = new Date().toISOString();
+    est.declinedAt = undefined;
+    est.declinedReason = undefined;
+    this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
+    this.logActivity(
+      'status_change',
+      'estimate',
+      id,
+      `Customer digitally approved and signed Estimate ${est.estimateNumber} as "${signatureName.trim()}"`,
+      { status: prevStatus },
+      { status: 'approved', clientSignatureName: est.clientSignatureName, clientSignedAt: est.clientSignedAt },
+      est.estimateNumber
+    );
+    return est;
+  }
+
+  public declineEstimateClient(id: string, reason?: string): Estimate | undefined {
+    const est = this.estimates.find((e) => e.id === id);
+    if (!est) return undefined;
+    const prevStatus = est.status;
+    est.status = 'declined';
+    est.declinedAt = new Date().toISOString();
+    est.declinedReason = reason?.trim() || 'Declined by client via portal';
+    this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
+    this.logActivity(
+      'status_change',
+      'estimate',
+      id,
+      `Customer declined Estimate ${est.estimateNumber}${reason ? `: ${reason.trim()}` : ''}`,
+      { status: prevStatus },
+      { status: 'declined', declinedReason: est.declinedReason },
+      est.estimateNumber
+    );
+    return est;
   }
 
   public updateEstimate(id: string, updates: Partial<Omit<Estimate, 'id' | 'createdAt' | 'estimateNumber'>>): Estimate | undefined {
@@ -2339,24 +2577,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const remainingDueNow = Math.max(0, Math.round((rawDueNow - totalPaid) * 100) / 100);
 
     // Total remaining unpaid on the overall contract
-    let totalRemainingBalance = Math.max(0, Math.round((contractTotal - totalPaid) * 100) / 100);
-
-    // Edge-case resolution for legacy double-subtraction bug where balance was stored as $82:
-    if (
-      Math.abs((agreement.balanceDueUponCompletion ?? 0) - 82) < 0.05 ||
-      Math.abs((agreement.balanceDue ?? 0) - 82) < 0.05
-    ) {
-      const origTotal = Number(agreement.originalEstimateTotal) || Number(linkedEst?.originalTotal) || 0;
-      if (origTotal > 0 && Math.abs(origTotal - totalPaid - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      } else if (Math.abs(contractTotal - totalPaid - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      } else if (Math.abs(totalPaid - 800.34) < 0.05 || Math.abs(rawDueNow - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      } else if (Math.abs(contractTotal - 82 - 800.34) < 0.05) {
-        totalRemainingBalance = 800.34;
-      }
-    }
+    const totalRemainingBalance = Math.max(0, Math.round((contractTotal - totalPaid) * 100) / 100);
 
     // Remaining balance due upon completion (after upfront amount due now is paid/deducted)
     const balanceDueUponCompletion = Math.max(0, Math.round((totalRemainingBalance - remainingDueNow) * 100) / 100);
@@ -2559,17 +2780,427 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
   public signWorkAgreementClient(agreementId: string, clientSignatureName: string): WorkAgreement | null {
     const agr = this.workAgreements.find((a) => a.id === agreementId);
     if (!agr) return null;
-    agr.clientSignatureName = clientSignatureName.trim();
-    agr.clientSignedAt = new Date().toISOString();
+    const cleanSig = clientSignatureName.trim();
+    agr.clientSignatureName = cleanSig || undefined;
+    agr.clientSignedAt = cleanSig ? new Date().toISOString() : undefined;
     this.persist();
     syncRecordInBackground('work_agreements', workAgreementToDb(agr));
     this.logActivity(
       'update',
       'estimate',
       agr.estimateId,
-      `Client signed Work Agreement ${agr.agreementNumber} (${agr.contractId || agr.id}) digitally: ${clientSignatureName.trim()}`
+      cleanSig
+        ? `Client signed Work Agreement ${agr.agreementNumber} (${agr.contractId || agr.id}) digitally: ${cleanSig}`
+        : `Cleared digital signature on Work Agreement ${agr.agreementNumber} (${agr.contractId || agr.id})`
     );
     return agr;
+  }
+
+  // --- Service Contract Cancellations & Stop-Work Settlements (Rome / Floyd County, GA) ---
+  public getContractCancellations(): ContractCancellation[] {
+    return [...this.contractCancellations].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  public getContractCancellationById(id: string): ContractCancellation | undefined {
+    return this.contractCancellations.find((c) => c.id === id);
+  }
+
+  public getContractCancellationByEstimateId(estimateId: string): ContractCancellation | undefined {
+    return this.contractCancellations.find((c) => c.estimateId === estimateId);
+  }
+
+  public getContractCancellationByAgreementId(agreementId: string): ContractCancellation | undefined {
+    return this.contractCancellations.find((c) => c.workAgreementId === agreementId);
+  }
+
+  public createContractCancellation(
+    estimateId: string,
+    data: {
+      stage: CancellationStage;
+      initiatedBy: 'client' | 'contractor' | 'mutual';
+      cancellationReason: string;
+      stopWorkDate: string;
+      completionPercentage: number;
+      workPerformedSummary: string;
+      unfinishedWorkRisks: string;
+      exposedSystemsList: string[];
+      items: CancellationSettlementItem[];
+      taxRate?: number;
+      priorPaymentsCredited: number;
+      refundIssued?: number;
+      settlementPaidNow?: number;
+      paymentMethod?: PaymentMethod;
+      paymentReceiptNumber?: string;
+      terms: string;
+      clientSignatureName?: string;
+      acknowledgments?: CancellationClientAcknowledgments;
+      generateSettlementInvoice?: boolean;
+    }
+  ): ContractCancellation {
+    const est = this.estimates.find((e) => e.id === estimateId);
+    if (!est) throw new Error('Estimate not found');
+
+    const agr = this.workAgreements.find((w) => w.estimateId === est.id || w.id === est.workAgreementId);
+    const linkedJob = this.jobs.find(
+      (j) => j.id === est.convertedToJobId || j.estimateId === est.id || (agr && j.id === agr.jobId)
+    );
+
+    const now = new Date().toISOString();
+    const year = new Date().getFullYear();
+    const rand = Math.floor(10000 + Math.random() * 90000);
+    const id = `cnc-${Date.now()}`;
+    const cancellationNumber = `CNC-${year}-${rand}`;
+    const sealCode = `SEAL-CNC-${est.estimateNumber.replace(/[^0-9]/g, '') || '9901'}-${rand}`;
+
+    const originalContractTotal = Number(agr?.updatedTotal ?? est.total ?? 0);
+    const settlementSubtotal = Math.round(
+      data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * 100
+    ) / 100;
+    const taxRate = data.taxRate !== undefined ? Number(data.taxRate) : Number(est.taxRate ?? 0.07);
+    const taxableSubtotal = data.items
+      .filter((i) => i.category === 'materials_installed' || i.category === 'materials_uninstalled')
+      .reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+    const settlementTax = Math.round(taxableSubtotal * taxRate * 100) / 100;
+    const totalSettlementCharges = Math.round((settlementSubtotal + settlementTax) * 100) / 100;
+
+    const priorPaymentsCredited = Math.max(0, Number(data.priorPaymentsCredited) || 0);
+    const refundIssued = Math.max(0, Number(data.refundIssued) || 0);
+    const netBeforeNowPayment = Math.max(0, Math.round((totalSettlementCharges - priorPaymentsCredited + refundIssued) * 100) / 100);
+    const settlementPaidNow = Math.max(0, Number(data.settlementPaidNow) || 0);
+    const settlementBalanceDue = Math.max(0, Math.round((netBeforeNowPayment - settlementPaidNow) * 100) / 100);
+
+    const isClientSigned = Boolean(data.clientSignatureName && data.clientSignatureName.trim());
+    const status: ContractCancellation['status'] =
+      isClientSigned && settlementBalanceDue <= 0.01
+        ? 'settled_released'
+        : isClientSigned
+        ? 'executed_unpaid'
+        : 'pending_signature';
+
+    // Stop-work date + 90 days for O.C.G.A. § 44-14-361.1 Georgia Mechanics' Lien deadline
+    const stopDateObj = new Date(data.stopWorkDate || now);
+    const lienDeadlineObj = new Date(stopDateObj.getTime() + 90 * 24 * 60 * 60 * 1000);
+    const lienRightsExpiresAt = lienDeadlineObj.toISOString().split('T')[0];
+
+    const cancellation: ContractCancellation = {
+      id,
+      cancellationNumber,
+      sealCode,
+      estimateId: est.id,
+      estimateNumber: est.estimateNumber,
+      workAgreementId: agr?.id,
+      agreementNumber: agr?.agreementNumber,
+      contractId: agr?.contractId,
+      jobId: linkedJob?.id,
+      jobNumber: linkedJob?.jobNumber,
+      clientId: est.clientId,
+      clientName: est.clientName,
+      propertyId: est.propertyId,
+      propertyAddress: est.propertyAddress,
+      stage: data.stage,
+      status,
+      initiatedBy: data.initiatedBy,
+      cancellationReason: data.cancellationReason.trim() || 'Client requested mid-contract stop-work and cancellation',
+      stopWorkDate: data.stopWorkDate || now.split('T')[0],
+      completionPercentage: Math.min(100, Math.max(0, Number(data.completionPercentage) || 0)),
+      workPerformedSummary: data.workPerformedSummary.trim(),
+      unfinishedWorkRisks: data.unfinishedWorkRisks.trim(),
+      exposedSystemsList: data.exposedSystemsList || [],
+      originalContractTotal,
+      items: data.items.map((i) => ({
+        ...i,
+        quantity: Number(i.quantity) || 0,
+        unitPrice: Number(i.unitPrice) || 0,
+        total: Math.round((Number(i.total) || 0) * 100) / 100,
+      })),
+      settlementSubtotal,
+      taxRate,
+      settlementTax,
+      totalSettlementCharges,
+      priorPaymentsCredited,
+      refundIssued,
+      settlementBalanceDue,
+      settlementPaidAmount: settlementPaidNow,
+      paymentMethod: data.paymentMethod,
+      paymentReceiptNumber: data.paymentReceiptNumber,
+      warrantyVoided: true,
+      lienRightsReserved: settlementBalanceDue > 0.01,
+      lienRightsExpiresAt,
+      governingLawCounty: 'Floyd County',
+      governingLawCity: 'Rome',
+      governingLawState: 'Georgia',
+      acknowledgments: data.acknowledgments || {
+        asIsAndWarrantyVoidAccepted: isClientSigned,
+        quantumMeruitAndLienRightsAccepted: isClientSigned,
+        noChargebackAndMutualReleaseAccepted: isClientSigned,
+        floydCountyGeorgiaVenueAccepted: isClientSigned,
+      },
+      terms: data.terms,
+      contractorSignedBy: 'Charles Willis - Owner & Field Specialist',
+      contractorSignedAt: now,
+      clientSignatureName: isClientSigned ? data.clientSignatureName!.trim() : undefined,
+      clientSignedAt: isClientSigned ? now : undefined,
+      settledAt: status === 'settled_released' ? now : undefined,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const existingIdx = this.contractCancellations.findIndex((c) => c.estimateId === est.id);
+    if (existingIdx >= 0) {
+      cancellation.id = this.contractCancellations[existingIdx].id;
+      this.contractCancellations[existingIdx] = cancellation;
+    } else {
+      this.contractCancellations.unshift(cancellation);
+    }
+
+    // Link cancellation to Estimate, WorkAgreement, and Job
+    est.cancellationAgreementId = cancellation.id;
+    (est as any).cancellationSnapshot = cancellation;
+    if (agr) {
+      agr.cancellationAgreementId = cancellation.id;
+      syncRecordInBackground('work_agreements', workAgreementToDb(agr));
+    }
+    if (linkedJob) {
+      linkedJob.cancellationAgreementId = cancellation.id;
+      linkedJob.status = 'canceled';
+      linkedJob.notes = `${linkedJob.notes ? linkedJob.notes + '\n' : ''}[STOP-WORK / CANCELLATION ${cancellationNumber}] Operations halted ${cancellation.stopWorkDate} at ${cancellation.completionPercentage}% completion. Settlement Balance Due: $${settlementBalanceDue.toFixed(2)}.`;
+      syncRecordInBackground('jobs', jobToDb(linkedJob));
+    }
+
+    // If settlementPaidNow > 0, record on estimate payments as well
+    if (settlementPaidNow > 0) {
+      this.recordEstimatePayment(est.id, {
+        amount: settlementPaidNow,
+        method: data.paymentMethod || 'debit_credit',
+        referenceNumber: data.paymentReceiptNumber || `CNC-SETTLE-${rand}`,
+        notes: `Cancellation Settlement Payment on ${cancellationNumber}`,
+        receivedBy: 'Charles Willis - Owner & Field Specialist',
+      });
+    }
+
+    // Optionally generate a formal settlement invoice if balance is due
+    if (data.generateSettlementInvoice && settlementBalanceDue > 0) {
+      const inv = this.addInvoice({
+        jobId: linkedJob?.id || 'manual-invoice',
+        jobNumber: linkedJob?.jobNumber || cancellationNumber,
+        clientId: est.clientId,
+        clientName: est.clientName,
+        propertyId: est.propertyId,
+        propertyAddress: est.propertyAddress,
+        items: [
+          ...cancellation.items.map((item) => ({
+            id: `inv-cnc-${item.id}`,
+            description: `[CANCELLATION SETTLEMENT - ${cancellationNumber}] ${item.description}`,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+          })),
+          ...(priorPaymentsCredited > 0
+            ? [
+                {
+                  id: `inv-cnc-credit-${Date.now()}`,
+                  description: `Less Prior Contract Deposit & Progress Payments Credited (${est.estimateNumber})`,
+                  quantity: 1,
+                  unitPrice: -priorPaymentsCredited,
+                  total: -priorPaymentsCredited,
+                },
+              ]
+            : []),
+        ],
+        subtotal: Math.max(0, settlementSubtotal - priorPaymentsCredited),
+        tax: settlementTax,
+        taxExempt: settlementTax === 0,
+        taxRate,
+        total: netBeforeNowPayment,
+        amountPaid: settlementPaidNow,
+        balanceDue: settlementBalanceDue,
+        status: settlementBalanceDue <= 0.01 ? 'paid' : 'sent',
+        dueDate: cancellation.stopWorkDate,
+      });
+      cancellation.invoiceId = inv.id;
+      (est as any).cancellationSnapshot = cancellation;
+    }
+
+    this.persist();
+    syncRecordInBackground('estimates', estimateToDb(est));
+
+    this.logActivity(
+      'cancellation_created',
+      'estimate',
+      est.id,
+      `Issued Georgia Service Contract Cancellation & Stop-Work Agreement ${cancellationNumber} (${est.estimateNumber}) at ${cancellation.completionPercentage}% completion. Total Settlement Charges: $${totalSettlementCharges.toFixed(2)}, Prior Credits: $${priorPaymentsCredited.toFixed(2)}, Net Settlement Balance Due: $${settlementBalanceDue.toFixed(2)}.`,
+      undefined,
+      cancellation,
+      cancellationNumber
+    );
+
+    return cancellation;
+  }
+
+  public signContractCancellationClient(
+    cancellationId: string,
+    clientSignatureName: string,
+    acknowledgments?: CancellationClientAcknowledgments
+  ): ContractCancellation | null {
+    const cnc = this.contractCancellations.find((c) => c.id === cancellationId);
+    if (!cnc) return null;
+
+    const cleanSig = clientSignatureName.trim();
+    const now = new Date().toISOString();
+
+    cnc.clientSignatureName = cleanSig || undefined;
+    cnc.clientSignedAt = cleanSig ? now : undefined;
+    if (acknowledgments) {
+      cnc.acknowledgments = acknowledgments;
+    } else if (cleanSig) {
+      cnc.acknowledgments = {
+        asIsAndWarrantyVoidAccepted: true,
+        quantumMeruitAndLienRightsAccepted: true,
+        noChargebackAndMutualReleaseAccepted: true,
+        floydCountyGeorgiaVenueAccepted: true,
+      };
+    }
+
+    if (!cleanSig) {
+      cnc.status = 'pending_signature';
+      cnc.settledAt = undefined;
+    } else if (cnc.settlementBalanceDue <= 0.01) {
+      cnc.status = 'settled_released';
+      cnc.lienRightsReserved = false;
+      cnc.settledAt = now;
+    } else {
+      cnc.status = 'executed_unpaid';
+      cnc.lienRightsReserved = true;
+    }
+    cnc.updatedAt = now;
+
+    const est = this.estimates.find((e) => e.id === cnc.estimateId);
+    if (est) {
+      (est as any).cancellationSnapshot = cnc;
+      syncRecordInBackground('estimates', estimateToDb(est));
+    }
+
+    this.persist();
+    this.logActivity(
+      'update',
+      'estimate',
+      cnc.estimateId,
+      cleanSig
+        ? `Client executed Georgia Cancellation & Stop-Work Agreement ${cnc.cancellationNumber} digitally: "${cleanSig}" (Status: ${cnc.status})`
+        : `Cleared client signature on Cancellation Agreement ${cnc.cancellationNumber}`
+    );
+    return cnc;
+  }
+
+  public recordCancellationSettlementPayment(
+    cancellationId: string,
+    paymentData: {
+      amount: number;
+      method: PaymentMethod;
+      referenceNumber?: string;
+      notes?: string;
+      receivedBy?: string;
+    }
+  ): ContractCancellation | null {
+    const cnc = this.contractCancellations.find((c) => c.id === cancellationId);
+    if (!cnc) return null;
+
+    const paidDelta = Math.max(0, Number(paymentData.amount) || 0);
+    if (paidDelta <= 0) return cnc;
+
+    const now = new Date().toISOString();
+    cnc.settlementPaidAmount = Math.round(((cnc.settlementPaidAmount || 0) + paidDelta) * 100) / 100;
+    cnc.settlementBalanceDue = Math.max(0, Math.round((cnc.settlementBalanceDue - paidDelta) * 100) / 100);
+    cnc.paymentMethod = paymentData.method;
+    if (paymentData.referenceNumber) {
+      cnc.paymentReceiptNumber = paymentData.referenceNumber;
+    }
+
+    if (cnc.settlementBalanceDue <= 0.01) {
+      cnc.lienRightsReserved = false;
+      if (cnc.clientSignatureName) {
+        cnc.status = 'settled_released';
+        cnc.settledAt = now;
+      }
+    }
+    cnc.updatedAt = now;
+
+    // Also record payment on linked estimate and invoice
+    this.recordEstimatePayment(cnc.estimateId, {
+      amount: paidDelta,
+      method: paymentData.method,
+      referenceNumber: paymentData.referenceNumber || `CNC-PAY-${Date.now().toString().slice(-4)}`,
+      notes: paymentData.notes || `Settlement payment applied to Cancellation Agreement ${cnc.cancellationNumber}`,
+      receivedBy: paymentData.receivedBy || 'Charles Willis - Owner & Field Specialist',
+    });
+
+    if (cnc.invoiceId) {
+      const inv = this.invoices.find((i) => i.id === cnc.invoiceId);
+      if (inv) {
+        this.updateInvoicePayment(inv.id, {
+          amountPaid: Math.min(inv.total, (inv.amountPaid || 0) + paidDelta),
+        });
+      }
+    }
+
+    const est = this.estimates.find((e) => e.id === cnc.estimateId);
+    if (est) {
+      (est as any).cancellationSnapshot = cnc;
+      syncRecordInBackground('estimates', estimateToDb(est));
+    }
+
+    this.persist();
+    this.logActivity(
+      'payment_received',
+      'estimate',
+      cnc.estimateId,
+      `Recorded $${paidDelta.toFixed(2)} settlement payment on Cancellation Agreement ${cnc.cancellationNumber} via ${paymentData.method}. Remaining Settlement Balance: $${cnc.settlementBalanceDue.toFixed(2)}.`
+    );
+
+    return cnc;
+  }
+
+  public deleteContractCancellation(cancellationId: string, authorizingUser?: UserProfile): boolean {
+    const idx = this.contractCancellations.findIndex((c) => c.id === cancellationId);
+    if (idx === -1) return false;
+
+    const target = this.contractCancellations[idx];
+    this.contractCancellations.splice(idx, 1);
+
+    const est = this.estimates.find((e) => e.id === target.estimateId);
+    if (est) {
+      est.cancellationAgreementId = undefined;
+      delete (est as any).cancellationSnapshot;
+      syncRecordInBackground('estimates', estimateToDb(est));
+    }
+
+    const agr = this.workAgreements.find((w) => w.id === target.workAgreementId || w.estimateId === target.estimateId);
+    if (agr) {
+      agr.cancellationAgreementId = undefined;
+      syncRecordInBackground('work_agreements', workAgreementToDb(agr));
+    }
+
+    const job = this.jobs.find((j) => j.id === target.jobId);
+    if (job) {
+      job.cancellationAgreementId = undefined;
+      syncRecordInBackground('jobs', jobToDb(job));
+    }
+
+    this.persist();
+    this.logActivity(
+      'delete',
+      'estimate',
+      target.estimateId,
+      `Deleted Contract Cancellation Agreement ${target.cancellationNumber} for ${target.clientName}${
+        authorizingUser ? ` [Authorized by ${authorizingUser.displayName}]` : ''
+      }`,
+      target,
+      null,
+      target.cancellationNumber
+    );
+    return true;
   }
 
 
@@ -2597,6 +3228,16 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     };
 
     this.invoices.unshift(newInv);
+
+    // Link invoice to job if jobId is a real job
+    if (newInv.jobId && newInv.jobId !== 'sub-recurring' && newInv.jobId !== 'manual-invoice') {
+      const job = this.jobs.find((j) => j.id === newInv.jobId);
+      if (job) {
+        job.invoiceId = newInv.id;
+        syncRecordInBackground('jobs', jobToDb(job));
+      }
+    }
+
     this.persist();
     syncRecordInBackground('invoices', invoiceToDb(newInv));
     this.logActivity(
@@ -2611,10 +3252,52 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return newInv;
   }
 
+  public updateInvoice(
+    invoiceId: string,
+    updates: Partial<Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber'>>
+  ): Invoice | undefined {
+    const inv = this.invoices.find((i) => i.id === invoiceId);
+    if (!inv) return undefined;
+
+    const prevSnapshot = { ...inv };
+    Object.assign(inv, updates);
+
+    if (updates.items || updates.taxExempt !== undefined || updates.taxRate !== undefined) {
+      const subtotal = inv.items.reduce((acc, item) => acc + (Number(item.total) || 0), 0);
+      const effectiveRate = inv.taxExempt ? 0 : (inv.taxRate ?? 0.07);
+      const tax = Math.round(subtotal * effectiveRate * 100) / 100;
+      const total = Math.round((subtotal + tax) * 100) / 100;
+      inv.subtotal = subtotal;
+      inv.tax = tax;
+      inv.taxRate = effectiveRate;
+      inv.total = total;
+      inv.balanceDue = Math.max(0, Math.round((total - (inv.amountPaid || 0)) * 100) / 100);
+      if (inv.balanceDue <= 0.01 && inv.total > 0) {
+        inv.status = 'paid';
+      } else if (inv.status === 'paid' && inv.balanceDue > 0) {
+        inv.status = 'sent';
+      }
+    }
+
+    this.persist();
+    syncRecordInBackground('invoices', invoiceToDb(inv));
+    this.logActivity(
+      'update',
+      'invoice',
+      inv.id,
+      `Updated invoice ${inv.invoiceNumber} for ${inv.clientName} (Total: $${inv.total.toFixed(2)}, Balance: $${inv.balanceDue.toFixed(2)})`,
+      prevSnapshot,
+      inv,
+      inv.invoiceNumber
+    );
+    return inv;
+  }
+
   public markInvoicePaid(invoiceId: string, stripePaymentIntentId?: string) {
     const inv = this.invoices.find((i) => i.id === invoiceId);
     if (inv) {
       const prevStatus = inv.status;
+      const unpaidDelta = Math.max(0, inv.total - (inv.amountPaid || 0));
       inv.status = 'paid';
       inv.amountPaid = inv.total;
       inv.balanceDue = 0;
@@ -2623,10 +3306,10 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         inv.stripePaymentLink = `https://dashboard.stripe.com/test/payments/${stripePaymentIntentId}`;
       }
 
-      // Update client total spent
+      // Update client total spent by the newly paid balance
       const client = this.clients.find((c) => c.id === inv.clientId);
-      if (client) {
-        client.totalSpent = (client.totalSpent || 0) + inv.total;
+      if (client && unpaidDelta > 0) {
+        client.totalSpent = (client.totalSpent || 0) + unpaidDelta;
         syncRecordInBackground('clients', clientToDb(client));
       }
 
@@ -2764,7 +3447,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     sub.currentPeriodStart = newStart;
     sub.currentPeriodEnd = newEnd;
 
-    // 1. Generate automated renewal invoice (Stripe $99 paid invoice)
+    // 1. Generate automated renewal invoice
     const invId = `inv-sub-${Date.now()}`;
     const invoiceNumber = `INV-${Math.floor(5000 + Math.random() * 4999)}`;
     const newInv: Invoice = {
@@ -2811,8 +3494,8 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       propertyId: sub.propertyId,
       propertyAddress: sub.propertyAddress,
       title: 'Preventative Maintenance: Quarterly HVAC, Plumbing & Safety Audit',
-      description: `Automated monthly preventative maintenance service triggered by active $99/mo Stripe subscription renewal [${sub.stripeSubscriptionId}].`,
-      status: 'unscheduled', // Placed directly into Unscheduled queue on Dispatch Board
+      description: `Automated monthly preventative maintenance service triggered by active $${sub.amount}/mo subscription renewal [${sub.stripeSubscriptionId}].`,
+      status: 'unscheduled',
       priority: 'medium',
       scheduledDate: now.toISOString().split('T')[0],
       timeWindowStart: '09:00',
@@ -2827,7 +3510,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       photosBefore: [],
       photosAfter: [],
       invoiceId: invId,
-      notes: `Automated dispatch via Stripe Subscription renewal (${sub.stripeSubscriptionId})`,
+      notes: `Automated dispatch via Subscription renewal (${sub.stripeSubscriptionId})`,
       totalAmount: sub.amount,
       createdAt: now.toISOString(),
     };
@@ -2838,20 +3521,26 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     if (client) {
       client.activeJobsCount = (client.activeJobsCount || 0) + 1;
       client.totalSpent = (client.totalSpent || 0) + sub.amount;
+      syncRecordInBackground('clients', clientToDb(client));
     }
 
     const prop = this.properties.find((p) => p.id === sub.propertyId);
     if (prop) {
       prop.serviceHistoryJobIds.push(jobId);
+      syncRecordInBackground('properties', propertyToDb(prop));
     }
 
     sub.lastDispatchedJobId = jobId;
+    syncRecordInBackground('invoices', invoiceToDb(newInv));
+    syncRecordInBackground('jobs', jobToDb(newJob));
+    syncRecordInBackground('subscriptions', subscriptionToDb(sub));
+
     this.logActivity({
       entityType: 'job',
       entityId: newJob.id,
       entityTitle: newJob.title,
       actionType: 'create',
-      description: `Auto-dispatched preventative maintenance job for ${sub.clientName} via Stripe subscription`,
+      description: `Auto-dispatched preventative maintenance job for ${sub.clientName} via subscription renewal`,
       previousState: null,
       newState: newJob,
     });

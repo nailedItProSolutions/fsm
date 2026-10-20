@@ -2,21 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { useActiveFSMData } from '@/lib/useStore';
-import { InvoiceItem, Job } from '@/types';
+import { Invoice, InvoiceItem, Job } from '@/types';
 import { X, Plus, Trash2, Receipt, Calculator, Calendar, FileText, ShieldCheck } from 'lucide-react';
 
 interface InvoiceBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialJobId?: string;
+  initialInvoice?: Invoice | null;
 }
 
 export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   isOpen,
   onClose,
   initialJobId,
+  initialInvoice,
 }) => {
-  const { clients, properties, jobs, addInvoice } = useActiveFSMData();
+  const { clients, properties, jobs, addInvoice, updateInvoice } = useActiveFSMData();
 
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
@@ -35,9 +37,25 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   const clientProperties = properties.filter((p) => p.clientId === selectedClientId);
   const clientJobs = jobs.filter((j) => j.clientId === selectedClientId);
 
-  // If initialJobId is provided, pre-populate
+  // If initialInvoice or initialJobId is provided, pre-populate
   useEffect(() => {
-    if (initialJobId) {
+    if (initialInvoice) {
+      setSelectedClientId(initialInvoice.clientId);
+      setSelectedPropertyId(initialInvoice.propertyId);
+      setSelectedJobId(
+        initialInvoice.jobId && initialInvoice.jobId !== 'direct-invoice' && initialInvoice.jobId !== 'manual-invoice'
+          ? initialInvoice.jobId
+          : ''
+      );
+      setDueDate(initialInvoice.dueDate);
+      setIsTaxExempt(Boolean(initialInvoice.taxExempt || initialInvoice.tax === 0));
+      setTaxRate(initialInvoice.taxRate && initialInvoice.taxRate > 0 ? initialInvoice.taxRate : 0.07);
+      setItems(
+        initialInvoice.items && initialInvoice.items.length > 0
+          ? initialInvoice.items.map((item) => ({ ...item }))
+          : [{ id: '1', description: 'Standard Property Maintenance Labor', quantity: 2, unitPrice: 85, total: 170 }]
+      );
+    } else if (initialJobId) {
       const job = jobs.find((j) => j.id === initialJobId);
       if (job) {
         setSelectedClientId(job.clientId);
@@ -59,8 +77,12 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
       }
     } else if (clients.length > 0 && !selectedClientId) {
       setSelectedClientId(clients[0].id);
+      const firstProps = properties.filter((p) => p.clientId === clients[0].id);
+      if (firstProps.length > 0) {
+        setSelectedPropertyId(firstProps[0].id);
+      }
     }
-  }, [initialJobId, jobs, clients]);
+  }, [initialInvoice, initialJobId, jobs, clients, properties, isOpen]);
 
   // Handle client selection change
   const handleClientChange = (clientId: string) => {
@@ -158,32 +180,52 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
     const property = properties.find((p) => p.id === selectedPropertyId);
     const job = jobs.find((j) => j.id === selectedJobId);
 
-    const clientName = client?.isCompany
-      ? `${client.companyName} (${client.firstName} ${client.lastName})`
-      : `${client?.firstName} ${client?.lastName}`;
+    const clientName = client
+      ? client.isCompany
+        ? `${client.companyName} (${client.firstName} ${client.lastName})`
+        : `${client.firstName} ${client.lastName}`
+      : initialInvoice?.clientName || 'Client';
 
     const propertyAddress = property
       ? `${property.street}${property.unit ? `, ${property.unit}` : ''}, ${property.city}, ${property.state}`
-      : 'Service Address On File';
+      : initialInvoice?.propertyAddress || 'Service Address On File';
 
-    addInvoice({
-      jobId: selectedJobId || 'direct-invoice',
-      jobNumber: job?.jobNumber || 'DIRECT',
-      clientId: selectedClientId,
-      clientName: clientName || 'Client',
-      propertyId: selectedPropertyId || 'prop-default',
-      propertyAddress,
-      items,
-      subtotal,
-      tax,
-      taxExempt: isTaxExempt,
-      taxRate: effectiveTaxRate,
-      total,
-      amountPaid: 0,
-      balanceDue: total,
-      status: 'sent',
-      dueDate,
-    });
+    if (initialInvoice) {
+      updateInvoice(initialInvoice.id, {
+        jobId: selectedJobId || initialInvoice.jobId || 'direct-invoice',
+        jobNumber: job?.jobNumber || (selectedJobId ? initialInvoice.jobNumber : 'DIRECT'),
+        clientId: selectedClientId,
+        clientName,
+        propertyId: selectedPropertyId || initialInvoice.propertyId || 'prop-default',
+        propertyAddress,
+        items,
+        subtotal,
+        tax,
+        taxExempt: isTaxExempt,
+        taxRate: effectiveTaxRate,
+        total,
+        dueDate,
+      });
+    } else {
+      addInvoice({
+        jobId: selectedJobId || 'direct-invoice',
+        jobNumber: job?.jobNumber || 'DIRECT',
+        clientId: selectedClientId,
+        clientName,
+        propertyId: selectedPropertyId || 'prop-default',
+        propertyAddress,
+        items,
+        subtotal,
+        tax,
+        taxExempt: isTaxExempt,
+        taxRate: effectiveTaxRate,
+        total,
+        amountPaid: 0,
+        balanceDue: total,
+        status: 'sent',
+        dueDate,
+      });
+    }
 
     onClose();
   };
@@ -200,9 +242,13 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
               <Receipt className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold font-heading text-[#fdfbf7]">Create Customer Invoice</h2>
+              <h2 className="text-lg font-bold font-heading text-[#fdfbf7]">
+                {initialInvoice ? `Edit Invoice ${initialInvoice.invoiceNumber}` : 'Create Customer Invoice'}
+              </h2>
               <p className="text-xs text-[#b8b0a5]">
-                Generate invoice with optional tax exemption or Floyd County sales tax & instant Stripe payment link
+                {initialInvoice
+                  ? 'Update line items, client, property, due date, or tax exemption status'
+                  : 'Generate invoice with optional tax exemption or Floyd County sales tax & instant Stripe payment link'}
               </p>
             </div>
           </div>
@@ -493,7 +539,7 @@ export const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
               className="bg-[#c5a059] hover:bg-[#d4b068] text-black font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2"
             >
               <Receipt className="w-4 h-4" />
-              <span>Create & Issue Invoice</span>
+              <span>{initialInvoice ? 'Save Invoice Changes' : 'Create & Issue Invoice'}</span>
             </button>
           </div>
         </form>

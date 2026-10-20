@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { useActiveFSMData } from '@/lib/useStore';
-import { DailyWorkLog, WeeklyTimesheet } from '@/types';
+import { DailyWorkLog, JobTradeCategory, WeeklyTimesheet } from '@/types';
 import { LockedTimesheetPdfModal } from './LockedTimesheetPdfModal';
 import { 
   Lock, 
@@ -17,12 +17,14 @@ import {
   AlertCircle,
   FileCheck2,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Plus,
+  X
 } from 'lucide-react';
 
 export const TechVaultView: React.FC = () => {
   const { user } = useAuth();
-  const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId } = useActiveFSMData();
+  const { getDailyWorkLogsByTechId, getWeeklyTimesheetsByTechId, addDailyWorkLog, properties } = useActiveFSMData();
 
   const currentTechId = user?.role === 'technician' ? user.uid : 'user-tech-1';
   const techDisplayName = user?.role === 'technician' ? user.displayName : 'Charles Willis (Lead Field Tech)';
@@ -32,7 +34,18 @@ export const TechVaultView: React.FC = () => {
   const [viewingPdfTimesheet, setViewingPdfTimesheet] = useState<WeeklyTimesheet | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'logs' | 'pay'>('logs');
 
-  // Compute Totals
+  // Log Work Hours Modal State
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [logDate, setLogDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [logStartTime, setLogStartTime] = useState('08:00 AM');
+  const [logStopTime, setLogStopTime] = useState('04:30 PM');
+  const [logTotalHours, setLogTotalHours] = useState('8.5');
+  const [logPropertyLocation, setLogPropertyLocation] = useState(() => properties[0]?.street || '4512 Oakwood Ave');
+  const [logJobCategory, setLogJobCategory] = useState<JobTradeCategory>('Plumbing');
+  const [logTaskDetails, setLogTaskDetails] = useState('');
+
+  // Compute Totals & Latest Hourly Rate
+  const latestHourlyRate = myWeeklyTimesheets[0]?.hourlyRate || 35.0;
   const totalHoursLogged = myDailyLogs.reduce((acc, log) => acc + (log.totalHours || 0), 0);
   const paidTimesheets = myWeeklyTimesheets.filter((t) => t.status === 'verified_paid');
   const totalVerifiedEarnings = paidTimesheets.reduce(
@@ -41,6 +54,25 @@ export const TechVaultView: React.FC = () => {
   );
   const pendingTimesheets = myWeeklyTimesheets.filter((t) => t.status !== 'verified_paid');
   const pendingHours = pendingTimesheets.reduce((acc, t) => acc + (t.totalHours || 0), 0);
+
+  const handleLogSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addDailyWorkLog({
+      technicianId: currentTechId,
+      technicianName: user?.role === 'technician' ? user.displayName : 'Charles Willis',
+      date: logDate,
+      startTime: logStartTime,
+      stopTime: logStopTime,
+      totalHours: parseFloat(logTotalHours) || 8.0,
+      propertyLocation: logPropertyLocation.trim() || '4512 Oakwood Ave',
+      taskDetails: logTaskDetails.trim() || 'Field maintenance & service tasks completed.',
+      jobCategory: logJobCategory,
+      confidenceScore: 1.0,
+      source: 'manual_entry',
+    });
+    setIsLogModalOpen(false);
+    setLogTaskDetails('');
+  };
 
   return (
     <div className="space-y-6 text-[#fdfbf7]">
@@ -52,16 +84,27 @@ export const TechVaultView: React.FC = () => {
             <span>Technician Portal • Personal Vault</span>
           </div>
           <h1 className="text-2xl font-bold font-heading text-[#fdfbf7]">
-            {techDisplayName} Timesheet & Pay Vault
+            {techDisplayName} Timesheet &amp; Pay Vault
           </h1>
           <p className="text-xs text-[#b8b0a5] mt-1 max-w-2xl">
             Restricted historical daily logs and weekly compensation summaries. Timesheets verified and locked by administration cannot be modified.
           </p>
         </div>
 
-        <div className="bg-[#161616] px-4 py-2.5 rounded-xl border border-[#262626] text-right shrink-0">
-          <div className="text-[10px] text-[#78716c] uppercase font-bold">Standard Compensation</div>
-          <div className="text-base font-bold font-mono text-[#c5a059]">$35.00 / hr</div>
+        <div className="flex items-center space-x-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsLogModalOpen(true)}
+            className="bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center space-x-1.5 shadow"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Log Work Hours</span>
+          </button>
+
+          <div className="bg-[#161616] px-4 py-2.5 rounded-xl border border-[#262626] text-right">
+            <div className="text-[10px] text-[#78716c] uppercase font-bold">Standard Compensation</div>
+            <div className="text-base font-bold font-mono text-[#c5a059]">${latestHourlyRate.toFixed(2)} / hr</div>
+          </div>
         </div>
       </div>
 
@@ -260,7 +303,7 @@ export const TechVaultView: React.FC = () => {
                       <div className="space-y-1">
                         <div className="font-bold text-emerald-300 flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>Payroll Verified & Cleared via {sheet.paymentVerification.paymentMethod === 'check' ? 'Company Check' : 'Bank Transfer'}</span>
+                          <span>Payroll Verified &amp; Cleared via {sheet.paymentVerification.paymentMethod === 'check' ? 'Company Check' : 'Bank Transfer'}</span>
                         </div>
                         <div className="text-[11px] text-emerald-200/80">
                           Ref: <strong className="font-mono text-white">{sheet.paymentVerification.checkNumber}</strong> • Paid: <strong className="text-white">{sheet.paymentVerification.paymentDate}</strong> • Verified by: {sheet.paymentVerification.verifiedBy}
@@ -286,6 +329,129 @@ export const TechVaultView: React.FC = () => {
                 No weekly timesheets generated yet.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Log Work Hours Modal */}
+      {isLogModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="bg-[#111111] border border-[#2a2a2a] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-[#222222] bg-[#161616] flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-[#c5a059]" />
+                <h3 className="text-sm font-bold text-[#fdfbf7]">Log Daily Work Hours</h3>
+              </div>
+              <button onClick={() => setIsLogModalOpen(false)} className="text-[#78716c] hover:text-[#fdfbf7]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleLogSubmit} className="p-5 space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Work Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={logDate}
+                    onChange={(e) => setLogDate(e.target.value)}
+                    className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Total Hours *</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    required
+                    value={logTotalHours}
+                    onChange={(e) => setLogTotalHours(e.target.value)}
+                    className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] font-mono focus:outline-none focus:border-[#c5a059]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Start Time</label>
+                  <input
+                    type="text"
+                    value={logStartTime}
+                    onChange={(e) => setLogStartTime(e.target.value)}
+                    className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] font-mono focus:outline-none focus:border-[#c5a059]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Stop Time</label>
+                  <input
+                    type="text"
+                    value={logStopTime}
+                    onChange={(e) => setLogStopTime(e.target.value)}
+                    className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] font-mono focus:outline-none focus:border-[#c5a059]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Property Location *</label>
+                  <input
+                    type="text"
+                    required
+                    value={logPropertyLocation}
+                    onChange={(e) => setLogPropertyLocation(e.target.value)}
+                    placeholder="e.g. 4512 Oakwood Ave"
+                    className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Trade Category</label>
+                  <select
+                    value={logJobCategory}
+                    onChange={(e) => setLogJobCategory(e.target.value as JobTradeCategory)}
+                    className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+                  >
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Drywall">Drywall</option>
+                    <option value="HVAC">HVAC</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Turnover">Turnover</option>
+                    <option value="Handyman">Handyman</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">Completed Task Details *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={logTaskDetails}
+                  onChange={(e) => setLogTaskDetails(e.target.value)}
+                  placeholder="Describe work completed on site..."
+                  className="w-full bg-[#181818] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-[#222222]">
+                <button
+                  type="button"
+                  onClick={() => setIsLogModalOpen(false)}
+                  className="px-3.5 py-2 rounded-lg border border-[#333333] text-xs font-bold text-[#b8b0a5] hover:bg-[#1a1a1a]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold transition flex items-center space-x-1"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Submit Work Log</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

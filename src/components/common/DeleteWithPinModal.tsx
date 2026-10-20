@@ -22,7 +22,7 @@ interface DeleteWithPinModalProps {
   onConfirm: (authorizingUser: UserProfile) => void | Promise<void>;
   title?: string;
   itemName: string;
-  itemType?: 'estimate' | 'agreement' | 'invoice' | 'technician' | 'job' | 'record' | 'client history' | 'payment';
+  itemType?: 'estimate' | 'agreement' | 'cancellation' | 'invoice' | 'technician' | 'job' | 'record' | 'client history' | 'payment' | 'property' | 'client';
   warningMessage?: string;
   targetId?: string;
 }

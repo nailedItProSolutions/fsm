@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { WeeklyTimesheet, TimesheetBonus, TimesheetDeduction } from '@/types';
 import { STANDARD_HOURLY_RATES, calculateNetPay } from '@/lib/ocrEngine';
 import { useFSMStore } from '@/lib/useStore';
+import { useAuth } from '@/lib/authContext';
 import { 
   X, 
   DollarSign, 
@@ -38,6 +39,7 @@ export const TimesheetAuditModal: React.FC<TimesheetAuditModalProps> = ({
   onConfirmAudit,
 }) => {
   const { clients } = useFSMStore();
+  const { user } = useAuth();
 
   // Hourly Rate state
   const [hourlyRate, setHourlyRate] = useState<number>(timesheet.hourlyRate || 35.0);
@@ -709,7 +711,7 @@ export const TimesheetAuditModal: React.FC<TimesheetAuditModalProps> = ({
         <div className="bg-[#181818] p-5 border-t border-[#262626] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-[#78716c] flex items-center space-x-1.5">
             <UserCheck className="w-4 h-4 text-[#c5a059]" />
-            <span>Auditing as: <strong>Sarah Jenkins (Admin)</strong></span>
+            <span>Auditing as: <strong>{user?.displayName ? `${user.displayName} (Admin)` : 'Charles Willis (Admin)'}</strong></span>
           </div>
 
           <div className="flex items-center space-x-3 w-full sm:w-auto">

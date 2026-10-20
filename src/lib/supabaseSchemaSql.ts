@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS public.users (
     pin TEXT DEFAULT '',
     telegram_chat_id TEXT,
     active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 -- 2. CLIENTS (CRM)
@@ -45,7 +46,8 @@ CREATE TABLE IF NOT EXISTS public.clients (
     is_archived BOOLEAN DEFAULT FALSE,
     archived_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_clients_is_archived ON public.clients(is_archived);
@@ -58,7 +60,8 @@ CREATE TABLE IF NOT EXISTS public.properties (
     property_type TEXT DEFAULT 'single_family',
     notes TEXT DEFAULT '',
     service_history_job_ids JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_properties_client_id ON public.properties(client_id);
@@ -92,7 +95,8 @@ CREATE TABLE IF NOT EXISTS public.jobs (
     notes TEXT DEFAULT '',
     total_amount NUMERIC(12, 2) DEFAULT 0,
     completed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON public.jobs(status);
@@ -112,14 +116,17 @@ CREATE TABLE IF NOT EXISTS public.estimates (
     tax_rate NUMERIC(6, 4) DEFAULT 0.08,
     tax_amount NUMERIC(12, 2) DEFAULT 0,
     total NUMERIC(12, 2) DEFAULT 0,
+    original_total NUMERIC(12, 2),
     deposit_paid NUMERIC(12, 2) DEFAULT 0,
     work_agreement_id TEXT,
     payments JSONB DEFAULT '[]'::jsonb,
+    terms JSONB DEFAULT '[]'::jsonb,
     status TEXT NOT NULL DEFAULT 'draft',
     valid_until DATE,
     converted_to_job_id TEXT,
     market_comparison JSONB,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_estimates_client_id ON public.estimates(client_id);
@@ -175,6 +182,8 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     items JSONB DEFAULT '[]'::jsonb,
     subtotal NUMERIC(12, 2) DEFAULT 0,
     tax NUMERIC(12, 2) DEFAULT 0,
+    tax_rate NUMERIC(6, 4) DEFAULT 0.07,
+    tax_exempt BOOLEAN DEFAULT false,
     total NUMERIC(12, 2) DEFAULT 0,
     amount_paid NUMERIC(12, 2) DEFAULT 0,
     balance_due NUMERIC(12, 2) DEFAULT 0,
@@ -182,7 +191,8 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     stripe_payment_link TEXT,
     due_date DATE,
     paid_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_invoices_client_id ON public.invoices(client_id);
@@ -210,7 +220,8 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     selected_add_ons JSONB,
     monthly_add_ons_total NUMERIC(10, 2) DEFAULT 0,
     one_time_add_ons_total NUMERIC(10, 2) DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 -- 9. DAILY WORK LOGS (TIMESHEET OCR)
@@ -231,7 +242,8 @@ CREATE TABLE IF NOT EXISTS public.daily_work_logs (
     confidence_score NUMERIC(4, 3) DEFAULT 0,
     source TEXT DEFAULT 'manual_entry',
     weekly_timesheet_id TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_work_logs_tech ON public.daily_work_logs(technician_id);
@@ -263,7 +275,8 @@ CREATE TABLE IF NOT EXISTS public.weekly_timesheets (
     payment_verification JSONB,
     generated_pdf_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_timesheets_tech ON public.weekly_timesheets(technician_id);
@@ -284,7 +297,8 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     description TEXT,
     previous_state JSONB,
     new_state JSONB,
-    timestamp TIMESTAMPTZ DEFAULT NOW()
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    raw JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON public.audit_logs(timestamp DESC);
@@ -323,6 +337,13 @@ END $$;
 -- ==============================================================================
 -- IDEMPOTENT INCREMENTAL MIGRATIONS (Safe for existing databases)
 -- ==============================================================================
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS original_total NUMERIC(12, 2);
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS terms JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS raw JSONB;
 ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS amount_due_now NUMERIC(12, 2) DEFAULT 0;
 ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS due_now_description TEXT;
 ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS balance_due_upon_completion NUMERIC(12, 2) DEFAULT 0;
@@ -331,6 +352,14 @@ ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS raw JSONB;
 UPDATE public.work_agreements 
 SET balance_due_upon_completion = balance_due 
 WHERE balance_due_upon_completion IS NULL OR balance_due_upon_completion = 0;
+
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_exempt BOOLEAN DEFAULT false;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(6, 4) DEFAULT 0.07;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.daily_work_logs ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.weekly_timesheets ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS raw JSONB;
 `;
 
 export const SUPABASE_MIGRATION_ADD_PAYMENT_FIELDS_SQL = `-- ==============================================================================
@@ -338,30 +367,35 @@ export const SUPABASE_MIGRATION_ADD_PAYMENT_FIELDS_SQL = `-- ===================
 -- Run this in Supabase Project -> SQL Editor -> Run
 -- ==============================================================================
 
--- 1. Add amount_due_now (Payment amount due upon contract execution)
-ALTER TABLE public.work_agreements 
-ADD COLUMN IF NOT EXISTS amount_due_now NUMERIC(12, 2) DEFAULT 0;
+-- 1. Add raw JSONB column across all 11 tables for lossless cloud sync
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS original_total NUMERIC(12, 2);
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS terms JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.estimates ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS amount_due_now NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS due_now_description TEXT;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS balance_due_upon_completion NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE public.work_agreements ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_exempt BOOLEAN DEFAULT false;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(6, 4) DEFAULT 0.07;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.daily_work_logs ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.weekly_timesheets ADD COLUMN IF NOT EXISTS raw JSONB;
+ALTER TABLE public.audit_logs ADD COLUMN IF NOT EXISTS raw JSONB;
 
--- 2. Add due_now_description (Optional note e.g. Upfront materials procurement)
-ALTER TABLE public.work_agreements 
-ADD COLUMN IF NOT EXISTS due_now_description TEXT;
-
--- 3. Add balance_due_upon_completion (Remaining balance upon completion)
-ALTER TABLE public.work_agreements 
-ADD COLUMN IF NOT EXISTS balance_due_upon_completion NUMERIC(12, 2) DEFAULT 0;
-
--- 4. Add raw JSONB payload column for future-proof sync
-ALTER TABLE public.work_agreements 
-ADD COLUMN IF NOT EXISTS raw JSONB;
-
--- 5. Backfill existing agreements so balance_due_upon_completion = balance_due
+-- 2. Backfill existing agreements so balance_due_upon_completion = balance_due
 UPDATE public.work_agreements 
 SET balance_due_upon_completion = balance_due 
 WHERE balance_due_upon_completion IS NULL OR balance_due_upon_completion = 0;
 
 -- Verification
-SELECT column_name, data_type, column_default 
+SELECT table_name, column_name, data_type 
 FROM information_schema.columns 
-WHERE table_name = 'work_agreements' 
-  AND column_name IN ('amount_due_now', 'due_now_description', 'balance_due_upon_completion', 'raw');
+WHERE table_schema = 'public' 
+  AND column_name IN ('amount_due_now', 'due_now_description', 'balance_due_upon_completion', 'raw', 'tax_exempt', 'tax_rate', 'original_total', 'terms')
+ORDER BY table_name, column_name;
 `;

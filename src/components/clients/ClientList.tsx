@@ -19,24 +19,34 @@ import {
   Filter,
   DollarSign,
   Briefcase,
-  Trash2
+  Trash2,
+  Pencil,
+  RotateCcw
 } from 'lucide-react';
 import { DeleteWithPinModal } from '@/components/common/DeleteWithPinModal';
 
 export const ClientList: React.FC = () => {
-  const { clients, properties, jobs, archiveClient, unarchiveClient, clearClientHistory } = useFSMStore();
+  const { clients, properties, jobs, archiveClient, unarchiveClient, clearClientHistory, deleteClient } = useFSMStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'company' | 'residential'>('all');
   const [filterArchived, setFilterArchived] = useState<'active' | 'archived'>('active');
   const [isNewClientOpen, setIsNewClientOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [activeClientForProp, setActiveClientForProp] = useState<Client | null>(null);
   const [clientToClearHistory, setClientToClearHistory] = useState<Client | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   const handleConfirmClearHistory = (authorizingUser: any) => {
     if (!clientToClearHistory) return;
     clearClientHistory(clientToClearHistory.id, authorizingUser);
     setClientToClearHistory(null);
+  };
+
+  const handleConfirmDeleteClient = (authorizingUser: any) => {
+    if (!clientToDelete) return;
+    deleteClient(clientToDelete.id, authorizingUser);
+    setClientToDelete(null);
   };
 
   // Filter clients based on query and type
@@ -91,7 +101,10 @@ export const ClientList: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => setIsNewClientOpen(true)}
+          onClick={() => {
+            setEditingClient(null);
+            setIsNewClientOpen(true);
+          }}
           className="bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2"
         >
           <Plus className="w-4 h-4 text-black" />
@@ -103,7 +116,7 @@ export const ClientList: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-[#111111] border border-[#222222] p-4 rounded-xl shadow-sm">
           <div className="text-[11px] font-bold uppercase tracking-wider text-[#78716c]">Total Clients</div>
-          <div className="text-2xl font-bold font-heading text-[#fdfbf7] mt-1">{clients.length}</div>
+          <div className="text-2xl font-bold font-heading text-[#fdfbf7] mt-1">{activeClientsOnly.length}</div>
           <div className="text-[10px] text-[#c5a059] mt-0.5">Active accounts in Rome, GA</div>
         </div>
 
@@ -307,16 +320,28 @@ export const ClientList: React.FC = () => {
                     </td>
 
                     {/*  */}
-                    <td className="px-6 py-4 text-right space-x-2">
+                    <td className="px-6 py-4 text-right space-x-1.5 whitespace-nowrap">
                       <Link
                         href={`/dashboard/clients/${client.id}`}
-                        className="inline-block bg-[#1a1a1a] hover:bg-[#252525] text-[#fdfbf7] border border-[#333333] font-bold text-[11px] px-3 py-1.5 rounded-lg transition"
+                        className="inline-block bg-[#1a1a1a] hover:bg-[#252525] text-[#fdfbf7] border border-[#333333] font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition"
                       >
                         View Profile
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingClient(client);
+                          setIsNewClientOpen(true);
+                        }}
+                        title="Edit Client Profile"
+                        className="inline-flex items-center gap-1 bg-[#1a1a1a] hover:bg-[#252525] text-[#c5a059] border border-[#333333] font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
                       <Link
                         href={`/dashboard/schedule?clientId=${client.id}`}
-                        className="inline-block bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow"
+                        className="inline-block bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow"
                       >
                         + Book Job
                       </Link>
@@ -330,16 +355,24 @@ export const ClientList: React.FC = () => {
                             }
                           }
                         }}
-                        className={`inline-block border font-bold text-[11px] px-3 py-1.5 rounded-lg transition shadow ${client.isArchived ? 'bg-[#1a1a1a] hover:bg-[#252525] text-emerald-400 border-emerald-900/50' : 'bg-[#1a1a1a] hover:bg-red-950/40 text-[#b8b0a5] border-[#333333] hover:border-red-900/50'}`}
+                        className={`inline-block border font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow ${client.isArchived ? 'bg-[#1a1a1a] hover:bg-[#252525] text-emerald-400 border-emerald-900/50' : 'bg-[#1a1a1a] hover:bg-red-950/40 text-[#b8b0a5] border-[#333333] hover:border-red-900/50'}`}
                       >
                         {client.isArchived ? 'Unarchive' : 'Archive'}
                       </button>
                       <button
                         onClick={() => setClientToClearHistory(client)}
                         title="Clear client service history (Requires PIN)"
-                        className="inline-block bg-[#1a1a1a] hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-[#333333] hover:border-red-900/50 font-bold text-[11px] px-2 py-1.5 rounded-lg transition shadow"
+                        className="inline-block bg-[#1a1a1a] hover:bg-amber-950/40 text-amber-400 hover:text-amber-300 border border-[#333333] hover:border-amber-900/50 font-bold text-[11px] px-2 py-1.5 rounded-lg transition shadow"
                       >
-                        <Trash2 className="w-3.5 h-3.5 inline" />
+                        <RotateCcw className="w-3.5 h-3.5 inline" />
+                      </button>
+                      <button
+                        onClick={() => setClientToDelete(client)}
+                        title="Delete Client Permanently (Requires PIN)"
+                        className="inline-flex items-center gap-1 bg-[#1a1a1a] hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-[#333333] hover:border-red-900/50 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition shadow"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Client</span>
                       </button>
                     </td>
                   </tr>
@@ -365,10 +398,14 @@ export const ClientList: React.FC = () => {
         </div>
       </div>
 
-      {/*  */}
+      {/* Add / Edit Client Modal */}
       <NewClientModal
         isOpen={isNewClientOpen}
-        onClose={() => setIsNewClientOpen(false)}
+        onClose={() => {
+          setIsNewClientOpen(false);
+          setEditingClient(null);
+        }}
+        initialClient={editingClient}
       />
 
       {/*  */}
@@ -391,6 +428,19 @@ export const ClientList: React.FC = () => {
           itemName={`${clientToClearHistory.isCompany ? clientToClearHistory.companyName : `${clientToClearHistory.firstName} ${clientToClearHistory.lastName}`} (All Jobs, Invoices, & Service Logs)`}
           itemType="client history"
           warningMessage="DANGER: This will permanently delete all jobs, work orders, estimates, invoices, and service records associated with this client. The client profile will be retained, but all transaction history and spending counters will be reset to zero. This action is irreversible and requires strict employee PIN confirmation."
+        />
+      )}
+
+      {/* Delete Client Confirmation Modal with Employee PIN Verification */}
+      {clientToDelete && (
+        <DeleteWithPinModal
+          isOpen={!!clientToDelete}
+          onClose={() => setClientToDelete(null)}
+          onConfirm={handleConfirmDeleteClient}
+          title="Delete Client Profile Permanently"
+          itemName={clientToDelete.isCompany ? clientToDelete.companyName || `${clientToDelete.firstName} ${clientToDelete.lastName}` : `${clientToDelete.firstName} ${clientToDelete.lastName}`}
+          itemType="client"
+          warningMessage="DANGER: This will permanently delete this client profile, all linked properties, and all associated jobs, estimates, work agreements, invoices, and subscriptions. This action is irreversible and requires employee PIN verification."
         />
       )}
     </div>

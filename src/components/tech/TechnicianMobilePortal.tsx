@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { useFSMStore } from '@/lib/useStore';
+import { useActiveFSMData } from '@/lib/useStore';
 import { useAuth } from '@/lib/authContext';
 import { Job, Property, Client } from '@/types';
 import { 
@@ -17,7 +17,9 @@ import {
   Key, 
   CheckCircle2, 
   Plus, 
-  ChevronRight, 
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Receipt, 
   User, 
   Calendar,
@@ -29,7 +31,8 @@ import {
   ShieldCheck,
   Building2,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Upload
 } from 'lucide-react';
 
 export const STANDARDIZED_TURNOVER_ITEMS = [
@@ -54,6 +57,41 @@ const SAMPLE_FIELD_PHOTOS = [
   { label: 'Turnover Brand New HVAC Air Filter (After)', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80' },
 ];
 
+function compressImageToDataUrl(file: File, maxDim = 900, quality = 0.75): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export const TechnicianMobilePortal: React.FC = () => {
   const { 
     jobs, 
@@ -63,11 +101,14 @@ export const TechnicianMobilePortal: React.FC = () => {
     toggleChecklistItem, 
     updateJobStatus, 
     addJobPhoto,
-    updateJob
-  } = useFSMStore();
+    removeJobPhoto,
+    updateJob,
+    addDailyWorkLog
+  } = useActiveFSMData();
 
   const { user } = useAuth();
   const technicians = getTechnicians();
+  const isAdmin = user?.role === 'admin' || user?.role === 'dispatcher';
 
   // Active tech state
   const [selectedTechId, setSelectedTechId] = useState<string>(() => {
@@ -77,45 +118,103 @@ export const TechnicianMobilePortal: React.FC = () => {
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [completionNotes, setCompletionNotes] = useState<Record<string, string>>({});
   const [photoPickerModalJobId, setPhotoPickerModalJobId] = useState<{ jobId: string; type: 'before' | 'after' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const activeTech = technicians.find((t) => t.uid === selectedTechId) || technicians[0];
+  const techJobs = jobs.filter((j) => j.assignedTechId === selectedTechId);
+
+  // Group by today / other dates
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaysJobs = techJobs.filter((j) => j.scheduledDate === todayStr || !j.scheduledDate);
+  const otherJobs = techJobs.filter((j) => j.scheduledDate !== todayStr && Boolean(j.scheduledDate));
+
+  const [routeFilter, setRouteFilter] = useState<'today' | 'other' | 'all'>(() => {
+    return todaysJobs.length === 0 && otherJobs.length > 0 ? 'all' : 'today';
+  });
+
+  React.useEffect(() => {
+    if (todaysJobs.length === 0 && otherJobs.length > 0 && routeFilter === 'today') {
+      setRouteFilter('all');
+    }
+  }, [selectedTechId, todaysJobs.length, otherJobs.length]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const jobParam = params.get('job');
-      if (jobParam) setExpandedJobId(jobParam);
+      if (jobParam) {
+        setExpandedJobId(jobParam);
+        setRouteFilter('all');
+      }
       const techParam = params.get('tech');
       if (techParam) setSelectedTechId(techParam);
     }
   }, []);
 
-  const activeTech = technicians.find((t) => t.uid === selectedTechId) || technicians[0];
-  const techJobs = jobs.filter((j) => j.assignedTechId === selectedTechId);
+  const displayedJobs =
+    routeFilter === 'today' ? todaysJobs : routeFilter === 'other' ? otherJobs : techJobs;
 
-  // Group by today / upcoming
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todaysJobs = techJobs.filter((j) => j.scheduledDate === todayStr || !j.scheduledDate);
-  const otherJobs = techJobs.filter((j) => j.scheduledDate !== todayStr && j.scheduledDate);
-
-  const completedCount = todaysJobs.filter((j) => j.status === 'completed').length;
-  const progressPercent = todaysJobs.length > 0 ? Math.round((completedCount / todaysJobs.length) * 100) : 0;
+  const completedCount = displayedJobs.filter((j) => j.status === 'completed').length;
+  const progressPercent = displayedJobs.length > 0 ? Math.round((completedCount / displayedJobs.length) * 100) : 0;
 
   const handleStartJob = (jobId: string) => {
     updateJobStatus(jobId, 'in_progress');
   };
 
-  const handleCompleteJob = (jobId: string) => {
-    const notes = completionNotes[jobId];
+  const handleCompleteJob = (job: Job) => {
+    const notes = completionNotes[job.id];
     if (notes) {
-      const job = jobs.find((j) => j.id === jobId);
-      updateJob(jobId, { notes: `${job?.notes || ''}\n[Tech Completion Note]: ${notes}` });
+      updateJob(job.id, { notes: `${job.notes || ''}\n[Tech Completion Note]: ${notes}` });
     }
-    updateJobStatus(jobId, 'completed');
+    updateJobStatus(job.id, 'completed');
+
+    // Calculate hours from job window or default to 2.5 hrs
+    let totalHours = 2.5;
+    if (job.timeWindowStart && job.timeWindowEnd) {
+      const [sh, sm] = job.timeWindowStart.split(':').map(Number);
+      const [eh, em] = job.timeWindowEnd.split(':').map(Number);
+      if (!isNaN(sh) && !isNaN(eh)) {
+        const diff = (eh + (em || 0) / 60) - (sh + (sm || 0) / 60);
+        if (diff > 0) {
+          totalHours = Math.round(diff * 10) / 10;
+        }
+      }
+    }
+
+    addDailyWorkLog({
+      technicianId: job.assignedTechId || activeTech?.uid || 'user-tech-1',
+      technicianName: job.assignedTechName || activeTech?.displayName || 'Charles Willis',
+      date: todayStr,
+      startTime: job.timeWindowStart || '08:00 AM',
+      stopTime: job.timeWindowEnd || '04:30 PM',
+      totalHours,
+      propertyLocation: job.propertyAddress,
+      propertyId: job.propertyId,
+      taskDetails: `Completed ${job.jobNumber}: ${job.title}`,
+      jobCategory: 'Turnover',
+      confidenceScore: 1,
+      source: 'manual_entry',
+    });
   };
 
   const handleAddSamplePhoto = (photoUrl: string) => {
     if (!photoPickerModalJobId) return;
     addJobPhoto(photoPickerModalJobId.jobId, photoPickerModalJobId.type, photoUrl);
     setPhotoPickerModalJobId(null);
+  };
+
+  const handleRealPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !photoPickerModalJobId) return;
+    try {
+      const dataUrl = await compressImageToDataUrl(file, 900, 0.75);
+      addJobPhoto(photoPickerModalJobId.jobId, photoPickerModalJobId.type, dataUrl);
+      setPhotoPickerModalJobId(null);
+    } catch (err) {
+      console.error('Failed to process photo upload:', err);
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const handleApplyTurnoverChecklist = (jobId: string) => {
@@ -143,25 +242,31 @@ export const TechnicianMobilePortal: React.FC = () => {
                 Technician Field Hub
               </div>
               <h1 className="text-sm font-bold font-heading text-[#fdfbf7]">
-                Today's Daily Route
+                Today&apos;s Daily Route
               </h1>
             </div>
           </div>
 
-          {/* Tech Switcher Dropdown */}
+          {/* Tech Switcher Dropdown (Admins/Dispatchers only) or Static Badge */}
           <div className="flex items-center space-x-1.5">
             <User className="w-3.5 h-3.5 text-[#b8b0a5]" />
-            <select
-              value={selectedTechId}
-              onChange={(e) => setSelectedTechId(e.target.value)}
-              className="bg-[#181818] border border-[#2e2e2e] rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
-            >
-              {technicians.map((t) => (
-                <option key={t.uid} value={t.uid}>
-                  {t.displayName}
-                </option>
-              ))}
-            </select>
+            {isAdmin ? (
+              <select
+                value={selectedTechId}
+                onChange={(e) => setSelectedTechId(e.target.value)}
+                className="bg-[#181818] border border-[#2e2e2e] rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+              >
+                {technicians.map((t) => (
+                  <option key={t.uid} value={t.uid}>
+                    {t.displayName}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="bg-[#181818] border border-[#2e2e2e] rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#c5a059]">
+                {activeTech?.displayName || user?.displayName || 'Field Technician'}
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -176,7 +281,7 @@ export const TechnicianMobilePortal: React.FC = () => {
               <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
             </div>
             <div className="text-[11px] font-bold text-[#c5a059]">
-              {completedCount} of {todaysJobs.length} Completed ({progressPercent}%)
+              {completedCount} of {displayedJobs.length} Completed ({progressPercent}%)
             </div>
           </div>
 
@@ -197,28 +302,74 @@ export const TechnicianMobilePortal: React.FC = () => {
           </div>
         </div>
 
+        {/* Route View Filter Tab Bar */}
+        <div className="flex items-center justify-between gap-2 bg-[#111111] p-1.5 rounded-xl border border-[#222222]">
+          <button
+            type="button"
+            onClick={() => setRouteFilter('today')}
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition ${
+              routeFilter === 'today'
+                ? 'bg-[#c5a059] text-black shadow'
+                : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
+            }`}
+          >
+            Today ({todaysJobs.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setRouteFilter('other')}
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition ${
+              routeFilter === 'other'
+                ? 'bg-[#c5a059] text-black shadow'
+                : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
+            }`}
+          >
+            Other Dates ({otherJobs.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setRouteFilter('all')}
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition ${
+              routeFilter === 'all'
+                ? 'bg-[#c5a059] text-black shadow'
+                : 'text-[#b8b0a5] hover:text-[#fdfbf7]'
+            }`}
+          >
+            All Assigned ({techJobs.length})
+          </button>
+        </div>
+
         {/* Route Stops Header */}
         <div className="flex items-center justify-between pt-1">
           <h2 className="text-xs font-bold uppercase tracking-wider text-[#b8b0a5]">
-            Assigned Work Orders ({todaysJobs.length})
+            Assigned Work Orders ({displayedJobs.length})
           </h2>
-          <span className="text-[11px] text-[#78716c]">Rome & Surrounding</span>
+          <span className="text-[11px] text-[#78716c]">Rome &amp; Surrounding</span>
         </div>
 
         {/* Job Cards */}
-        {todaysJobs.length === 0 ? (
-          <div className="bg-[#111111] border border-[#222222] rounded-2xl p-8 text-center text-[#78716c]">
+        {displayedJobs.length === 0 ? (
+          <div className="bg-[#111111] border border-[#222222] rounded-2xl p-8 text-center text-[#78716c] space-y-2">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2 opacity-60" />
-            <p className="text-sm font-semibold text-[#fdfbf7]">No scheduled stops for today!</p>
+            <p className="text-sm font-semibold text-[#fdfbf7]">No scheduled stops in this view!</p>
             <p className="text-xs mt-1">Enjoy your break or check dispatch for emergency calls.</p>
+            {techJobs.length > 0 && routeFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setRouteFilter('all')}
+                className="mt-2 px-3.5 py-1.5 rounded-lg bg-[#c5a059] text-black font-bold text-xs transition"
+              >
+                View All Assigned Jobs ({techJobs.length})
+              </button>
+            )}
           </div>
         ) : (
-          todaysJobs.map((job, index) => {
+          displayedJobs.map((job, index) => {
             const property = properties.find((p) => p.id === job.propertyId);
             const client = clients.find((c) => c.id === job.clientId);
             const isCompleted = job.status === 'completed';
             const isInProgress = job.status === 'in_progress';
-            const isExpanded = expandedJobId === job.id || (!isCompleted && expandedJobId === null && index === 0);
+            const isExpanded = expandedJobId === null || expandedJobId === job.id;
 
             const checklistDoneCount = job.checklist?.filter((c) => c.done).length || 0;
             const checklistTotal = job.checklist?.length || 0;
@@ -245,8 +396,11 @@ export const TechnicianMobilePortal: React.FC = () => {
                     : 'border-[#242424]'
                 }`}
               >
-                {/* Card Top Stop Bar */}
-                <div className="bg-[#161616] px-4 py-2.5 border-b border-[#222222] flex items-center justify-between text-xs">
+                {/* Card Top Stop Bar (Click to Expand / Collapse) */}
+                <div
+                  onClick={() => setExpandedJobId(isExpanded && expandedJobId === job.id ? '__none__' : job.id)}
+                  className="bg-[#161616] px-4 py-2.5 border-b border-[#222222] flex items-center justify-between text-xs cursor-pointer hover:bg-[#1b1b1b] transition"
+                >
                   <div className="flex items-center space-x-2">
                     <span className="bg-[#242424] text-[#c5a059] font-mono font-bold text-[10px] px-2 py-0.5 rounded">
                       Stop #{index + 1}
@@ -254,6 +408,11 @@ export const TechnicianMobilePortal: React.FC = () => {
                     <span className="font-mono text-[#b8b0a5] font-semibold text-[11px]">
                       {job.jobNumber}
                     </span>
+                    {job.scheduledDate && (
+                      <span className="text-[10px] font-mono text-[#78716c]">
+                        ({job.scheduledDate})
+                      </span>
+                    )}
                     {isTurnoverJob && (
                       <span className="bg-purple-950/80 text-purple-300 border border-purple-700/60 font-mono font-bold text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
                         <Building2 className="w-3 h-3 text-purple-400" />
@@ -279,390 +438,423 @@ export const TechnicianMobilePortal: React.FC = () => {
                     >
                       {job.status.replace('_', ' ')}
                     </span>
+
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-[#78716c]" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-[#78716c]" />
+                    )}
                   </div>
                 </div>
 
                 {/* Card Body */}
                 <div className="p-4 space-y-4">
                   {/* Job Title & Client */}
-                  <div>
-                    <h3 className="font-bold text-base text-[#fdfbf7] font-heading">
-                      {job.title}
-                    </h3>
-                    <div className="text-xs text-[#b8b0a5] mt-0.5">
-                      Client: <span className="font-semibold text-[#fdfbf7]">{job.clientName}</span>
+                  <div
+                    onClick={() => setExpandedJobId(isExpanded && expandedJobId === job.id ? '__none__' : job.id)}
+                    className="cursor-pointer flex items-center justify-between"
+                  >
+                    <div>
+                      <h3 className="font-bold text-base text-[#fdfbf7] font-heading">
+                        {job.title}
+                      </h3>
+                      <div className="text-xs text-[#b8b0a5] mt-0.5">
+                        Client: <span className="font-semibold text-[#fdfbf7]">{job.clientName}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Property Address & GPS Launch */}
-                  <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="text-xs flex items-start gap-1.5">
-                        <MapPin className="w-4 h-4 text-[#FF8A00] flex-shrink-0 mt-0.5" />
-                        <div>
-                          <div className="font-semibold text-[#fdfbf7]">{job.propertyAddress}</div>
-                          {property?.label && (
-                            <div className="text-[11px] text-[#c5a059]">{property.label}</div>
+                  {isExpanded && (
+                    <>
+                      {/* Property Address & GPS Launch */}
+                      <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-xs flex items-start gap-1.5">
+                            <MapPin className="w-4 h-4 text-[#FF8A00] flex-shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-semibold text-[#fdfbf7]">{job.propertyAddress}</div>
+                              {property?.label && (
+                                <div className="text-[11px] text-[#c5a059]">{property.label}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick GPS & Phone Buttons */}
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                              job.propertyAddress
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-[#242424] hover:bg-[#2e2e2e] text-[#fdfbf7] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-[#333333]"
+                          >
+                            <Navigation className="w-3.5 h-3.5 text-[#FF8A00]" />
+                            <span>GPS Navigation</span>
+                          </a>
+
+                          <a
+                            href={`tel:${client?.phone || '7068448193'}`}
+                            className="bg-[#242424] hover:bg-[#2e2e2e] text-[#fdfbf7] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-[#333333]"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Call Customer</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Prominent Access Instructions & Gate Code Alert */}
+                      {(property?.gateCode || property?.accessInstructions || job.notes) && (
+                        <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-3 text-xs space-y-1">
+                          <div className="flex items-center space-x-1.5 text-amber-400 font-bold">
+                            <Key className="w-3.5 h-3.5 text-[#FF8A00]" />
+                            <span>Property Access Details:</span>
+                          </div>
+                          {property?.gateCode && (
+                            <div className="text-[#fdfbf7] font-mono text-sm font-bold bg-[#111111] px-2.5 py-1 rounded inline-block border border-amber-500/30">
+                              Gate / Lockbox: {property.gateCode}
+                            </div>
+                          )}
+                          {property?.accessInstructions && (
+                            <div className="text-amber-200/90 text-[11px] pt-1 leading-snug">
+                              {property.accessInstructions}
+                            </div>
+                          )}
+                          {job.notes && (
+                            <div className="text-[#b8b0a5] text-[11px] italic pt-0.5">
+                              Dispatch Note: {job.notes}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Quick GPS & Phone Buttons */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                          job.propertyAddress
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-[#242424] hover:bg-[#2e2e2e] text-[#fdfbf7] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-[#333333]"
-                      >
-                        <Navigation className="w-3.5 h-3.5 text-[#FF8A00]" />
-                        <span>GPS Navigation</span>
-                      </a>
-
-                      <a
-                        href={`tel:${client?.phone || '7068448193'}`}
-                        className="bg-[#242424] hover:bg-[#2e2e2e] text-[#fdfbf7] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-[#333333]"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Call Customer</span>
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Prominent Access Instructions & Gate Code Alert */}
-                  {(property?.gateCode || property?.accessInstructions || job.notes) && (
-                    <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-3 text-xs space-y-1">
-                      <div className="flex items-center space-x-1.5 text-amber-400 font-bold">
-                        <Key className="w-3.5 h-3.5 text-[#FF8A00]" />
-                        <span>Property Access Details:</span>
-                      </div>
-                      {property?.gateCode && (
-                        <div className="text-[#fdfbf7] font-mono text-sm font-bold bg-[#111111] px-2.5 py-1 rounded inline-block border border-amber-500/30">
-                          Gate / Lockbox: {property.gateCode}
-                        </div>
                       )}
-                      {property?.accessInstructions && (
-                        <div className="text-amber-200/90 text-[11px] pt-1 leading-snug">
-                          {property.accessInstructions}
-                        </div>
-                      )}
-                      {job.notes && (
-                        <div className="text-[#b8b0a5] text-[11px] italic pt-0.5">
-                          Dispatch Note: {job.notes}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  {/* Work Order Checklist */}
-                  {job.checklist && job.checklist.length > 0 ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-[#b8b0a5] flex items-center gap-1.5">
-                          <CheckSquare className="w-3.5 h-3.5 text-[#c5a059]" />
-                          {isTurnoverJob ? 'Turnover Punch-List' : 'Tasks Checklist'} ({checklistDoneCount}/{checklistTotal})
-                        </span>
-                        {isTurnoverJob ? (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-700/60">
-                            Standard Protocol Active
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-[#78716c]">Tap to complete</span>
-                        )}
-                      </div>
-
-                      <div className="space-y-1.5 bg-[#161616] p-2.5 rounded-xl border border-[#242424]">
-                        {job.checklist.map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => toggleChecklistItem(job.id, item.id)}
-                            className="w-full text-left flex items-start space-x-2.5 p-1.5 rounded-lg hover:bg-[#202020] transition group"
-                          >
-                            <div
-                              className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition ${
-                                item.done
-                                  ? 'bg-emerald-500 border-emerald-500 text-black'
-                                  : 'border-[#444444] bg-[#1a1a1a] group-hover:border-[#c5a059]'
-                              }`}
-                            >
-                              {item.done && <Check className="w-3 h-3 stroke-[3]" />}
-                            </div>
-                            <span
-                              className={`text-xs ${
-                                item.done ? 'line-through text-[#78716c]' : 'text-[#fdfbf7]'
-                              }`}
-                            >
-                              {item.text}
+                      {/* Work Order Checklist */}
+                      {job.checklist && job.checklist.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-[#b8b0a5] flex items-center gap-1.5">
+                              <CheckSquare className="w-3.5 h-3.5 text-[#c5a059]" />
+                              {isTurnoverJob ? 'Turnover Punch-List' : 'Tasks Checklist'} ({checklistDoneCount}/{checklistTotal})
                             </span>
-                          </button>
-                        ))}
-                      </div>
+                            {isTurnoverJob ? (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-700/60">
+                                Standard Protocol Active
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-[#78716c]">Tap to complete</span>
+                            )}
+                          </div>
 
-                      {isTurnoverJob && job.checklist.length < STANDARDIZED_TURNOVER_ITEMS.length && (
-                        <div className="flex justify-end pt-1">
+                          <div className="space-y-1.5 bg-[#161616] p-2.5 rounded-xl border border-[#242424]">
+                            {job.checklist.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => toggleChecklistItem(job.id, item.id)}
+                                className="w-full text-left flex items-start space-x-2.5 p-1.5 rounded-lg hover:bg-[#202020] transition group"
+                              >
+                                <div
+                                  className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition ${
+                                    item.done
+                                      ? 'bg-emerald-500 border-emerald-500 text-black'
+                                      : 'border-[#444444] bg-[#1a1a1a] group-hover:border-[#c5a059]'
+                                  }`}
+                                >
+                                  {item.done && <Check className="w-3 h-3 stroke-[3]" />}
+                                </div>
+                                <span
+                                  className={`text-xs ${
+                                    item.done ? 'line-through text-[#78716c]' : 'text-[#fdfbf7]'
+                                  }`}
+                                >
+                                  {item.text}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+
+                          {isTurnoverJob && job.checklist.length < STANDARDIZED_TURNOVER_ITEMS.length && (
+                            <div className="flex justify-end pt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleApplyTurnoverChecklist(job.id)}
+                                className="text-[11px] font-semibold text-purple-300 hover:text-purple-200 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-700/60 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
+                              >
+                                <Sparkles className="w-3 h-3 text-purple-400" />
+                                Apply 7-Point Turnover Checklist Protocol
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : isTurnoverJob ? (
+                        <div className="bg-[#18181b] p-3 rounded-xl border border-purple-800/60 text-center space-y-2">
+                          <p className="text-xs text-purple-200 font-bold">Standardized Turnover Checklist Required</p>
                           <button
                             type="button"
                             onClick={() => handleApplyTurnoverChecklist(job.id)}
-                            className="text-[11px] font-semibold text-purple-300 hover:text-purple-200 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-700/60 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
+                            className="text-xs font-bold text-white bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg shadow transition flex items-center justify-center mx-auto space-x-1"
                           >
-                            <Sparkles className="w-3 h-3 text-purple-400" />
-                            Apply 7-Point Turnover Checklist Protocol
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Load 7-Point Turnover Checklist</span>
                           </button>
                         </div>
-                      )}
-                    </div>
-                  ) : isTurnoverJob ? (
-                    <div className="bg-[#18181b] p-3 rounded-xl border border-purple-800/60 text-center space-y-2">
-                      <p className="text-xs text-purple-200 font-bold">Standardized Turnover Checklist Required</p>
-                      <button
-                        type="button"
-                        onClick={() => handleApplyTurnoverChecklist(job.id)}
-                        className="text-xs font-bold text-white bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg shadow transition flex items-center justify-center mx-auto space-x-1"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Load 7-Point Turnover Checklist</span>
-                      </button>
-                    </div>
-                  ) : null}
+                      ) : null}
 
-                  {/* Before & After Job Photos */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-[#b8b0a5] flex items-center gap-1.5">
-                        <Camera className="w-3.5 h-3.5 text-[#FF8A00]" />
-                        Before / After Photos
-                      </span>
-                      {isTurnoverJob && (
-                        <span className="text-[10px] text-amber-400 font-semibold">
-                          Min 1 &apos;After&apos; photo required to close
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Before Photos */}
-                      <div className="bg-[#161616] p-2.5 rounded-xl border border-[#242424] space-y-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-bold text-[#b8b0a5]">Before Photos</span>
-                          <button
-                            type="button"
-                            onClick={() => setPhotoPickerModalJobId({ jobId: job.id, type: 'before' })}
-                            className="text-[10px] text-[#c5a059] hover:underline font-bold flex items-center gap-0.5"
-                          >
-                            <Plus className="w-3 h-3" /> Add
-                          </button>
+                      {/* Before & After Job Photos */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-[#b8b0a5] flex items-center gap-1.5">
+                            <Camera className="w-3.5 h-3.5 text-[#FF8A00]" />
+                            Before / After Photos
+                          </span>
+                          {isTurnoverJob && (
+                            <span className="text-[10px] text-amber-400 font-semibold">
+                              Min 1 &apos;After&apos; photo required to close
+                            </span>
+                          )}
                         </div>
 
-                        {job.photosBefore && job.photosBefore.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {job.photosBefore.map((p, i) => (
-                              <img
-                                key={i}
-                                src={p}
-                                alt="Before"
-                                className="w-full h-16 object-cover rounded-lg border border-[#333333]"
-                              />
-                            ))}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Before Photos */}
+                          <div className="bg-[#161616] p-2.5 rounded-xl border border-[#242424] space-y-2">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-[#b8b0a5]">Before Photos</span>
+                              <button
+                                type="button"
+                                onClick={() => setPhotoPickerModalJobId({ jobId: job.id, type: 'before' })}
+                                className="text-[10px] text-[#c5a059] hover:underline font-bold flex items-center gap-0.5"
+                              >
+                                <Plus className="w-3 h-3" /> Add
+                              </button>
+                            </div>
+
+                            {job.photosBefore && job.photosBefore.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {job.photosBefore.map((p, i) => (
+                                  <div key={i} className="relative group">
+                                    <img
+                                      src={p}
+                                      alt="Before"
+                                      className="w-full h-16 object-cover rounded-lg border border-[#333333]"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeJobPhoto(job.id, 'before', i)}
+                                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-red-600 text-white text-xs font-bold flex items-center justify-center transition"
+                                      title="Delete photo"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="h-14 border border-dashed border-[#333333] rounded-lg flex items-center justify-center text-[10px] text-[#78716c]">
+                                No before photos
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <div className="h-14 border border-dashed border-[#333333] rounded-lg flex items-center justify-center text-[10px] text-[#78716c]">
-                            No before photos
+
+                          {/* After Photos */}
+                          <div className="bg-[#161616] p-2.5 rounded-xl border border-[#242424] space-y-2">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-[#b8b0a5]">After Photos</span>
+                              <button
+                                type="button"
+                                onClick={() => setPhotoPickerModalJobId({ jobId: job.id, type: 'after' })}
+                                className="text-[10px] text-[#c5a059] hover:underline font-bold flex items-center gap-0.5"
+                              >
+                                <Plus className="w-3 h-3" /> Add
+                              </button>
+                            </div>
+
+                            {job.photosAfter && job.photosAfter.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {job.photosAfter.map((p, i) => (
+                                  <div key={i} className="relative group">
+                                    <img
+                                      src={p}
+                                      alt="After"
+                                      className="w-full h-16 object-cover rounded-lg border border-[#333333]"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeJobPhoto(job.id, 'after', i)}
+                                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-red-600 text-white text-xs font-bold flex items-center justify-center transition"
+                                      title="Delete photo"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="h-14 border border-dashed border-[#333333] rounded-lg flex items-center justify-center text-[10px] text-[#78716c]">
+                                No after photos
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
 
-                      {/* After Photos */}
-                      <div className="bg-[#161616] p-2.5 rounded-xl border border-[#242424] space-y-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-bold text-[#b8b0a5]">After Photos</span>
-                          <button
-                            type="button"
-                            onClick={() => setPhotoPickerModalJobId({ jobId: job.id, type: 'after' })}
-                            className="text-[10px] text-[#c5a059] hover:underline font-bold flex items-center gap-0.5"
-                          >
-                            <Plus className="w-3 h-3" /> Add
-                          </button>
+                      {/* Completion Notes Input (if in-progress or scheduled) */}
+                      {!isCompleted && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
+                            Technician Completion Notes
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={completionNotes[job.id] || ''}
+                            onChange={(e) =>
+                              setCompletionNotes({ ...completionNotes, [job.id]: e.target.value })
+                            }
+                            placeholder="Add notes for dispatch (e.g. Shutoff valve tagged, job cleaned up)..."
+                            className="w-full bg-[#181818] border border-[#2a2a2a] rounded-xl p-2.5 text-xs text-[#fdfbf7] placeholder-[#78716c] focus:outline-none focus:border-[#c5a059]"
+                          />
                         </div>
+                      )}
 
-                        {job.photosAfter && job.photosAfter.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {job.photosAfter.map((p, i) => (
-                              <img
-                                key={i}
-                                src={p}
-                                alt="After"
-                                className="w-full h-16 object-cover rounded-lg border border-[#333333]"
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="h-14 border border-dashed border-[#333333] rounded-lg flex items-center justify-center text-[10px] text-[#78716c]">
-                            No after photos
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Completion Notes Input (if in-progress or scheduled) */}
-                  {!isCompleted && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
-                        Technician Completion Notes
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={completionNotes[job.id] || ''}
-                        onChange={(e) =>
-                          setCompletionNotes({ ...completionNotes, [job.id]: e.target.value })
-                        }
-                        placeholder="Add notes for dispatch (e.g. Shutoff valve tagged, job cleaned up)..."
-                        className="w-full bg-[#181818] border border-[#2a2a2a] rounded-xl p-2.5 text-xs text-[#fdfbf7] placeholder-[#78716c] focus:outline-none focus:border-[#c5a059]"
-                      />
-                    </div>
-                  )}
-
-                  {/* Status Change CTA Actions */}
-                  <div className="pt-2">
-                    {job.status === 'scheduled' && (
-                      <button
-                        onClick={() => handleStartJob(job.id)}
-                        className="w-full bg-[#FF8A00] hover:bg-[#e07b00] text-black font-bold text-xs py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
-                      >
-                        <Play className="w-4 h-4 fill-current" />
-                        <span>Start Work / Clock In (In Progress)</span>
-                      </button>
-                    )}
-
-                    {job.status === 'in_progress' && (
-                      <div className="space-y-3">
-                        {/* Turnover Quality Gate Status Box */}
-                        {isTurnoverJob && (
-                          <div
-                            className={`p-3.5 rounded-xl border transition ${
-                              isCompletionGated
-                                ? 'bg-amber-950/40 border-amber-600/60 text-amber-200 shadow-md'
-                                : 'bg-emerald-950/40 border-emerald-600/60 text-emerald-200 shadow-md'
-                            }`}
+                      {/* Status Change CTA Actions */}
+                      <div className="pt-2">
+                        {job.status === 'scheduled' && (
+                          <button
+                            onClick={() => handleStartJob(job.id)}
+                            className="w-full bg-[#FF8A00] hover:bg-[#e07b00] text-black font-bold text-xs py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                {isCompletionGated ? (
-                                  <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
-                                ) : (
-                                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                                )}
-                                <div>
-                                  <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                                    Turnover Quality Gate {isCompletionGated ? '— Sign-Off Locked' : '— Ready'}
-                                  </h4>
-                                  <p className="text-[11px] text-[#b8b0a5] mt-0.5">
-                                    {isCompletionGated
-                                      ? 'Turnover protocol requires 100% checklist tasks + 1 "After" photo.'
-                                      : 'All turnover quality criteria met. Work order unlocked for completion.'}
-                                  </p>
+                            <Play className="w-4 h-4 fill-current" />
+                            <span>Start Work / Clock In (In Progress)</span>
+                          </button>
+                        )}
+
+                        {job.status === 'in_progress' && (
+                          <div className="space-y-3">
+                            {/* Turnover Quality Gate Status Box */}
+                            {isTurnoverJob && (
+                              <div
+                                className={`p-3.5 rounded-xl border transition ${
+                                  isCompletionGated
+                                    ? 'bg-amber-950/40 border-amber-600/60 text-amber-200 shadow-md'
+                                    : 'bg-emerald-950/40 border-emerald-600/60 text-emerald-200 shadow-md'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    {isCompletionGated ? (
+                                      <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+                                    ) : (
+                                      <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                                    )}
+                                    <div>
+                                      <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                                        Turnover Quality Gate {isCompletionGated ? '— Sign-Off Locked' : '— Ready'}
+                                      </h4>
+                                      <p className="text-[11px] text-[#b8b0a5] mt-0.5">
+                                        {isCompletionGated
+                                          ? 'Turnover protocol requires 100% checklist tasks + 1 "After" photo.'
+                                          : 'All turnover quality criteria met. Work order unlocked for completion.'}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <span
+                                    className={`text-[10px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${
+                                      isCompletionGated
+                                        ? 'bg-amber-900/80 text-amber-300 border border-amber-700'
+                                        : 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
+                                    }`}
+                                  >
+                                    {isCompletionGated ? 'Gated Lock' : 'Certified'}
+                                  </span>
+                                </div>
+
+                                {/* Gate Status Grid */}
+                                <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                                  <div
+                                    className={`p-2 rounded-lg border flex items-center space-x-2 ${
+                                      allChecklistDone
+                                        ? 'bg-emerald-950/70 border-emerald-700/80 text-emerald-300 font-semibold'
+                                        : 'bg-[#18181b] border-[#333333] text-amber-300'
+                                    }`}
+                                  >
+                                    {allChecklistDone ? (
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                    ) : (
+                                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                                    )}
+                                    <span className="text-[11px]">
+                                      {allChecklistDone
+                                        ? `✓ All Tasks (${checklistDoneCount}/${checklistTotal})`
+                                        : `Tasks: ${checklistDoneCount}/${checklistTotal} Done`}
+                                    </span>
+                                  </div>
+
+                                  <div
+                                    className={`p-2 rounded-lg border flex items-center space-x-2 ${
+                                      hasAfterPhoto
+                                        ? 'bg-emerald-950/70 border-emerald-700/80 text-emerald-300 font-semibold'
+                                        : 'bg-[#18181b] border-[#333333] text-amber-300'
+                                    }`}
+                                  >
+                                    {hasAfterPhoto ? (
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                    ) : (
+                                      <Camera className="w-4 h-4 text-amber-400 shrink-0" />
+                                    )}
+                                    <span className="text-[11px]">
+                                      {hasAfterPhoto
+                                        ? `✓ ${job.photosAfter?.length} 'After' Photo(s)`
+                                        : 'Missing 1+ After Photo'}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
+                            )}
 
-                              <span
-                                className={`text-[10px] font-black uppercase px-2 py-0.5 rounded shrink-0 ${
-                                  isCompletionGated
-                                    ? 'bg-amber-900/80 text-amber-300 border border-amber-700'
-                                    : 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
-                                }`}
-                              >
-                                {isCompletionGated ? 'Gated Lock' : 'Certified'}
-                              </span>
-                            </div>
-
-                            {/* Gate Status Grid */}
-                            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                              <div
-                                className={`p-2 rounded-lg border flex items-center space-x-2 ${
-                                  allChecklistDone
-                                    ? 'bg-emerald-950/70 border-emerald-700/80 text-emerald-300 font-semibold'
-                                    : 'bg-[#18181b] border-[#333333] text-amber-300'
-                                }`}
-                              >
-                                {allChecklistDone ? (
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                                ) : (
-                                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                                )}
-                                <span className="text-[11px]">
-                                  {allChecklistDone
-                                    ? `✓ All Tasks (${checklistDoneCount}/${checklistTotal})`
-                                    : `Tasks: ${checklistDoneCount}/${checklistTotal} Done`}
-                                </span>
-                              </div>
-
-                              <div
-                                className={`p-2 rounded-lg border flex items-center space-x-2 ${
-                                  hasAfterPhoto
-                                    ? 'bg-emerald-950/70 border-emerald-700/80 text-emerald-300 font-semibold'
-                                    : 'bg-[#18181b] border-[#333333] text-amber-300'
-                                }`}
-                              >
-                                {hasAfterPhoto ? (
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                                ) : (
-                                  <Camera className="w-4 h-4 text-amber-400 shrink-0" />
-                                )}
-                                <span className="text-[11px]">
-                                  {hasAfterPhoto
-                                    ? `✓ ${job.photosAfter?.length} 'After' Photo(s)`
-                                    : 'Missing 1+ After Photo'}
-                                </span>
-                              </div>
-                            </div>
+                            <button
+                              type="button"
+                              disabled={isCompletionGated}
+                              onClick={() => handleCompleteJob(job)}
+                              className={`w-full font-bold text-xs py-3.5 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 ${
+                                isCompletionGated
+                                  ? 'bg-[#202020] text-[#777777] border border-[#333333] cursor-not-allowed opacity-80'
+                                  : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-emerald-950/50 ring-2 ring-emerald-500/40'
+                              }`}
+                            >
+                              {isCompletionGated ? (
+                                <>
+                                  <Lock className="w-4 h-4 text-amber-400" />
+                                  <span>Complete Job Locked (Turnover Incomplete)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>✓ Complete Work Order &amp; Sign Off</span>
+                                </>
+                              )}
+                            </button>
                           </div>
                         )}
 
-                        <button
-                          type="button"
-                          disabled={isCompletionGated}
-                          onClick={() => handleCompleteJob(job.id)}
-                          className={`w-full font-bold text-xs py-3.5 px-4 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 ${
-                            isCompletionGated
-                              ? 'bg-[#202020] text-[#777777] border border-[#333333] cursor-not-allowed opacity-80'
-                              : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-emerald-950/50 ring-2 ring-emerald-500/40'
-                          }`}
-                        >
-                          {isCompletionGated ? (
-                            <>
-                              <Lock className="w-4 h-4 text-amber-400" />
-                              <span>Complete Job Locked (Turnover Incomplete)</span>
-                            </>
-                          ) : (
-                            <>
+                        {isCompleted && (
+                          <div className="bg-emerald-950/40 border border-emerald-500/40 p-3 rounded-xl flex items-center justify-between text-xs">
+                            <div className="flex items-center space-x-2 text-emerald-400 font-semibold">
                               <CheckCircle2 className="w-4 h-4" />
-                              <span>✓ Complete Work Order & Sign Off</span>
-                            </>
-                          )}
-                        </button>
+                              <span>Work Order Completed</span>
+                            </div>
+                            <Link
+                              href="/dashboard/invoices"
+                              className="bg-[#1f1f1f] hover:bg-[#282828] text-[#c5a059] px-2.5 py-1 rounded-lg text-[11px] font-bold border border-[#c5a059]/30 transition flex items-center gap-1"
+                            >
+                              <Receipt className="w-3 h-3" />
+                              <span>Invoice</span>
+                            </Link>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    {isCompleted && (
-                      <div className="bg-emerald-950/40 border border-emerald-500/40 p-3 rounded-xl flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-2 text-emerald-400 font-semibold">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Work Order Completed</span>
-                        </div>
-                        <Link
-                          href="/dashboard/invoices"
-                          className="bg-[#1f1f1f] hover:bg-[#282828] text-[#c5a059] px-2.5 py-1 rounded-lg text-[11px] font-bold border border-[#c5a059]/30 transition flex items-center gap-1"
-                        >
-                          <Receipt className="w-3 h-3" />
-                          <span>Invoice</span>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -690,11 +882,31 @@ export const TechnicianMobilePortal: React.FC = () => {
             </div>
 
             <div className="p-4 space-y-3">
-              <p className="text-xs text-[#b8b0a5]">
-                Select a field inspection photo from the device camera library:
+              {/* Real Camera / File Upload */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleRealPhotoUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-xs flex items-center justify-center space-x-2 shadow transition"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload / Take Real Photo</span>
+                </button>
+              </div>
+
+              <p className="text-xs text-[#b8b0a5] pt-1">
+                Or select a sample field inspection photo for quick demo testing:
               </p>
 
-              <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
                 {SAMPLE_FIELD_PHOTOS.map((photo, i) => (
                   <button
                     key={i}

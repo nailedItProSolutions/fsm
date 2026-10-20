@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Client, Property, Job, Invoice } from '@/types';
 import { useFSMStore } from '@/lib/useStore';
 import { AddPropertyModal } from './AddPropertyModal';
+import { NewClientModal } from './NewClientModal';
 import { 
   Building2, 
   User, 
@@ -50,23 +51,46 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
     createSubscription,
     cancelSubscription,
     triggerSubscriptionRenewal,
-    clearClientHistory
+    clearClientHistory,
+    updateClient,
+    deleteProperty
   } = useFSMStore();
 
   const [activeTab, setActiveTab] = useState<'properties' | 'history' | 'billing' | 'subscriptions' | 'notes' | 'audit'>(initialTab || 'properties');
   const [showAddProperty, setShowAddProperty] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
+  const [showEditClientModal, setShowEditClientModal] = useState(false);
   const [showNewSubModal, setShowNewSubModal] = useState(false);
   const [selectedPropIdForSub, setSelectedPropIdForSub] = useState('');
   const [renewalNotice, setRenewalNotice] = useState<{ jobNum: string; invNum: string; subId: string } | null>(null);
   const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
   const [historyClearedNotice, setHistoryClearedNotice] = useState(false);
   const [editingInvoicePayment, setEditingInvoicePayment] = useState<Invoice | null>(null);
+  const [notesText, setNotesText] = useState(client.notes || '');
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  useEffect(() => {
+    setNotesText(client.notes || '');
+  }, [client.notes]);
+
+  const handleSaveNotes = () => {
+    updateClient(client.id, { notes: notesText });
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 3000);
+  };
 
   const handleConfirmClearHistory = (authorizingUser: any) => {
     clearClientHistory(client.id, authorizingUser);
     setShowClearHistoryModal(false);
     setHistoryClearedNotice(true);
     setTimeout(() => setHistoryClearedNotice(false), 5000);
+  };
+
+  const handleConfirmDeleteProperty = (authorizingUser: any) => {
+    if (!propertyToDelete) return;
+    deleteProperty(propertyToDelete.id, authorizingUser);
+    setPropertyToDelete(null);
   };
 
   const properties = getPropertiesByClientId(client.id);
@@ -161,6 +185,13 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
           {/*  */}
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setShowEditClientModal(true)}
+              className="bg-[#1e1e1e] hover:bg-[#282828] text-[#fdfbf7] text-xs font-bold px-3.5 py-2.5 rounded-xl border border-[#333333] transition flex items-center space-x-1.5 shadow-sm"
+            >
+              <Pencil className="w-3.5 h-3.5 text-[#c5a059]" />
+              <span>Edit Client</span>
+            </button>
+            <button
               onClick={() => setShowClearHistoryModal(true)}
               title="Clear all job and service history for this client (Requires PIN)"
               className="bg-red-950/40 hover:bg-red-900/60 text-red-300 text-xs font-bold px-3.5 py-2.5 rounded-xl border border-red-800/50 transition flex items-center space-x-1.5 shadow-sm"
@@ -169,7 +200,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
               <span>Clear History</span>
             </button>
             <button
-              onClick={() => setShowAddProperty(true)}
+              onClick={() => {
+                setEditingProperty(null);
+                setShowAddProperty(true);
+              }}
               className="bg-[#1e1e1e] hover:bg-[#282828] text-[#fdfbf7] text-xs font-bold px-3.5 py-2.5 rounded-xl border border-[#333333] transition flex items-center space-x-1.5 shadow-sm"
             >
               <Plus className="w-3.5 h-3.5 text-[#c5a059]" />
@@ -268,7 +302,7 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
             <span>Subscriptions ({subscriptions.length})</span>
             {subscriptions.length > 0 && (
               <span className="bg-[#c5a059]/20 text-[#c5a059] text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">
-                $99/mo
+                ${subscriptions[0]?.amount || 99}/mo
               </span>
             )}
           </button>
@@ -312,7 +346,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
               </p>
             </div>
             <button
-              onClick={() => setShowAddProperty(true)}
+              onClick={() => {
+                setEditingProperty(null);
+                setShowAddProperty(true);
+              }}
               className="bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold px-3.5 py-2 rounded-lg transition flex items-center space-x-1.5 shadow"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -330,9 +367,9 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
                   key={prop.id}
                   className="bg-[#111111] border border-[#222222] hover:border-[#c5a059]/40 rounded-xl p-5 shadow-sm transition space-y-4"
                 >
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-[#c5a059]">
+                      <div className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-[#c5a059] shrink-0">
                         <Building2 className="w-4 h-4" />
                       </div>
                       <div>
@@ -343,11 +380,34 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
                         </div>
                       </div>
                     </div>
-                    {activePropJobs.length > 0 && (
-                      <span className="bg-[#FF8A00]/20 text-[#FF8A00] border border-[#FF8A00]/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {activePropJobs.length} Active Job
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {activePropJobs.length > 0 && (
+                        <span className="bg-[#FF8A00]/20 text-[#FF8A00] border border-[#FF8A00]/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {activePropJobs.length} Active Job
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProperty(prop);
+                          setShowAddProperty(true);
+                        }}
+                        title="Edit Property Details"
+                        className="bg-[#181818] hover:bg-[#242424] text-[#b8b0a5] hover:text-[#c5a059] border border-[#2a2a2a] px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1"
+                      >
+                        <Pencil className="w-3 h-3 text-[#c5a059]" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPropertyToDelete(prop)}
+                        title="Delete Property (Requires PIN)"
+                        className="bg-[#181818] hover:bg-red-950/50 text-red-400 hover:text-red-300 border border-[#2a2a2a] hover:border-red-900/50 px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/*  */}
@@ -384,7 +444,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
                 <Building2 className="w-8 h-8 text-[#78716c] mx-auto mb-2" />
                 <p className="text-sm font-bold text-[#b8b0a5]">No service addresses added yet.</p>
                 <button
-                  onClick={() => setShowAddProperty(true)}
+                  onClick={() => {
+                    setEditingProperty(null);
+                    setShowAddProperty(true);
+                  }}
                   className="mt-3 text-xs bg-[#c5a059] hover:bg-[#b38728] text-black font-bold px-4 py-2 rounded-lg"
                 >
                   + Add First Property Address
@@ -820,17 +883,44 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
         </div>
       )}
 
-      {/*  */}
+      {/* Client Notes Tab */}
       {activeTab === 'notes' && (
         <div className="bg-[#111111] border border-[#222222] rounded-xl p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">
-            Dispatcher Notes & Client Preferences
-          </h3>
-          <p className="text-xs text-[#b8b0a5] leading-relaxed bg-[#161616] p-4 rounded-xl border border-[#262626]">
-            {client.notes || 'No special notes recorded.'}
-          </p>
-          <div className="text-[11px] text-[#78716c]">
-            Client Profile Created: {new Date(client.createdAt).toLocaleDateString()} • Last Updated: {new Date(client.updatedAt).toLocaleDateString()}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">
+                Dispatcher Notes & Client Preferences
+              </h3>
+              <p className="text-xs text-[#b8b0a5] mt-0.5">
+                Record special instructions, billing preferences, gate access notes, or preferred contact hours
+              </p>
+            </div>
+            {notesSaved && (
+              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 animate-in fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Saved!</span>
+              </span>
+            )}
+          </div>
+          <textarea
+            rows={5}
+            value={notesText}
+            onChange={(e) => setNotesText(e.target.value)}
+            placeholder="Enter dispatcher notes, client preferences, or special service instructions..."
+            className="w-full text-xs text-[#fdfbf7] leading-relaxed bg-[#161616] p-4 rounded-xl border border-[#262626] focus:outline-none focus:border-[#c5a059]"
+          />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <div className="text-[11px] text-[#78716c]">
+              Client Profile Created: {new Date(client.createdAt).toLocaleDateString()} • Last Updated: {new Date(client.updatedAt).toLocaleDateString()}
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveNotes}
+              className="bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold px-4 py-2 rounded-lg shadow transition flex items-center space-x-1.5 self-end sm:self-auto"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Save Notes</span>
+            </button>
           </div>
         </div>
       )}
@@ -846,13 +936,37 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ client, onBack, init
         </div>
       )}
 
-      {/*  */}
+      {/* Add / Edit Property Modal */}
       <AddPropertyModal
         isOpen={showAddProperty}
-        onClose={() => setShowAddProperty(false)}
+        onClose={() => {
+          setShowAddProperty(false);
+          setEditingProperty(null);
+        }}
         clientId={client.id}
         clientName={client.isCompany ? client.companyName || '' : `${client.firstName} ${client.lastName}`}
+        initialProperty={editingProperty}
       />
+
+      {/* Edit Client Profile Modal */}
+      <NewClientModal
+        isOpen={showEditClientModal}
+        onClose={() => setShowEditClientModal(false)}
+        initialClient={client}
+      />
+
+      {/* Delete Property Confirmation Modal with Employee PIN Verification */}
+      {propertyToDelete && (
+        <DeleteWithPinModal
+          isOpen={!!propertyToDelete}
+          onClose={() => setPropertyToDelete(null)}
+          onConfirm={handleConfirmDeleteProperty}
+          title="Delete Managed Property"
+          itemName={`${propertyToDelete.label || 'Property'} — ${propertyToDelete.street}, ${propertyToDelete.city}`}
+          itemType="property"
+          warningMessage="This will permanently remove this property address from the client's portfolio. Existing historical jobs or invoices referencing this address will remain on file."
+        />
+      )}
 
       {/* Clear Client History Confirmation Modal with Employee PIN Verification */}
       {showClearHistoryModal && (

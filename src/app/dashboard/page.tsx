@@ -22,11 +22,18 @@ import { ActivityHistoryFeed } from '@/components/audit/ActivityHistoryFeed';
 
 export default function ExecutiveDashboard() {
   const { user } = useAuth();
-  const { clients, properties, jobs, invoices } = useActiveFSMData();
+  const { clients, properties, jobs, invoices, technicians } = useActiveFSMData();
 
   const totalRevenue = clients.reduce((acc, c) => acc + (c.totalSpent || 0), 0);
   const activeJobs = jobs.filter((j) => j.status === 'in_progress' || j.status === 'scheduled');
   const outstandingAR = invoices.reduce((acc, inv) => acc + (inv.balanceDue || 0), 0);
+  const activeTechIds = new Set(
+    activeJobs.map((j) => j.assignedTechId || j.assignedTechName).filter(Boolean)
+  );
+  const activeTechCount =
+    activeTechIds.size > 0
+      ? activeTechIds.size
+      : technicians.filter((t) => t.active !== false).length || 1;
 
   return (
     <div className="space-y-8 text-[#fdfbf7]">
@@ -112,7 +119,7 @@ export default function ExecutiveDashboard() {
             {activeJobs.length} Jobs
           </div>
           <div className="text-[11px] text-[#b8b0a5] mt-1">
-            2 technicians on active route
+            {activeTechCount} {activeTechCount === 1 ? 'technician' : 'technicians'} on active route
           </div>
         </div>
 
@@ -155,16 +162,17 @@ export default function ExecutiveDashboard() {
 
           <div className="space-y-3">
             {jobs.slice(0, 3).map((job) => (
-              <div 
+              <Link
                 key={job.id}
-                className="bg-[#161616] border border-[#262626] hover:border-[#c5a059]/40 p-4 rounded-xl transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+                href="/dashboard/schedule"
+                className="bg-[#161616] border border-[#262626] hover:border-[#c5a059]/40 p-4 rounded-xl transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 group"
               >
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <span className="font-mono text-[11px] font-bold text-[#c5a059] bg-[#1f1f1f] px-2 py-0.5 rounded">
                       {job.jobNumber}
                     </span>
-                    <h4 className="font-bold text-sm text-[#fdfbf7]">{job.title}</h4>
+                    <h4 className="font-bold text-sm text-[#fdfbf7] group-hover:text-[#c5a059] transition">{job.title}</h4>
                   </div>
                   <div className="text-xs text-[#b8b0a5] flex items-center gap-2">
                     <span>{job.clientName}</span>
@@ -182,7 +190,7 @@ export default function ExecutiveDashboard() {
                       {job.timeWindowStart} - {job.timeWindowEnd}
                     </div>
                     <div className="text-[10px] text-[#c5a059]">
-                      Tech: {job.assignedTechName}
+                      Tech: {job.assignedTechName || 'Unassigned'}
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
@@ -195,7 +203,7 @@ export default function ExecutiveDashboard() {
                     {job.status.replace('_', ' ')}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

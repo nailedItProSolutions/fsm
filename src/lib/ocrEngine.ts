@@ -521,7 +521,7 @@ export const SAMPLE_HANDWRITTEN_TIMESHEETS = [
   {
     fileName: 'timesheet_scan_oct14_mike.jpg',
     uploadedSequence: 3, // Uploaded 3rd in batch
-    technicianname: 'Charles Willis',
+    technicianName: 'Charles Willis',
     technicianId: 'user-tech-1',
     rawHandwritingText: `
 DAILY WORK REPORT - NAILED IT PROPERTY SOLUTIONS
@@ -539,7 +539,7 @@ Cleaned water residue and tested drainage. No leaks observed.
   {
     fileName: 'timesheet_scan_oct15_mike.jpg',
     uploadedSequence: 1, // Uploaded 1st in batch
-    technicianname: 'Charles Willis',
+    technicianName: 'Charles Willis',
     technicianId: 'user-tech-1',
     rawHandwritingText: `
 DAILY JOB SUMMARY
@@ -558,7 +558,7 @@ Hung 1/2-in drywall, taped and applied first coat 45-minute hot mud.
   {
     fileName: 'timesheet_scan_oct16_mike.jpg',
     uploadedSequence: 4, // Uploaded 4th in batch
-    technicianname: 'Charles Willis',
+    technicianName: 'Charles Willis',
     technicianId: 'user-tech-1',
     rawHandwritingText: `
 FIELD SERVICE LOG
@@ -577,7 +577,7 @@ Reset tripping 20A breaker and verified proper grounding on all kitchen circuits
     fileName: 'timesheet_scan_oct17_david.jpg',
     uploadedSequence: 2, // Uploaded 2nd in batch
     technicianName: 'Charles Willis',
-    technicianId: 'user-tech-2',
+    technicianId: 'user-tech-1',
     rawHandwritingText: `
 DAILY LOG
 Date: 10/17/2024

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { WeeklyTimesheet, PaymentVerification } from '@/types';
+import { useAuth } from '@/lib/authContext';
 import { 
   X, 
   ShieldCheck, 
@@ -13,6 +14,41 @@ import {
   CheckCircle2,
   Image as ImageIcon
 } from 'lucide-react';
+
+function compressImageToDataUrl(file: File, maxDim = 900, quality = 0.75): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 interface PaymentVerificationModalProps {
   timesheet: WeeklyTimesheet;
@@ -27,6 +63,7 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
   onClose,
   onVerify,
 }) => {
+  const { user } = useAuth();
   const effectiveNetPay = timesheet.netPay !== undefined ? timesheet.netPay : timesheet.totalGrossPay;
   const [checkNumber, setCheckNumber] = useState(`CHK-${Math.floor(10000 + Math.random() * 90000)}`);
   const [amount, setAmount] = useState(effectiveNetPay);
@@ -35,10 +72,14 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
   const [checkImageUrl, setCheckImageUrl] = useState(
     'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80'
   );
+  const [uploadedFileName, setUploadedFileName] = useState('check_receipt_verified.jpg');
   const [notes, setNotes] = useState('Floyd County First National Bank Payroll Check issued. Funds cleared.');
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
+
+  const verifiedByLabel = user?.displayName ? `${user.displayName} (Admin)` : 'Charles Willis (Admin)';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,17 +90,25 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
       paymentMethod,
       checkImageUrl,
       notes,
-      verifiedBy: 'Sarah Jenkins (Admin)',
+      verifiedBy: verifiedByLabel,
     });
     onClose();
   };
 
-  const handleSimulateUpload = () => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setIsUploading(true);
-    setTimeout(() => {
-      setCheckImageUrl('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80');
+    try {
+      const dataUrl = await compressImageToDataUrl(file, 900, 0.75);
+      setCheckImageUrl(dataUrl);
+      setUploadedFileName(file.name);
+    } catch (err) {
+      console.error('Failed to compress check image:', err);
+    } finally {
       setIsUploading(false);
-    }, 600);
+      e.target.value = '';
+    }
   };
 
   return (
@@ -73,7 +122,7 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
             </div>
             <div>
               <h3 className="font-bold text-sm text-[#fdfbf7] font-heading">
-                Lock Timesheet & Verify Payment
+                Lock Timesheet &amp; Verify Payment
               </h3>
               <p className="text-xs text-[#b8b0a5]">
                 {timesheet.technicianName} • Week {timesheet.weekNumber} ({timesheet.weekStartDate} — {timesheet.weekEndDate})
@@ -193,6 +242,13 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
             <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
               Check Image or Bank Payment Receipt *
             </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
             <div className="border border-dashed border-[#333333] bg-[#161616] rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center space-x-2.5">
                 {checkImageUrl ? (
@@ -207,8 +263,8 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
                   </div>
                 )}
                 <div>
-                  <div className="font-bold text-[#fdfbf7] text-xs">
-                    {checkImageUrl ? 'check_receipt_verified.jpg' : 'No image attached'}
+                  <div className="font-bold text-[#fdfbf7] text-xs truncate max-w-[220px]">
+                    {checkImageUrl ? uploadedFileName : 'No image attached'}
                   </div>
                   <div className="text-[10px] text-[#78716c]">Attached to weekly record permanently</div>
                 </div>
@@ -216,7 +272,7 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
 
               <button
                 type="button"
-                onClick={handleSimulateUpload}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="bg-[#242424] hover:bg-[#2c2c2c] text-[#c5a059] border border-[#c5a059]/40 text-[11px] font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shrink-0"
               >
@@ -228,7 +284,7 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
 
           <div>
             <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
-              Payroll Notes & Verification Log
+              Payroll Notes &amp; Verification Log
             </label>
             <textarea
               rows={2}
@@ -251,7 +307,7 @@ export const PaymentVerificationModal: React.FC<PaymentVerificationModalProps> =
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center space-x-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Verify & Permanently Lock Timesheet</span>
+              <span>Verify &amp; Permanently Lock Timesheet</span>
             </button>
           </div>
         </form>

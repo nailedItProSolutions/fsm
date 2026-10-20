@@ -22,6 +22,7 @@ export function useFSMStore() {
     invoices: store.getInvoices(),
     estimates: store.getEstimates(),
     workAgreements: store.getWorkAgreements(),
+    contractCancellations: store.getContractCancellations(),
     subscriptions: store.getSubscriptions(),
     getClientById: (id: string) => store.getClientById(id),
     getJobById: (id: string) => store.getJobById(id),
@@ -37,6 +38,7 @@ export function useFSMStore() {
     verifyEmployeePin: (pin: string, employeeId?: string) => store.verifyEmployeePin(pin, employeeId),
     deleteEstimate: (estimateId: string, authorizingUser?: any) => store.deleteEstimate(estimateId, authorizingUser),
     deleteWorkAgreement: (agreementId: string, authorizingUser?: any) => store.deleteWorkAgreement(agreementId, authorizingUser),
+    deleteContractCancellation: (cancellationId: string, authorizingUser?: any) => store.deleteContractCancellation(cancellationId, authorizingUser),
     deleteInvoice: (invoiceId: string, authorizingUser?: any) => store.deleteInvoice(invoiceId, authorizingUser),
     deleteJob: (jobId: string, authorizingUser?: any) => store.deleteJob(jobId, authorizingUser),
     clearClientHistory: (clientId: string, authorizingUser?: any) => store.clearClientHistory(clientId, authorizingUser),
@@ -49,16 +51,23 @@ export function useFSMStore() {
     getSubscriptionsByClientId: (clientId: string) => store.getSubscriptionsByClientId(clientId),
     archiveClient: (id: string) => store.archiveClient(id),
     unarchiveClient: (id: string) => store.unarchiveClient(id),
-  addClient: (clientData: any, initialProperty?: any) => store.addClient(clientData, initialProperty),
+    addClient: (clientData: any, initialProperty?: any) => store.addClient(clientData, initialProperty),
+    updateClient: (clientId: string, updates: any) => store.updateClient(clientId, updates),
+    deleteClient: (clientId: string, authorizingUser?: any) => store.deleteClient(clientId, authorizingUser),
     addProperty: (propertyData: any) => store.addProperty(propertyData),
+    updateProperty: (propertyId: string, updates: any) => store.updateProperty(propertyId, updates),
+    deleteProperty: (propertyId: string, authorizingUser?: any) => store.deleteProperty(propertyId, authorizingUser),
     addJob: (jobData: any) => store.addJob(jobData),
     updateJob: (jobId: string, updates: any) => store.updateJob(jobId, updates),
-    updateJobStatus: (jobId: string, status: any) => store.updateJobStatus(jobId, status),
+    updateJobStatus: (jobId: string, status: any, completedAt?: string) => store.updateJobStatus(jobId, status, completedAt),
     toggleChecklistItem: (jobId: string, itemId: string) => store.toggleChecklistItem(jobId, itemId),
     addJobPhoto: (jobId: string, type: 'before' | 'after', photoUrl: string) => store.addJobPhoto(jobId, type, photoUrl),
+    removeJobPhoto: (jobId: string, type: 'before' | 'after', photoIndex: number) => store.removeJobPhoto(jobId, type, photoIndex),
     addEstimate: (estimateData: any) => store.addEstimate(estimateData),
     updateEstimate: (id: string, updates: any) => store.updateEstimate(id, updates),
     updateEstimateStatus: (id: string, status: any) => store.updateEstimateStatus(id, status),
+    approveEstimateClient: (id: string, signatureName: string) => store.approveEstimateClient(id, signatureName),
+    declineEstimateClient: (id: string, reason?: string) => store.declineEstimateClient(id, reason),
     convertEstimateToJob: (estimateId: string, date?: string, techId?: string) => store.convertEstimateToJob(estimateId, date, techId),
     recordEstimatePayment: (estimateId: string, paymentData: any) => store.recordEstimatePayment(estimateId, paymentData),
     updateEstimatePayment: (estimateId: string, paymentId: string, updates: any, authorizingUser?: any) => store.updateEstimatePayment(estimateId, paymentId, updates, authorizingUser),
@@ -69,7 +78,15 @@ export function useFSMStore() {
     getWorkAgreementByEstimateId: (estimateId: string) => store.getWorkAgreementByEstimateId(estimateId),
     signWorkAgreementClient: (agreementId: string, clientSignatureName: string) => store.signWorkAgreementClient(agreementId, clientSignatureName),
     calculateAgreementBalances: (agreement: any, est?: any) => store.calculateAgreementBalances(agreement, est),
+    getContractCancellations: () => store.getContractCancellations(),
+    getContractCancellationById: (id: string) => store.getContractCancellationById(id),
+    getContractCancellationByEstimateId: (estimateId: string) => store.getContractCancellationByEstimateId(estimateId),
+    getContractCancellationByAgreementId: (agreementId: string) => store.getContractCancellationByAgreementId(agreementId),
+    createContractCancellation: (estimateId: string, data: any) => store.createContractCancellation(estimateId, data),
+    signContractCancellationClient: (id: string, sig: string, ack?: any) => store.signContractCancellationClient(id, sig, ack),
+    recordCancellationSettlementPayment: (id: string, paymentData: any) => store.recordCancellationSettlementPayment(id, paymentData),
     addInvoice: (invoiceData: any) => store.addInvoice(invoiceData),
+    updateInvoice: (invoiceId: string, updates: any) => store.updateInvoice(invoiceId, updates),
     markInvoicePaid: (invoiceId: string, stripePaymentIntentId?: string) => store.markInvoicePaid(invoiceId, stripePaymentIntentId),
     updateInvoicePayment: (invoiceId: string, updates: any, authorizingUser?: any) => store.updateInvoicePayment(invoiceId, updates, authorizingUser),
     createSubscription: (subData: any) => store.createSubscription(subData),
@@ -128,6 +145,10 @@ export function useActiveFSMData() {
     () => store.workAgreements.filter((w) => !archivedClientIds.has(w.clientId)),
     [store.workAgreements, archivedClientIds]
   );
+  const activeCancellations = useMemo(
+    () => store.contractCancellations.filter((c) => !archivedClientIds.has(c.clientId)),
+    [store.contractCancellations, archivedClientIds]
+  );
 
   return {
     ...store,
@@ -137,5 +158,6 @@ export function useActiveFSMData() {
     invoices: activeInvoices,
     estimates: activeEstimates,
     workAgreements: activeAgreements,
+    contractCancellations: activeCancellations,
   };
 }

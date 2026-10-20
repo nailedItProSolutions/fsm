@@ -48,6 +48,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
 
   const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [dayFilterMode, setDayFilterMode] = useState<'date' | 'all'>('date');
   const [selectedStatus, setSelectedStatus] = useState<JobStatus | 'all'>('all');
   const [selectedTech, setSelectedTech] = useState<string>('all');
   
@@ -55,6 +56,12 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
   const [isNewJobOpen, setIsNewJobOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [smsPreviewJob, setSmsPreviewJob] = useState<Job | null>(null);
+
+  const formatDateYMD = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const currentDateStr = useMemo(() => formatDateYMD(currentDate), [currentDate]);
 
   // Filter emergency jobs for high-priority dispatch tracking
   const emergencyJobs = useMemo(() => {
@@ -96,7 +103,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
     setCurrentDate(new Date());
   };
 
-  // Filter jobs
+  // Filter jobs by status & technician
   const filteredJobs = useMemo(() => {
     return jobs.filter((j) => {
       if (selectedStatus !== 'all' && j.status !== selectedStatus) return false;
@@ -104,6 +111,74 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
       return true;
     });
   }, [jobs, selectedStatus, selectedTech]);
+
+  // Jobs for Day View (filtered by currentDateStr when dayFilterMode === 'date')
+  const dayFilteredJobs = useMemo(() => {
+    if (dayFilterMode === 'all') return filteredJobs;
+    return filteredJobs.filter((j) => j.scheduledDate === currentDateStr || j.status === 'unscheduled');
+  }, [filteredJobs, dayFilterMode, currentDateStr]);
+
+  const scheduledJobsOnCurrentDate = useMemo(() => {
+    return filteredJobs.filter((j) => j.scheduledDate === currentDateStr);
+  }, [filteredJobs, currentDateStr]);
+
+  const mostRecentScheduledDateStr = useMemo(() => {
+    const dates = filteredJobs
+      .map((j) => j.scheduledDate)
+      .filter((d): d is string => Boolean(d))
+      .sort();
+    return dates.length > 0 ? dates[dates.length - 1] : null;
+  }, [filteredJobs]);
+
+  const handleJumpToDateStr = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (y && m && d) {
+      setCurrentDate(new Date(y, m - 1, d));
+      setDayFilterMode('date');
+    }
+  };
+
+  // Compute the 7 calendar days (Mon-Sun) of the week containing currentDate
+  const weekDays = useMemo(() => {
+    const d = new Date(currentDate);
+    const dayOfWeek = d.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + i);
+      const dayDateStr = formatDateYMD(dayDate);
+      return {
+        date: dayDate,
+        dateStr: dayDateStr,
+        dayName: dayDate.toLocaleDateString('en-US', { weekday: 'long' }),
+        shortDate: dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      };
+    });
+  }, [currentDate]);
+
+  // Compute calendar days of currentDate's month
+  const monthDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 = Sun .. 6 = Sat
+    const todayStr = formatDateYMD(new Date());
+
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const dayNum = i + 1;
+      const dayDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      return {
+        dayNum,
+        dateStr: dayDateStr,
+        isToday: dayDateStr === todayStr,
+      };
+    });
+
+    return { firstDayOfWeek, days };
+  }, [currentDate]);
 
   const dateString = currentDate.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -249,9 +324,9 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
       )}
 
       {/* Date Navigation & Status Filters Bar */}
-      <div className="bg-[#111111] border border-[#222222] p-4 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-[#111111] border border-[#222222] p-4 rounded-xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         {/* Date Navigator */}
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center space-x-1">
             <button
               onClick={handlePrevDate}
@@ -273,30 +348,92 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
             </button>
           </div>
           <span className="font-bold text-sm text-[#fdfbf7] font-heading">{dateString}</span>
-        </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-[11px] font-bold text-[#78716c] uppercase tracking-wider">Status:</span>
-          {(['all', 'in_progress', 'scheduled', 'completed', 'unscheduled'] as const).map((st) => (
+          {calendarView === 'day' && (
             <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider transition ${
-                selectedStatus === st
-                  ? 'bg-[#c5a059] text-black font-extrabold'
-                  : 'bg-[#181818] text-[#b8b0a5] border border-[#2a2a2a] hover:text-[#fdfbf7]'
+              type="button"
+              onClick={() => setDayFilterMode((prev) => (prev === 'date' ? 'all' : 'date'))}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border transition ${
+                dayFilterMode === 'date'
+                  ? 'bg-[#c5a059]/20 text-[#c5a059] border-[#c5a059]/50'
+                  : 'bg-[#181818] text-[#b8b0a5] border-[#2a2a2a] hover:text-[#fdfbf7]'
               }`}
             >
-              {st === 'all' ? 'All' : st.replace('_', ' ')}
+              {dayFilterMode === 'date' ? `Date Filter: On (${currentDateStr})` : 'All Dates'}
             </button>
-          ))}
+          )}
+        </div>
+
+        {/* Filter Pills & Technician Dropdown */}
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-bold text-[#78716c] uppercase tracking-wider">Tech:</span>
+            <select
+              value={selectedTech}
+              onChange={(e) => setSelectedTech(e.target.value)}
+              className="bg-[#181818] border border-[#2a2a2a] rounded-lg px-2.5 py-1 text-xs font-semibold text-[#fdfbf7] focus:outline-none focus:border-[#c5a059]"
+            >
+              <option value="all">All Technicians</option>
+              {technicians.map((t) => (
+                <option key={t.uid} value={t.uid}>
+                  {t.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-[#78716c] uppercase tracking-wider">Status:</span>
+            {(['all', 'in_progress', 'scheduled', 'completed', 'unscheduled'] as const).map((st) => (
+              <button
+                key={st}
+                onClick={() => setSelectedStatus(st)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider transition ${
+                  selectedStatus === st
+                    ? 'bg-[#c5a059] text-black font-extrabold'
+                    : 'bg-[#181818] text-[#b8b0a5] border border-[#2a2a2a] hover:text-[#fdfbf7]'
+                }`}
+              >
+                {st === 'all' ? 'All' : st.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* VIEW 1: DAY SWIMLANES VIEW (Housecall Pro Style) */}
       {calendarView === 'day' && (
         <div className="bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden shadow-xl">
+          {/* Helpful Banner if no scheduled jobs match currentDateStr */}
+          {dayFilterMode === 'date' && scheduledJobsOnCurrentDate.length === 0 && filteredJobs.length > 0 && (
+            <div className="bg-amber-950/30 border-b border-amber-500/40 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center space-x-2 text-amber-200">
+                <CalendarDays className="w-4 h-4 text-[#FF8A00] shrink-0" />
+                <span>
+                  No scheduled work orders on <strong>{currentDateStr}</strong> ({filteredJobs.length} total job{filteredJobs.length === 1 ? '' : 's'} in system).
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {mostRecentScheduledDateStr && (
+                  <button
+                    type="button"
+                    onClick={() => handleJumpToDateStr(mostRecentScheduledDateStr)}
+                    className="px-3 py-1 rounded-lg bg-[#181818] hover:bg-[#222222] text-[#c5a059] border border-[#c5a059]/40 font-bold text-[11px] transition"
+                  >
+                    Jump to {mostRecentScheduledDateStr}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDayFilterMode('all')}
+                  className="px-3 py-1 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black font-bold text-[11px] transition"
+                >
+                  Show All Dates ({filteredJobs.length})
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Header Row */}
           <div className="grid grid-cols-12 bg-[#161616] border-b border-[#262626] text-xs font-bold text-[#b8b0a5] py-3.5 px-4">
             <div className="col-span-3 flex items-center space-x-1.5">
@@ -314,107 +451,124 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
 
           {/* Swimlanes for each technician */}
           <div className="divide-y divide-[#1e1e1e]">
-            {technicians.map((tech) => {
-              const techJobs = filteredJobs.filter((j) => j.assignedTechId === tech.uid);
+            {technicians
+              .filter((t) => selectedTech === 'all' || t.uid === selectedTech)
+              .map((tech) => {
+                const techJobs = dayFilteredJobs.filter(
+                  (j) => j.assignedTechId === tech.uid && j.status !== 'unscheduled'
+                );
 
-              return (
-                <div key={tech.uid} className="grid grid-cols-12 p-4 items-center hover:bg-[#141414] transition">
-                  {/* Tech Profile Column */}
-                  <div className="col-span-3 flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-[#1e1e1e] border border-[#c5a059]/40 text-[#c5a059] flex items-center justify-center font-bold text-sm">
-                      {tech.displayName.split(' ').map((n) => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm text-[#fdfbf7]">{tech.displayName}</div>
-                      <div className="text-[11px] text-[#c5a059] flex items-center gap-1 font-medium">
-                        <Wrench className="w-3 h-3 text-[#FF8A00]" />
-                        <span>{techJobs.length} {techJobs.length === 1 ? 'Job' : 'Jobs'} Scheduled</span>
+                return (
+                  <div key={tech.uid} className="grid grid-cols-12 p-4 items-center hover:bg-[#141414] transition">
+                    {/* Tech Profile Column */}
+                    <div className="col-span-3 flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-[#1e1e1e] border border-[#c5a059]/40 text-[#c5a059] flex items-center justify-center font-bold text-sm">
+                        {tech.displayName.split(' ').map((n) => n[0]).join('')}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#fdfbf7]">{tech.displayName}</div>
+                        <div className="text-[11px] text-[#c5a059] flex items-center gap-1 font-medium">
+                          <Wrench className="w-3 h-3 text-[#FF8A00]" />
+                          <span>{techJobs.length} {techJobs.length === 1 ? 'Job' : 'Jobs'} Scheduled</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Time Slot Columns */}
-                  <div className="col-span-9 grid grid-cols-4 gap-3">
-                    {timeSlots.map((slot, idx) => {
-                      // Find if a job falls into this slot
-                      const slotJob = techJobs.find((j) => {
-                        const jobHour = parseInt(j.timeWindowStart.split(':')[0], 10);
-                        const slotStartHour = parseInt(slot.start.split(':')[0], 10);
-                        return Math.abs(jobHour - slotStartHour) <= 1;
-                      });
+                    {/* Time Slot Columns */}
+                    <div className="col-span-9 grid grid-cols-4 gap-3">
+                      {timeSlots.map((slot, idx) => {
+                        // Find all jobs falling into this 2-hour window
+                        const slotJobs = techJobs.filter((j) => {
+                          const jobHour = parseInt((j.timeWindowStart || '08:00').split(':')[0], 10);
+                          if (idx === 0) return jobHour < 10;
+                          if (idx === 1) return jobHour >= 10 && jobHour < 12;
+                          if (idx === 2) return jobHour >= 12 && jobHour < 15;
+                          return jobHour >= 15;
+                        });
 
-                      if (slotJob) {
-                        const isEmerg = slotJob.priority === 'emergency';
+                        if (slotJobs.length > 0) {
+                          return (
+                            <div key={slot.label} className="space-y-2">
+                              {slotJobs.map((slotJob) => {
+                                const isEmerg = slotJob.priority === 'emergency';
+                                return (
+                                  <div
+                                    key={slotJob.id}
+                                    onClick={() => setSelectedJob(slotJob)}
+                                    className={`p-3 rounded-lg shadow-sm cursor-pointer transition space-y-1.5 ${
+                                      isEmerg
+                                        ? 'bg-gradient-to-br from-red-950 via-[#2f0e0e] to-[#1c0808] border-2 border-red-500 shadow-xl shadow-red-950/80 ring-2 ring-red-500/40 animate-pulse'
+                                        : 'bg-[#181818] border-l-4 border-[#FF8A00] hover:border-[#c5a059] hover:bg-[#202020]'
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <span className={`font-mono text-[10px] font-bold ${isEmerg ? 'text-red-400 font-black' : 'text-[#c5a059]'}`}>
+                                        {isEmerg ? `🚨 ${slotJob.jobNumber}` : slotJob.jobNumber}
+                                      </span>
+                                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                                        isEmerg
+                                          ? 'bg-red-600 text-white font-black shadow-sm'
+                                          : getStatusBadgeClass(slotJob.status)
+                                      }`}>
+                                        {isEmerg ? '24/7 EMERGENCY' : slotJob.status.replace('_', ' ')}
+                                      </span>
+                                    </div>
+                                    <h4 className={`font-bold text-xs truncate ${isEmerg ? 'text-red-100 font-extrabold' : 'text-[#fdfbf7]'}`}>
+                                      {slotJob.title}
+                                    </h4>
+                                    <div className={`text-[11px] truncate ${isEmerg ? 'text-red-200/90 font-medium' : 'text-[#b8b0a5]'}`}>
+                                      {slotJob.clientName}
+                                    </div>
+                                    <div className={`text-[10px] flex items-center gap-1 truncate ${isEmerg ? 'text-red-300' : 'text-[#78716c]'}`}>
+                                      <MapPin className={`w-3 h-3 shrink-0 ${isEmerg ? 'text-red-400' : 'text-[#FF8A00]'}`} />
+                                      <span>{slotJob.propertyAddress}</span>
+                                    </div>
+                                    {dayFilterMode === 'all' && slotJob.scheduledDate && (
+                                      <div className="text-[9px] font-mono text-[#c5a059]">
+                                        Date: {slotJob.scheduledDate}
+                                      </div>
+                                    )}
+                                    {isEmerg && (
+                                      <div className="pt-1.5 border-t border-red-900/60 flex items-center justify-between">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping inline-block" />
+                                          <span>Telegram Dispatched</span>
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSmsPreviewJob(slotJob);
+                                          }}
+                                          className="text-[9px] bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded font-black uppercase tracking-wider transition flex items-center gap-1 shadow-md hover:scale-105"
+                                        >
+                                          <Smartphone className="w-2.5 h-2.5" />
+                                          <span>SMS View</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        }
+
                         return (
                           <div
                             key={slot.label}
-                            onClick={() => setSelectedJob(slotJob)}
-                            className={`p-3 rounded-lg shadow-sm cursor-pointer transition space-y-1.5 ${
-                              isEmerg
-                                ? 'bg-gradient-to-br from-red-950 via-[#2f0e0e] to-[#1c0808] border-2 border-red-500 shadow-xl shadow-red-950/80 ring-2 ring-red-500/40 animate-pulse'
-                                : 'bg-[#181818] border-l-4 border-[#FF8A00] hover:border-[#c5a059] hover:bg-[#202020]'
-                            }`}
+                            onClick={() => setIsNewJobOpen(true)}
+                            className="border border-dashed border-[#262626] hover:border-[#c5a059]/40 hover:bg-[#161616] rounded-lg p-3 flex flex-col items-center justify-center text-[#78716c] text-[11px] cursor-pointer transition min-h-[90px]"
                           >
-                            <div className="flex justify-between items-start">
-                              <span className={`font-mono text-[10px] font-bold ${isEmerg ? 'text-red-400 font-black' : 'text-[#c5a059]'}`}>
-                                {isEmerg ? `🚨 ${slotJob.jobNumber}` : slotJob.jobNumber}
-                              </span>
-                              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                                isEmerg
-                                  ? 'bg-red-600 text-white font-black shadow-sm'
-                                  : getStatusBadgeClass(slotJob.status)
-                              }`}>
-                                {isEmerg ? '24/7 EMERGENCY' : slotJob.status.replace('_', ' ')}
-                              </span>
-                            </div>
-                            <h4 className={`font-bold text-xs truncate ${isEmerg ? 'text-red-100 font-extrabold' : 'text-[#fdfbf7]'}`}>
-                              {slotJob.title}
-                            </h4>
-                            <div className={`text-[11px] truncate ${isEmerg ? 'text-red-200/90 font-medium' : 'text-[#b8b0a5]'}`}>
-                              {slotJob.clientName}
-                            </div>
-                            <div className={`text-[10px] flex items-center gap-1 truncate ${isEmerg ? 'text-red-300' : 'text-[#78716c]'}`}>
-                              <MapPin className={`w-3 h-3 shrink-0 ${isEmerg ? 'text-red-400' : 'text-[#FF8A00]'}`} />
-                              <span>{slotJob.propertyAddress}</span>
-                            </div>
-                            {isEmerg && (
-                              <div className="pt-1.5 border-t border-red-900/60 flex items-center justify-between">
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping inline-block" />
-                                  <span>Telegram Dispatched</span>
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSmsPreviewJob(slotJob);
-                                  }}
-                                  className="text-[9px] bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded font-black uppercase tracking-wider transition flex items-center gap-1 shadow-md hover:scale-105"
-                                >
-                                  <Smartphone className="w-2.5 h-2.5" />
-                                  <span>SMS View</span>
-                                </button>
-                              </div>
-                            )}
+                            <span>+ Dispatch</span>
+                            <span className="text-[9px] text-[#555]">{slot.start} - {slot.end}</span>
                           </div>
                         );
-                      }
-
-                      return (
-                        <div
-                          key={slot.label}
-                          onClick={() => setIsNewJobOpen(true)}
-                          className="border border-dashed border-[#262626] hover:border-[#c5a059]/40 hover:bg-[#161616] rounded-lg p-3 flex flex-col items-center justify-center text-[#78716c] text-[11px] cursor-pointer transition min-h-[90px]"
-                        >
-                          <span>+ Dispatch</span>
-                          <span className="text-[9px] text-[#555]">{slot.start} - {slot.end}</span>
-                        </div>
-                      );
-                    })}
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
             {/* Unassigned & Unscheduled Maintenance Queue Swimlane */}
             {filteredJobs.filter(j => !j.assignedTechId || j.status === 'unscheduled').length > 0 && (
@@ -487,22 +641,22 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
       {calendarView === 'week' && (
         <div className="bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden shadow-xl p-4">
           <div className="grid grid-cols-7 gap-3 text-center mb-3">
-            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
-              <div key={day} className="bg-[#181818] p-2.5 rounded-lg border border-[#262626] font-bold text-xs text-[#c5a059]">
-                {day}
+            {weekDays.map((wd) => (
+              <div key={wd.dateStr} className="bg-[#181818] p-2.5 rounded-lg border border-[#262626] font-bold text-xs text-[#c5a059]">
+                <div>{wd.dayName}</div>
+                <div className="text-[10px] font-mono text-[#78716c] mt-0.5">{wd.shortDate}</div>
               </div>
             ))}
           </div>
 
           <div className="grid grid-cols-7 gap-3 min-h-[400px]">
-            {[0, 1, 2, 3, 4, 5, 6].map((dayIdx) => {
-              // Sample distribute jobs across days of week for demo
-              const dayJobs = filteredJobs.filter((_, idx) => (idx % 7) === dayIdx || (dayIdx === 3 && idx < 3));
+            {weekDays.map((wd) => {
+              const dayJobs = filteredJobs.filter((job) => job.scheduledDate === wd.dateStr);
 
               return (
-                <div key={dayIdx} className="bg-[#161616] border border-[#262626] rounded-xl p-2.5 space-y-2 flex flex-col justify-start">
+                <div key={wd.dateStr} className="bg-[#161616] border border-[#262626] rounded-xl p-2.5 space-y-2 flex flex-col justify-start">
                   <div className="text-[11px] font-mono text-[#78716c] pb-1 border-b border-[#222222] flex justify-between">
-                    <span>Day {dayIdx + 1}</span>
+                    <span>{wd.dateStr.slice(5)}</span>
                     <span className="text-[#c5a059] font-bold">{dayJobs.length}</span>
                   </div>
 
@@ -560,15 +714,24 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
               <div key={d} className="font-bold text-[#78716c] py-2">{d}</div>
             ))}
 
-            {Array.from({ length: 31 }, (_, i) => i + 1).map((dayNum) => {
-              const dayJobs = filteredJobs.filter((_, idx) => (idx * 5 + 3) % 31 === dayNum % 31);
-              const isToday = dayNum === new Date().getDate();
+            {Array.from({ length: monthDays.firstDayOfWeek }).map((_, emptyIdx) => (
+              <div key={`empty-${emptyIdx}`} className="min-h-[75px] p-2 rounded-xl bg-[#131313]/50 border border-transparent" />
+            ))}
+
+            {monthDays.days.map(({ dayNum, dateStr, isToday }) => {
+              const dayJobs = filteredJobs.filter((job) => job.scheduledDate === dateStr);
               const hasEmergency = dayJobs.some(j => j.priority === 'emergency');
 
               return (
                 <div
-                  key={dayNum}
-                  onClick={() => setIsNewJobOpen(true)}
+                  key={dateStr}
+                  onClick={() => {
+                    if (dayJobs.length > 0) {
+                      setSelectedJob(dayJobs[0]);
+                    } else {
+                      setIsNewJobOpen(true);
+                    }
+                  }}
                   className={`min-h-[75px] p-2 rounded-xl border text-left cursor-pointer transition flex flex-col justify-between ${
                     hasEmergency
                       ? 'bg-[#240c0c] border-red-500/80 shadow-md shadow-red-950/60 ring-1 ring-red-500/30'
@@ -615,7 +778,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
 
       {/* Job Details & Status Management Modal */}
       <JobDetailModal
-        job={selectedJob}
+        job={selectedJob ? (jobs.find((j) => j.id === selectedJob.id) || selectedJob) : null}
         isOpen={!!selectedJob}
         onClose={() => setSelectedJob(null)}
       />
@@ -731,7 +894,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                       <span>📲 DIRECT MOBILE TECH DISPATCH PORTAL:</span>
                     </div>
                     <div className="underline text-blue-400 font-mono break-all">
-                      https://fsm.naileditpropertysolutions.com/mobile/tech?job={smsPreviewJob.id}
+                      https://fsm.naileditpropertysolutions.com/dashboard/technician?job={smsPreviewJob.id}
                     </div>
                     <div className="text-[#a8a095] italic text-[9px] pt-1">
                       Tap the inline button below to acknowledge on-site transit.
@@ -749,7 +912,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
               {/* Action Buttons */}
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <a
-                  href={`/mobile/tech?job=${smsPreviewJob.id}`}
+                  href={`/dashboard/technician?job=${smsPreviewJob.id}`}
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 py-3 px-4 rounded-xl bg-[#222222] hover:bg-[#2e2e2e] text-[#fdfbf7] text-xs font-bold text-center border border-[#3a3a3a] flex items-center justify-center space-x-1.5 transition"

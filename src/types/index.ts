@@ -28,7 +28,8 @@ export type AuditActionType =
   | 'ocr_upload'
   | 'invoice_sent'
   | 'payment_received'
-  | 'agreement_created';
+  | 'agreement_created'
+  | 'cancellation_created';
 
 export type AuditEntityType = 
   | 'job' 
@@ -41,6 +42,7 @@ export type AuditEntityType =
   | 'work_log'
   | 'user'
   | 'agreement'
+  | 'cancellation'
   | 'system';
 
 export interface AuditLog {
@@ -133,6 +135,7 @@ export interface Job {
   notes: string;
   totalAmount?: number;
   workAgreementId?: string;
+  cancellationAgreementId?: string;
   originalEstimateTotal?: number;
   varianceAmount?: number;
   varianceReason?: string;
@@ -170,7 +173,12 @@ export interface Estimate {
   payments?: EstimatePayment[];
   depositPaid?: number;
   workAgreementId?: string;
+  cancellationAgreementId?: string;
   terms?: string[];
+  clientSignatureName?: string;
+  clientSignedAt?: string;
+  declinedAt?: string;
+  declinedReason?: string;
   marketComparison?: {
     trade: string;
     tradeLabel: string;
@@ -242,7 +250,98 @@ export interface WorkAgreement {
   contractorSignedAt: string;
   clientSignatureName?: string;
   clientSignedAt?: string;
+  cancellationAgreementId?: string;
   createdAt: string;
+}
+
+export type CancellationStage =
+  | 'pre_mobilization'
+  | 'materials_procured'
+  | 'mid_job_active'
+  | 'substantial_completion'
+  | 'recurring_plan';
+
+export interface CancellationSettlementItem {
+  id: string;
+  category:
+    | 'labor_completed'
+    | 'materials_installed'
+    | 'materials_uninstalled'
+    | 'completed_labor'
+    | 'installed_materials'
+    | 'restocking_fee'
+    | 'mobilization_fee'
+    | 'liquidated_damages'
+    | 'permit_inspection'
+    | 'permits_admin'
+    | 'other';
+  description: string;
+  details?: string;
+  statutoryBasis?: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface CancellationClientAcknowledgments {
+  asIsAndWarrantyVoidAccepted: boolean;
+  quantumMeruitAndLienRightsAccepted: boolean;
+  noChargebackAndMutualReleaseAccepted: boolean;
+  floydCountyGeorgiaVenueAccepted: boolean;
+}
+
+export interface ContractCancellation {
+  id: string;
+  cancellationNumber: string; // e.g. "CNC-2026-84192"
+  sealCode: string;           // e.g. "SEAL-CNC-1001-84192"
+  estimateId: string;
+  estimateNumber: string;
+  workAgreementId?: string;
+  agreementNumber?: string;
+  contractId?: string;
+  jobId?: string;
+  jobNumber?: string;
+  invoiceId?: string;
+  clientId: string;
+  clientName: string;
+  propertyId: string;
+  propertyAddress: string;
+  stage: CancellationStage;
+  status: 'pending_signature' | 'executed_unpaid' | 'settled_released';
+  initiatedBy: 'client' | 'contractor' | 'mutual';
+  cancellationReason: string;
+  stopWorkDate: string; // YYYY-MM-DD
+  completionPercentage: number;
+  workPerformedSummary: string;
+  unfinishedWorkRisks: string;
+  exposedSystemsList: string[];
+  originalContractTotal: number;
+  items: CancellationSettlementItem[];
+  settlementSubtotal: number;
+  taxRate: number;
+  settlementTax: number;
+  totalSettlementCharges: number;
+  priorPaymentsCredited: number;
+  refundIssued: number;
+  settlementBalanceDue: number;
+  settlementPaidAmount: number;
+  paymentMethod?: PaymentMethod;
+  paymentReceiptNumber?: string;
+  warrantyVoided: boolean;
+  lienRightsReserved: boolean;
+  lienRightsExpiresAt: string;
+  governingLawCounty: string;
+  governingLawCity: string;
+  governingLawState: string;
+  acknowledgments: CancellationClientAcknowledgments;
+  terms: string;
+  contractorSignedBy: string;
+  contractorSignedAt: string;
+  clientSignatureName?: string;
+  clientSignedAt?: string;
+  settledAt?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface InvoiceItem {

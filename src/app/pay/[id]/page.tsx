@@ -42,6 +42,7 @@ export default function CustomerInvoicePaymentPortal() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [transactionRef, setTransactionRef] = useState('');
+  const [paidAmountSnapshot, setPaidAmountSnapshot] = useState<number>(0);
 
   if (!invoice) {
     return (
@@ -64,6 +65,7 @@ export default function CustomerInvoicePaymentPortal() {
     setIsProcessing(true);
     setTimeout(() => {
       const ref = `pi_live_${Math.floor(10000000 + Math.random() * 90000000)}`;
+      setPaidAmountSnapshot(Number(invoice.balanceDue ?? invoice.total ?? 0));
       markInvoicePaid(invoice.id, ref);
       setTransactionRef(ref);
       setIsProcessing(false);
@@ -197,6 +199,18 @@ export default function CustomerInvoicePaymentPortal() {
                     <td colSpan={3} className="p-4 text-right">Total Amount Due:</td>
                     <td className="p-4 text-right font-mono text-base font-black">${Number(invoice.total).toFixed(2)}</td>
                   </tr>
+                  {invoice.amountPaid > 0 && (
+                    <>
+                      <tr className="bg-[#141414] text-emerald-400 font-semibold">
+                        <td colSpan={3} className="px-4 py-2.5 text-right">Amount Paid:</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-bold">-${Number(invoice.amountPaid).toFixed(2)}</td>
+                      </tr>
+                      <tr className="bg-[#17130e] text-[#fdfbf7] font-bold text-sm border-t border-[#333]">
+                        <td colSpan={3} className="p-3.5 text-right">Remaining Balance Due:</td>
+                        <td className="p-3.5 text-right font-mono text-base font-black text-[#c5a059]">${Number(invoice.balanceDue).toFixed(2)}</td>
+                      </tr>
+                    </>
+                  )}
                 </tfoot>
               </table>
             </div>
@@ -325,7 +339,7 @@ export default function CustomerInvoicePaymentPortal() {
             <CheckCircle2 className="w-14 h-14 text-emerald-400 mx-auto" />
             <h2 className="text-2xl font-bold font-heading text-white">Payment Received!</h2>
             <p className="text-xs text-emerald-200 max-w-md mx-auto leading-relaxed">
-              Your payment of <span className="font-bold text-white font-mono">${Number(invoice.total).toFixed(2)}</span> has been successfully processed. Thank you for doing business with Nailed It Property Solutions!
+              Your payment of <span className="font-bold text-white font-mono">${Number(paidAmountSnapshot || invoice.total).toFixed(2)}</span> has been successfully processed. Thank you for doing business with Nailed It Property Solutions!
             </p>
             <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-4 max-w-md mx-auto text-xs text-left space-y-1 font-mono">
               <div className="flex justify-between text-[#b8b0a5]">

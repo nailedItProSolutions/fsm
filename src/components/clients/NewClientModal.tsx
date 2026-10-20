@@ -1,21 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Client } from '@/types';
 import { useFSMStore } from '@/lib/useStore';
-import { X, Building2, User, MapPin, Key, FileText, CheckCircle2 } from 'lucide-react';
+import { X, Building2, User, MapPin, Key, FileText, CheckCircle2, Pencil } from 'lucide-react';
 
 interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (clientId: string) => void;
+  initialClient?: Client | null;
 }
 
 export const NewClientModal: React.FC<NewClientModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialClient,
 }) => {
-  const { addClient } = useFSMStore();
+  const { addClient, updateClient } = useFSMStore();
 
   const [isCompany, setIsCompany] = useState(false);
   const [companyName, setCompanyName] = useState('');
@@ -27,9 +30,9 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
   // Billing Address
   const [billStreet, setBillStreet] = useState('');
   const [billUnit, setBillUnit] = useState('');
-  const [billCity, setBillCity] = useState('Austin');
-  const [billState, setBillState] = useState('TX');
-  const [billZip, setBillZip] = useState('78701');
+  const [billCity, setBillCity] = useState('Rome');
+  const [billState, setBillState] = useState('GA');
+  const [billZip, setBillZip] = useState('30161');
 
   // Initial Service Property
   const [hasProperty, setHasProperty] = useState(true);
@@ -37,12 +40,53 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
   const [propLabel, setPropLabel] = useState('Primary Residence');
   const [propStreet, setPropStreet] = useState('');
   const [propUnit, setPropUnit] = useState('');
-  const [propCity, setPropCity] = useState('Austin');
-  const [propState, setPropState] = useState('TX');
-  const [propZip, setPropZip] = useState('78701');
+  const [propCity, setPropCity] = useState('Rome');
+  const [propState, setPropState] = useState('GA');
+  const [propZip, setPropZip] = useState('30161');
   const [gateCode, setGateCode] = useState('');
   const [accessInstructions, setAccessInstructions] = useState('');
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (initialClient) {
+      setIsCompany(initialClient.isCompany);
+      setCompanyName(initialClient.companyName || '');
+      setFirstName(initialClient.firstName || '');
+      setLastName(initialClient.lastName || '');
+      setEmail(initialClient.email || '');
+      setPhone(initialClient.phone || '');
+      setBillStreet(initialClient.billingAddress?.street || '');
+      setBillUnit(initialClient.billingAddress?.unit || '');
+      setBillCity(initialClient.billingAddress?.city || 'Rome');
+      setBillState(initialClient.billingAddress?.state || 'GA');
+      setBillZip(initialClient.billingAddress?.zip || '30161');
+      setNotes(initialClient.notes || '');
+    } else {
+      setIsCompany(false);
+      setCompanyName('');
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setPhone('');
+      setBillStreet('');
+      setBillUnit('');
+      setBillCity('Rome');
+      setBillState('GA');
+      setBillZip('30161');
+      setHasProperty(true);
+      setSameAsBilling(true);
+      setPropLabel('Primary Residence');
+      setPropStreet('');
+      setPropUnit('');
+      setPropCity('Rome');
+      setPropState('GA');
+      setPropZip('30161');
+      setGateCode('');
+      setAccessInstructions('');
+      setNotes('');
+    }
+  }, [isOpen, initialClient]);
 
   if (!isOpen) return null;
 
@@ -65,6 +109,15 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
       },
       notes,
     };
+
+    if (initialClient) {
+      updateClient(initialClient.id, clientData);
+      if (onSuccess) {
+        onSuccess(initialClient.id);
+      }
+      onClose();
+      return;
+    }
 
     let initialPropertyData = undefined;
     if (hasProperty) {
@@ -94,11 +147,15 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
         <div className="bg-[#181818] border-b border-[#262626] text-[#fdfbf7] p-5 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#c5a059] flex items-center justify-center text-black font-bold text-base">
-              +
+              {initialClient ? <Pencil className="w-4 h-4" /> : '+'}
             </div>
             <div>
-              <h3 className="font-bold text-base text-[#fdfbf7]">Add New Client</h3>
-              <p className="text-xs text-[#78716c]">Create client profile and initial property</p>
+              <h3 className="font-bold text-base text-[#fdfbf7]">
+                {initialClient ? 'Edit Client Profile' : 'Add New Client'}
+              </h3>
+              <p className="text-xs text-[#78716c]">
+                {initialClient ? 'Update client contact details, billing address, and notes' : 'Create client profile and initial property'}
+              </p>
             </div>
           </div>
           <button 
@@ -225,7 +282,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="(512) 555-0199"
+                placeholder="(706) 555-0199"
                 className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
               />
             </div>
@@ -288,119 +345,136 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
             </div>
           </div>
 
-          {/*  */}
-          <div className="border-t border-[#262626] pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] flex items-center space-x-1.5">
-                <Building2 className="w-3.5 h-3.5 text-[#c5a059]" />
-                <span>Initial Service Property</span>
-              </h4>
-              <label className="flex items-center space-x-2 text-xs text-[#b8b0a5] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={sameAsBilling}
-                  onChange={(e) => setSameAsBilling(e.target.checked)}
-                  className="rounded accent-[#c5a059] bg-[#181818] border-[#2a2a2a]"
-                />
-                <span>Same as billing address</span>
-              </label>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
-                  Property Label / Identifier
-                </label>
-                <input
-                  type="text"
-                  value={propLabel}
-                  onChange={(e) => setPropLabel(e.target.value)}
-                  placeholder="e.g. Primary Home, Building A, Rental Duplex"
-                  className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
-                />
+          {/* Initial Service Property (Only when creating a new client) */}
+          {!initialClient && (
+            <div className="border-t border-[#262626] pt-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex items-center space-x-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#c5a059] flex items-center space-x-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-[#c5a059]" />
+                    <span>Initial Service Property</span>
+                  </h4>
+                  <label className="flex items-center space-x-2 text-xs text-[#fdfbf7] font-semibold cursor-pointer bg-[#181818] px-2.5 py-1 rounded-lg border border-[#2a2a2a]">
+                    <input
+                      type="checkbox"
+                      checked={hasProperty}
+                      onChange={(e) => setHasProperty(e.target.checked)}
+                      className="rounded accent-[#c5a059] bg-[#181818] border-[#2a2a2a]"
+                    />
+                    <span>Add initial service property now</span>
+                  </label>
+                </div>
+                {hasProperty && (
+                  <label className="flex items-center space-x-2 text-xs text-[#b8b0a5] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sameAsBilling}
+                      onChange={(e) => setSameAsBilling(e.target.checked)}
+                      className="rounded accent-[#c5a059] bg-[#181818] border-[#2a2a2a]"
+                    />
+                    <span>Same as billing address</span>
+                  </label>
+                )}
               </div>
 
-              {!sameAsBilling && (
-                <>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2">
+              {hasProperty && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
+                      Property Label / Identifier
+                    </label>
+                    <input
+                      type="text"
+                      value={propLabel}
+                      onChange={(e) => setPropLabel(e.target.value)}
+                      placeholder="e.g. Primary Home, Building A, Rental Duplex"
+                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                    />
+                  </div>
+
+                  {!sameAsBilling && (
+                    <>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <input
+                            type="text"
+                            required={hasProperty && !sameAsBilling}
+                            value={propStreet}
+                            onChange={(e) => setPropStreet(e.target.value)}
+                            placeholder="Service Street Address"
+                            className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            value={propUnit}
+                            onChange={(e) => setPropUnit(e.target.value)}
+                            placeholder="Unit #"
+                            className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <input
+                          type="text"
+                          required={hasProperty && !sameAsBilling}
+                          value={propCity}
+                          onChange={(e) => setPropCity(e.target.value)}
+                          placeholder="City"
+                          className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                        />
+                        <input
+                          type="text"
+                          required={hasProperty && !sameAsBilling}
+                          value={propState}
+                          onChange={(e) => setPropState(e.target.value)}
+                          placeholder="State"
+                          className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                        />
+                        <input
+                          type="text"
+                          required={hasProperty && !sameAsBilling}
+                          value={propZip}
+                          onChange={(e) => setPropZip(e.target.value)}
+                          placeholder="Zip Code"
+                          className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1 flex items-center space-x-1">
+                        <Key className="w-3 h-3 text-[#78716c]" />
+                        <span>Gate / Lockbox Code</span>
+                      </label>
                       <input
                         type="text"
-                        required={!sameAsBilling}
-                        value={propStreet}
-                        onChange={(e) => setPropStreet(e.target.value)}
-                        placeholder="Service Street Address"
-                        className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                        value={gateCode}
+                        onChange={(e) => setGateCode(e.target.value)}
+                        placeholder="#1234 or Key under mat"
+                        className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                     <div>
+                      <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
+                        Access Instructions
+                      </label>
                       <input
                         type="text"
-                        value={propUnit}
-                        onChange={(e) => setPropUnit(e.target.value)}
-                        placeholder="Unit #"
-                        className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
+                        value={accessInstructions}
+                        onChange={(e) => setAccessInstructions(e.target.value)}
+                        placeholder="Side gate unlocked, watch for dog"
+                        className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      required={!sameAsBilling}
-                      value={propCity}
-                      onChange={(e) => setPropCity(e.target.value)}
-                      placeholder="City"
-                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
-                    />
-                    <input
-                      type="text"
-                      required={!sameAsBilling}
-                      value={propState}
-                      onChange={(e) => setPropState(e.target.value)}
-                      placeholder="State"
-                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
-                    />
-                    <input
-                      type="text"
-                      required={!sameAsBilling}
-                      value={propZip}
-                      onChange={(e) => setPropZip(e.target.value)}
-                      placeholder="Zip Code"
-                      className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2.5 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
-                    />
-                  </div>
-                </>
+                </div>
               )}
-
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1 flex items-center space-x-1">
-                    <Key className="w-3 h-3 text-[#78716c]" />
-                    <span>Gate / Lockbox Code</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={gateCode}
-                    onChange={(e) => setGateCode(e.target.value)}
-                    placeholder="#1234 or Key under mat"
-                    className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#b8b0a5] mb-1">
-                    Access Instructions
-                  </label>
-                  <input
-                    type="text"
-                    value={accessInstructions}
-                    onChange={(e) => setAccessInstructions(e.target.value)}
-                    placeholder="Side gate unlocked, watch for dog"
-                    className="w-full text-[#fdfbf7] bg-[#181818] placeholder-[#78716c] text-xs px-3.5 py-2 rounded-lg border border-[#2a2a2a] focus:outline-none focus:border-[#c5a059]"
-                  />
-                </div>
-              </div>
             </div>
-          </div>
+          )}
 
           {/*  */}
           <div className="border-t border-[#262626] pt-5">
@@ -431,7 +505,13 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
               className="px-5 py-2 rounded-lg bg-[#c5a059] hover:bg-[#b38728] text-black text-xs font-bold shadow-md transition flex items-center space-x-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Create Client & Property</span>
+              <span>
+                {initialClient
+                  ? 'Save Client Changes'
+                  : hasProperty
+                  ? 'Create Client & Property'
+                  : 'Create Client Profile'}
+              </span>
             </button>
           </div>
         </form>

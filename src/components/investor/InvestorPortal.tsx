@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/authContext';
 import { useActiveFSMData } from '@/lib/useStore';
 import { Property, Job, Invoice } from '@/types';
@@ -31,7 +32,9 @@ import {
   Layers,
   Phone,
   Mail,
-  Key
+  Key,
+  Plus,
+  CreditCard
 } from 'lucide-react';
 
 export const InvestorPortal: React.FC = () => {
@@ -41,9 +44,13 @@ export const InvestorPortal: React.FC = () => {
     properties,
     jobs,
     invoices,
+    estimates,
+    workAgreements,
     getPropertiesByClientId,
     getJobsByClientId,
     getInvoicesByClientId,
+    getEstimatesByClientId,
+    addJob,
   } = useActiveFSMData();
 
   // Active client scoping: if logged in as client, strictly scope to user.clientId or client-1
@@ -79,6 +86,15 @@ export const InvestorPortal: React.FC = () => {
   } | null>(null);
 
   const [activeInvoiceModal, setActiveInvoiceModal] = useState<Invoice | null>(null);
+
+  // Service Request Modal state
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [reqPropertyId, setReqPropertyId] = useState('');
+  const [reqTitle, setReqTitle] = useState('');
+  const [reqPriority, setReqPriority] = useState<Job['priority']>('medium');
+  const [reqDate, setReqDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [reqDescription, setReqDescription] = useState('');
+  const [requestSuccessNotice, setRequestSuccessNotice] = useState<{ jobNumber: string; title: string } | null>(null);
 
   // Get active client
   const activeClient = useMemo(() => {
@@ -128,6 +144,70 @@ export const InvestorPortal: React.FC = () => {
     if (!activeClient) return [];
     return getInvoicesByClientId(activeClient.id);
   }, [activeClient, getInvoicesByClientId, invoices]);
+
+  // Client estimates & work agreements
+  const clientEstimates = useMemo(() => {
+    if (!activeClient) return [];
+    const allEst = getEstimatesByClientId(activeClient.id);
+    return selectedPropertyId === 'all'
+      ? allEst
+      : allEst.filter((e) => e.propertyId === selectedPropertyId);
+  }, [activeClient, getEstimatesByClientId, estimates, selectedPropertyId]);
+
+  const clientAgreements = useMemo(() => {
+    if (!activeClient) return [];
+    const allAgr = workAgreements.filter((w) => w.clientId === activeClient.id);
+    return selectedPropertyId === 'all'
+      ? allAgr
+      : allAgr.filter((w) => w.propertyId === selectedPropertyId);
+  }, [activeClient, workAgreements, selectedPropertyId]);
+
+  const handleOpenRequestModal = () => {
+    const defaultProp =
+      selectedPropertyId !== 'all'
+        ? selectedPropertyId
+        : clientProperties[0]?.id || '';
+    setReqPropertyId(defaultProp);
+    setReqTitle('');
+    setReqPriority('medium');
+    setReqDate(new Date().toISOString().split('T')[0]);
+    setReqDescription('');
+    setShowRequestModal(true);
+  };
+
+  const handleSubmitServiceRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeClient) return;
+
+    const prop =
+      clientProperties.find((p) => p.id === reqPropertyId) || clientProperties[0];
+    const propertyAddress = prop
+      ? `${prop.street}${prop.unit ? `, ${prop.unit}` : ''}, ${prop.city}, ${prop.state} ${prop.zip}`
+      : `${activeClient.billingAddress.street}, ${activeClient.billingAddress.city}, ${activeClient.billingAddress.state} ${activeClient.billingAddress.zip}`;
+
+    const createdJob = addJob({
+      clientId: activeClient.id,
+      clientName:
+        activeClient.companyName || `${activeClient.firstName} ${activeClient.lastName}`,
+      propertyId: prop?.id || '',
+      propertyAddress,
+      title: reqTitle.trim() || 'Service Request',
+      description: reqDescription.trim() || 'Requested via Landlord & Investor Portal.',
+      status: 'unscheduled',
+      priority: reqPriority,
+      scheduledDate: reqDate || new Date().toISOString().split('T')[0],
+      timeWindowStart: '09:00',
+      timeWindowEnd: '17:00',
+      checklist: [],
+      photosBefore: [],
+      photosAfter: [],
+      notes: 'Submitted via Landlord & Investor Portal',
+    });
+
+    setShowRequestModal(false);
+    setRequestSuccessNotice({ jobNumber: createdJob.jobNumber, title: createdJob.title });
+    setTimeout(() => setRequestSuccessNotice(null), 6000);
+  };
 
   // Compute portfolio metrics
   const metrics = useMemo(() => {
@@ -240,35 +320,66 @@ export const InvestorPortal: React.FC = () => {
           </div>
         </div>
 
-        {/* Admin client switcher or Client profile indicator */}
-        <div className="flex items-center space-x-3 bg-[#111111]/80 px-4 py-2.5 rounded-lg border border-[#333333] shrink-0">
-          <div className="text-right">
-            <p className="text-xs text-[#a8a095]">Investor Account</p>
-            <p className="text-sm font-bold text-white">
-              {activeClient?.companyName || `${activeClient?.firstName} ${activeClient?.lastName}`}
-            </p>
-          </div>
-          {isAdmin && (
-            <div className="relative">
-              <select
-                aria-label="Switch Simulated Investor Account"
-                value={selectedClientId}
-                onChange={(e) => {
-                  setSelectedClientId(e.target.value);
-                  setSelectedPropertyId('all');
-                }}
-                className="bg-[#222222] border border-[#444444] text-xs text-[#fdfbf7] rounded px-2.5 py-1.5 focus:outline-none focus:border-purple-500 font-medium"
-              >
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.companyName || `${c.firstName} ${c.lastName}`}
-                  </option>
-                ))}
-              </select>
+        {/* Admin client switcher or Client profile indicator + Request Service Button */}
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={handleOpenRequestModal}
+            className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Request Service / Work Order</span>
+          </button>
+
+          <div className="flex items-center space-x-3 bg-[#111111]/80 px-4 py-2 rounded-lg border border-[#333333]">
+            <div className="text-right">
+              <p className="text-xs text-[#a8a095]">Investor Account</p>
+              <p className="text-sm font-bold text-white">
+                {activeClient?.companyName || `${activeClient?.firstName} ${activeClient?.lastName}`}
+              </p>
             </div>
-          )}
+            {isAdmin && (
+              <div className="relative">
+                <select
+                  aria-label="Switch Simulated Investor Account"
+                  value={selectedClientId}
+                  onChange={(e) => {
+                    setSelectedClientId(e.target.value);
+                    setSelectedPropertyId('all');
+                  }}
+                  className="bg-[#222222] border border-[#444444] text-xs text-[#fdfbf7] rounded px-2.5 py-1.5 focus:outline-none focus:border-purple-500 font-medium"
+                >
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.companyName || `${c.firstName} ${c.lastName}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Service Request Submitted Confirmation Banner */}
+      {requestSuccessNotice && (
+        <div className="bg-emerald-950/60 border border-emerald-500/50 rounded-xl p-4 flex items-center justify-between gap-3 text-xs text-emerald-200 shadow-lg animate-in fade-in">
+          <div className="flex items-center space-x-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div>
+              <span className="font-bold text-white">Work Order Submitted!</span> Your service request{' '}
+              <span className="font-mono font-bold text-emerald-300">{requestSuccessNotice.jobNumber}</span> ({requestSuccessNotice.title}) has been queued in the Rome, GA Dispatch Pipeline.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRequestSuccessNotice(null)}
+            className="text-emerald-400 hover:text-white px-2 py-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Portfolio Overview Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -439,6 +550,133 @@ export const InvestorPortal: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Quotes & Contracts Section (Estimates & Work Agreements) */}
+      <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 sm:p-5 space-y-4 shadow">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#222222] pb-3">
+          <div>
+            <h2 className="text-base font-bold text-white uppercase tracking-wider flex items-center">
+              <FileText className="w-4 h-4 mr-2 text-purple-400" />
+              Quotes &amp; Contracts ({clientEstimates.length + clientAgreements.length})
+            </h2>
+            <p className="text-xs text-[#888888] mt-0.5">
+              Review digital estimates, approve scopes of work, and view signed work agreements
+            </p>
+          </div>
+        </div>
+
+        {clientEstimates.length === 0 && clientAgreements.length === 0 ? (
+          <div className="text-xs text-[#888888] py-4 text-center">
+            No estimates or work agreements on file for this portfolio filter.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {clientEstimates.map((est) => (
+              <div
+                key={est.id}
+                className="bg-[#111111] border border-[#262626] hover:border-purple-700/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition"
+              >
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono text-xs font-bold text-purple-300 bg-purple-950/60 border border-purple-800/60 px-2 py-0.5 rounded">
+                      {est.estimateNumber}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                        est.status === 'approved'
+                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                          : est.status === 'declined'
+                          ? 'bg-red-950 text-red-400 border border-red-800'
+                          : 'bg-amber-950 text-amber-400 border border-amber-800'
+                      }`}
+                    >
+                      {est.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white font-semibold mt-1.5">
+                    {est.items?.[0]?.description || 'Property Maintenance Estimate'}
+                  </p>
+                  <p className="text-[11px] text-[#888888] mt-0.5 flex items-center">
+                    <MapPin className="w-3 h-3 mr-1 text-purple-400 shrink-0" />
+                    {est.propertyAddress}
+                  </p>
+                </div>
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                  <div className="font-mono text-sm font-bold text-white">
+                    ${est.total.toFixed(2)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {est.cancellationAgreementId && (
+                      <Link
+                        href={`/cancellation/${est.cancellationAgreementId}`}
+                        className="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
+                      >
+                        <span>Cancellation Agreement</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    )}
+                    <Link
+                      href={`/estimate/${est.id}`}
+                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
+                    >
+                      <span>View Quote</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {clientAgreements.map((agr) => (
+              <div
+                key={agr.id}
+                className="bg-[#111111] border border-emerald-900/40 hover:border-emerald-600/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition"
+              >
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono text-xs font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
+                      {agr.agreementNumber}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+                      {agr.clientSignedAt ? 'Signed Contract' : 'Awaiting Signature'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white font-semibold mt-1.5">
+                    Work Agreement ({agr.estimateNumber})
+                  </p>
+                  <p className="text-[11px] text-[#888888] mt-0.5 flex items-center">
+                    <MapPin className="w-3 h-3 mr-1 text-emerald-400 shrink-0" />
+                    {agr.propertyAddress}
+                  </p>
+                </div>
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                  <div className="font-mono text-sm font-bold text-emerald-400">
+                    ${agr.updatedTotal.toFixed(2)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {agr.cancellationAgreementId && (
+                      <Link
+                        href={`/cancellation/${agr.cancellationAgreementId}`}
+                        className="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
+                      >
+                        <span>Cancellation Agreement</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    )}
+                    <Link
+                      href={`/agreement/${agr.id}`}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
+                    >
+                      <span>View Contract</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Chronological Maintenance History Section */}
       <div className="space-y-4">
@@ -770,12 +1008,24 @@ export const InvestorPortal: React.FC = () => {
                             </div>
                             <p className="text-xs text-[#888888] mt-0.5">
                               Total Invoiced: <strong className="text-white">${invoice.total.toFixed(2)}</strong>
+                              {invoice.balanceDue > 0 && invoice.status !== 'paid' && (
+                                <span className="text-amber-400 font-semibold"> • Balance Due: ${invoice.balanceDue.toFixed(2)}</span>
+                              )}
                               {invoice.paidAt && ` • Paid on ${new Date(invoice.paidAt).toLocaleDateString()}`}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {invoice.status !== 'paid' && invoice.balanceDue > 0 && (
+                            <Link
+                              href={`/pay/${invoice.id}`}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow transition flex items-center space-x-1.5"
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>Pay Balance (${invoice.balanceDue.toFixed(2)})</span>
+                            </Link>
+                          )}
                           <button
                             onClick={() => setActiveInvoiceModal(invoice)}
                             className="px-3.5 py-1.5 bg-[#1f1f23] hover:bg-[#28282e] border border-[#38383e] text-white text-xs font-semibold rounded-lg transition flex items-center space-x-1.5"
@@ -889,7 +1139,7 @@ export const InvestorPortal: React.FC = () => {
                     NAILED IT PROPERTY SOLUTIONS
                   </h2>
                   <p className="text-xs text-[#888888]">Property Maintenance & Repair Services</p>
-                  <p className="text-xs text-[#666666]">Rome, GA & Austin, TX Metro</p>
+                  <p className="text-xs text-[#666666]">Rome, GA • Floyd County Metro</p>
                 </div>
                 <div className="text-right">
                   <span
@@ -992,13 +1242,153 @@ export const InvestorPortal: React.FC = () => {
                 <Printer className="w-3.5 h-3.5 text-slate-300" />
                 <span>Print / Save Receipt</span>
               </button>
+              <div className="flex items-center space-x-2">
+                {activeInvoiceModal.status !== 'paid' && activeInvoiceModal.balanceDue > 0 && (
+                  <Link
+                    href={`/pay/${activeInvoiceModal.id}`}
+                    className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1.5"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Pay Balance (${activeInvoiceModal.balanceDue.toFixed(2)})</span>
+                  </Link>
+                )}
+                <button
+                  onClick={() => setActiveInvoiceModal(null)}
+                  className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REQUEST SERVICE / WORK ORDER MODAL */}
+      {showRequestModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#141414] border border-[#333333] rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-in fade-in">
+            <div className="bg-[#18181b] border-b border-[#262626] p-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-purple-950 border border-purple-800 rounded-lg text-purple-400">
+                  <Wrench className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    Request Service / Work Order
+                  </h3>
+                  <p className="text-xs text-[#888888]">
+                    Submit a maintenance or turnover request to Rome, GA Dispatch
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setActiveInvoiceModal(null)}
-                className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition"
+                type="button"
+                onClick={() => setShowRequestModal(false)}
+                className="p-1.5 text-[#888888] hover:text-white rounded-lg bg-[#222222] hover:bg-[#333333] transition"
               >
-                Done
+                <X className="w-5 h-5" />
               </button>
             </div>
+
+            <form onSubmit={handleSubmitServiceRequest} className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
+                  Select Portfolio Property *
+                </label>
+                <select
+                  required
+                  value={reqPropertyId}
+                  onChange={(e) => setReqPropertyId(e.target.value)}
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500"
+                >
+                  {clientProperties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label || 'Property'} — {p.street}{p.unit ? `, ${p.unit}` : ''}, {p.city}
+                    </option>
+                  ))}
+                  {clientProperties.length === 0 && (
+                    <option value="">Primary Billing Address</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
+                  Work Request Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={reqTitle}
+                  onChange={(e) => setReqTitle(e.target.value)}
+                  placeholder="e.g. Unit 4B HVAC Not Cooling, Tenant Turnover Inspection"
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3.5 py-2.5 text-white placeholder-[#666666] focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
+                    Priority Level
+                  </label>
+                  <select
+                    value={reqPriority}
+                    onChange={(e) => setReqPriority(e.target.value as Job['priority'])}
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="low">Routine / Low</option>
+                    <option value="medium">Standard</option>
+                    <option value="high">High Priority</option>
+                    <option value="emergency">Emergency</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
+                    Preferred Service Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={reqDate}
+                    onChange={(e) => setReqDate(e.target.value)}
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#b8b0a5] mb-1">
+                  Detailed Scope / Access Notes *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={reqDescription}
+                  onChange={(e) => setReqDescription(e.target.value)}
+                  placeholder="Describe the repair or maintenance needed, tenant contact info, or special access instructions..."
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3.5 py-2.5 text-white placeholder-[#666666] focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="border-t border-[#262626] pt-4 flex items-center justify-end space-x-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(false)}
+                  className="px-4 py-2 rounded-lg border border-[#333333] text-[#b8b0a5] hover:bg-[#1e1e24] font-semibold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg transition flex items-center space-x-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Submit Work Order</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

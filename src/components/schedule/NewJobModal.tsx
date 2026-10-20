@@ -280,7 +280,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
                     <span>📲 DIRECT MOBILE TECH DISPATCH PORTAL:</span>
                   </div>
                   <div className="underline text-blue-400 font-mono break-all">
-                    https://fsm.naileditpropertysolutions.com/mobile/tech?job={job.id}
+                    https://fsm.naileditpropertysolutions.com/dashboard/technician?job={job.id}
                   </div>
                   <div className="text-[#a8a095] italic text-[9px] pt-1">
                     Tap the inline button below to acknowledge on-site transit.
@@ -298,7 +298,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
             {/* Action Buttons */}
             <div className="pt-2 flex flex-col sm:flex-row gap-3">
               <a
-                href={`/mobile/tech?job=${job.id}`}
+                href={`/dashboard/technician?job=${job.id}`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex-1 py-3 px-4 rounded-xl bg-[#222222] hover:bg-[#2e2e2e] text-[#fdfbf7] text-xs font-bold text-center border border-[#3a3a3a] flex items-center justify-center space-x-1.5 transition"

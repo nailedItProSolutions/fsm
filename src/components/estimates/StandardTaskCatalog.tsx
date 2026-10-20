@@ -57,7 +57,7 @@ export const StandardTaskCatalog: React.FC<StandardTaskCatalogProps> = ({ onSele
         </div>
         <div className="flex items-center gap-2 mt-3 text-[11px] text-[#78716c]">
           <Info className="w-3.5 h-3.5 text-[#c5a059]" />
-          <span>Calculated at Nailed It Property Solutions Base Rate: <strong className="text-[#fdfbf7] font-mono">$${BASE_HOURLY_RATE.toFixed(2)}/hr</strong></span>
+          <span>Calculated at Nailed It Property Solutions Base Rate: <strong className="text-[#fdfbf7] font-mono">${BASE_HOURLY_RATE.toFixed(2)}/hr</strong></span>
         </div>
       </div>
 
@@ -85,7 +85,7 @@ export const StandardTaskCatalog: React.FC<StandardTaskCatalogProps> = ({ onSele
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <div className="text-sm font-bold font-mono text-[#fdfbf7]">
-                      $${(task.estimatedHours * BASE_HOURLY_RATE).toFixed(2)}
+                      ${(task.estimatedHours * BASE_HOURLY_RATE).toFixed(2)}
                     </div>
                   </div>
                   <button
