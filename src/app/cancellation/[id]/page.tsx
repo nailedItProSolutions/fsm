@@ -156,9 +156,15 @@ export default function ContractCancellationPage() {
       cancellation.status === 'settled_released' ||
       (Boolean(cancellation.clientSignatureName) && cancellation.settlementBalanceDue <= 0.01);
 
+    const cleanStatutoryNumbers = (str: string) =>
+      str
+        .replace(/\s*\(O\.C\.G\.A\.\s*§[^)]*\)/gi, '')
+        .replace(/,?\s*O\.C\.G\.A\.\s*§\s*[\d.-]+(?:\s*(?:et\s*seq\.|&\s*§\s*[\d.-]+|and\s*§\s*[\d.-]+))*/gi, '')
+        .replace(/O\.C\.G\.A\.\s*§\s*[\d.-]+(?:\s*(?:et\s*seq\.|&\s*§\s*[\d.-]+|and\s*§\s*[\d.-]+))*\s*-?\s*/gi, '');
+
     const paragraphs = cancellation.terms
       .split(/\n\s*\n/)
-      .map((p) => p.trim())
+      .map((p) => cleanStatutoryNumbers(p.trim()))
       .filter(Boolean);
 
     return (
@@ -193,15 +199,15 @@ export default function ContractCancellationPage() {
               </h1>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] print:text-[7.5pt] text-neutral-700 mt-0.5">
                 <span className="flex items-center gap-1 font-semibold">
-                  <MapPin className="w-3 h-3 text-neutral-700 print:hidden" /> Rome, GA • Floyd County Metro
+                  <MapPin className="w-3 h-3 text-neutral-700 print:hidden" /> Rome, GA
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 font-semibold">
                   <Phone className="w-3 h-3 text-neutral-700 print:hidden" /> (706) 844-8193
                 </span>
                 <span>•</span>
-                <span className="font-mono">
-                  Authorized Officer: Charles Willis (ID #1014958)
+                <span className="font-semibold text-neutral-800">
+                  Representative for Nailed It Property Solutions: Charles Willis
                 </span>
               </div>
             </div>
@@ -267,10 +273,10 @@ export default function ContractCancellationPage() {
 
             <div>
               <div className="text-[9px] print:text-[6.5pt] font-bold uppercase tracking-wider text-neutral-500">
-                Floyd County Statutory Lien Preservation
+                Floyd County Lien Preservation
               </div>
               <div className="font-bold text-neutral-950 mt-0.5">
-                O.C.G.A. § 44-14-361 & § 44-14-361.1
+                Georgia Mechanics&apos; & Materialmen&apos;s Lien Law
               </div>
               <div className="text-neutral-700">
                 90-Day Lien Deadline: <strong>{cancellation.lienRightsExpiresAt}</strong>
@@ -290,10 +296,10 @@ export default function ContractCancellationPage() {
           <div className="p-2.5 print:p-2 rounded border border-neutral-800 bg-neutral-50/70 print:bg-white space-y-1.5 text-[10px] print:text-[7pt] leading-snug">
             <div className="flex flex-wrap items-center justify-between gap-1 border-b border-neutral-300 pb-1">
               <div className="font-black text-neutral-950 uppercase tracking-wider">
-                STATUTORY NOTICE: MID-JOB &ldquo;AS-IS&rdquo; DEMARCATION, MATERIAL STORAGE RISK & COMPLETE VOIDING OF WARRANTIES
+                NOTICE: MID-JOB &ldquo;AS-IS&rdquo; DEMARCATION, MATERIAL STORAGE RISK & COMPLETE VOIDING OF WARRANTIES
               </div>
               <span className="font-mono font-bold text-[9px] print:text-[6.5pt] uppercase text-neutral-700">
-                O.C.G.A. § 13-8-2 Compliant
+                Georgia Law Compliant
               </span>
             </div>
 
@@ -342,7 +348,7 @@ export default function ContractCancellationPage() {
           <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] print:text-[7.5pt]">
               <h2 className="font-black uppercase tracking-wider text-neutral-900">
-                Schedule A — Itemized Quantum Meruit & Liquidated Stop-Work Settlement (O.C.G.A. § 9-2-7 & § 13-6-7)
+                Schedule A — Itemized Quantum Meruit & Liquidated Stop-Work Settlement
               </h2>
               <span className="text-neutral-700">
                 Original Contract Total: <strong>${cancellation.originalContractTotal.toFixed(2)}</strong>
@@ -354,41 +360,44 @@ export default function ContractCancellationPage() {
                 <thead>
                   <tr className="bg-neutral-100 border-b border-neutral-400 print:border-neutral-800 font-bold uppercase text-neutral-800">
                     <th className="py-1 px-2">Category</th>
-                    <th className="py-1 px-2">Settlement Item & Georgia Statutory Basis</th>
+                    <th className="py-1 px-2">Settlement Item & Legal Basis</th>
                     <th className="py-1 px-2 text-right">Qty</th>
                     <th className="py-1 px-2 text-right">Rate</th>
                     <th className="py-1 px-2 text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  {cancellation.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="py-1 px-2 font-semibold uppercase text-neutral-700 whitespace-nowrap">
-                        {item.category.replace(/_/g, ' ')}
-                      </td>
-                      <td className="py-1 px-2">
-                        <span className="font-bold text-neutral-950">{item.description}</span>
-                        {item.details && (
-                          <span className="text-neutral-600 ml-1.5">({item.details})</span>
-                        )}
-                      </td>
-                      <td className="py-1 px-2 text-right font-mono">{item.quantity}</td>
-                      <td className="py-1 px-2 text-right font-mono">
-                        ${Number(item.unitPrice).toFixed(2)}
-                      </td>
-                      <td className="py-1 px-2 text-right font-mono font-bold text-neutral-950">
-                        ${Number(item.total).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
+                  {cancellation.items.map((item) => {
+                    const cleanedDetails = item.details ? cleanStatutoryNumbers(item.details) : '';
+                    return (
+                      <tr key={item.id}>
+                        <td className="py-1 px-2 font-semibold uppercase text-neutral-700 whitespace-nowrap">
+                          {item.category.replace(/_/g, ' ')}
+                        </td>
+                        <td className="py-1 px-2">
+                          <span className="font-bold text-neutral-950">{item.description}</span>
+                          {cleanedDetails && (
+                            <span className="text-neutral-600 ml-1.5">({cleanedDetails})</span>
+                          )}
+                        </td>
+                        <td className="py-1 px-2 text-right font-mono">{item.quantity}</td>
+                        <td className="py-1 px-2 text-right font-mono">
+                          ${Number(item.unitPrice).toFixed(2)}
+                        </td>
+                        <td className="py-1 px-2 text-right font-mono font-bold text-neutral-950">
+                          ${Number(item.total).toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
               {/* Compact Financial Reconciliation Footer */}
               <div className="bg-neutral-50 print:bg-white border-t border-neutral-400 print:border-neutral-800 px-3 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-[10px] print:text-[7pt]">
                 <div className="text-neutral-700 max-w-md leading-snug">
-                  <strong className="text-neutral-950 uppercase">Statutory Interest & Collection Notice:</strong>{' '}
-                  Pursuant to <strong>O.C.G.A. § 7-4-16</strong> & <strong>§ 13-1-11</strong>, any unpaid Net Settlement
+                  <strong className="text-neutral-950 uppercase">Interest & Collection Notice:</strong>{' '}
+                  Under Georgia commercial law, any unpaid Net Settlement
                   Balance accrues commercial interest at <strong>1.5% per month (18% per annum)</strong> plus{' '}
                   <strong>15% statutory attorney&apos;s fees</strong> and Floyd County Superior Court lien filing costs.
                 </div>
@@ -431,10 +440,10 @@ export default function ContractCancellationPage() {
             </div>
           </div>
 
-          {/* Mandatory 4-Point Client Statutory Acknowledgments (Compact 2x2 Grid) */}
+          {/* Mandatory 4-Point Client Acknowledgments (Compact 2x2 Grid) */}
           <div className="p-2 print:p-1.5 rounded bg-neutral-50 print:bg-white border border-neutral-400 print:border-neutral-800 space-y-1">
             <div className="text-[9.5px] print:text-[7pt] font-black uppercase tracking-wider text-neutral-950">
-              Mandatory Client Statutory Acknowledgments (Rome, Floyd County, Georgia)
+              Mandatory Client Acknowledgments (Rome, Floyd County, Georgia)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[9px] print:text-[6.5pt] leading-tight text-neutral-900">
               <div className="flex items-start gap-1.5 bg-white p-1.5 rounded border border-neutral-300">
@@ -444,7 +453,7 @@ export default function ContractCancellationPage() {
                 <span>
                   <strong>1. &ldquo;As-Is&rdquo; Acceptance, Exposed Ceiling/T&G Storage & Warranty Voiding:</strong> Client
                   accepts all halted work, exposed ceilings, and on-site T&G boards/materials strictly &ldquo;AS-IS&rdquo;, assumes
-                  all proper storage/acclimation risk, and waives all warranties (O.C.G.A. § 13-8-2).
+                  all proper storage/acclimation risk, and waives all warranties under Georgia law.
                 </span>
               </div>
               <div className="flex items-start gap-1.5 bg-white p-1.5 rounded border border-neutral-300">
@@ -453,8 +462,8 @@ export default function ContractCancellationPage() {
                 </span>
                 <span>
                   <strong>2. Quantum Meruit & Floyd County Lien Preservation:</strong> Client agrees the itemized charges
-                  are fair liquidated values (O.C.G.A. § 9-2-7 & § 13-6-7) and that Contractor&apos;s Mechanics&apos; Lien rights
-                  (O.C.G.A. § 44-14-361) remain in full force until paid in full.
+                  are fair liquidated values and that Contractor&apos;s Georgia Mechanics&apos; Lien rights
+                  remain in full force until paid in full.
                 </span>
               </div>
               <div className="flex items-start gap-1.5 bg-white p-1.5 rounded border border-neutral-300">
@@ -463,7 +472,7 @@ export default function ContractCancellationPage() {
                 </span>
                 <span>
                   <strong>3. Irrevocable Chargeback Waiver & Conditional Release:</strong> Client waives all credit card/ACH
-                  chargebacks or stop-payments on prior deposits or settlement payments (O.C.G.A. § 13-6-11).
+                  chargebacks or stop-payments on prior deposits or settlement payments under Georgia law.
                 </span>
               </div>
               <div className="flex items-start gap-1.5 bg-white p-1.5 rounded border border-neutral-300">
@@ -485,10 +494,10 @@ export default function ContractCancellationPage() {
                 Contractor Execution (Nailed It Property Solutions)
               </div>
               <div className="font-serif italic text-base print:text-xs text-neutral-950 border-b border-neutral-400 pb-0.5">
-                {cancellation.contractorSignedBy}
+                Charles Willis
               </div>
               <div className="flex justify-between text-[9.5px] print:text-[6.5pt] text-neutral-700">
-                <span>Authorized Officer: Charles Willis (ID #1014958)</span>
+                <span>Charles Willis — Representative for Nailed It Property Solutions</span>
                 <span>Date: {new Date(cancellation.contractorSignedAt).toLocaleDateString()}</span>
               </div>
             </div>
@@ -496,7 +505,7 @@ export default function ContractCancellationPage() {
             <div className="p-2.5 print:p-1.5 rounded bg-neutral-50 print:bg-white border border-neutral-400 print:border-neutral-800 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[9px] print:text-[6.5pt] font-black uppercase tracking-wider text-neutral-600">
-                  Client / Property Owner Binding Execution (O.C.G.A. § 10-12-1)
+                  Client / Property Owner Binding Execution
                 </span>
                 {!cancellation.clientSignatureName && (
                   <button
@@ -728,8 +737,8 @@ export default function ContractCancellationPage() {
 
             <form onSubmit={handleClientSignSubmit} className="space-y-4">
               <div className="p-3.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200">
-                Under the <strong>Georgia Uniform Electronic Transactions Act (O.C.G.A. § 10-12-1 et seq.)</strong>,
-                please review and check all four (4) mandatory statutory acknowledgments below before entering your binding digital signature.
+                Under the <strong>Georgia Uniform Electronic Transactions Act</strong>,
+                please review and check all four (4) mandatory acknowledgments below before entering your binding digital signature.
               </div>
 
               <div className="space-y-2.5 text-xs">
@@ -747,7 +756,7 @@ export default function ContractCancellationPage() {
                   />
                   <span>
                     <strong className="text-white block">
-                      1. Mid-Job &ldquo;As-Is&rdquo; Acceptance, Exposed Ceiling / T&G Storage Risk & Complete Voiding of Warranties (O.C.G.A. § 13-8-2)
+                      1. Mid-Job &ldquo;As-Is&rdquo; Acceptance, Exposed Ceiling / T&G Storage Risk & Complete Voiding of Warranties
                     </strong>
                     <span className="text-slate-400">
                       I accept the property, exposed ceiling/structures, and all unfinished/partial work strictly &ldquo;AS-IS, WHERE-IS&rdquo;, assume full responsibility for proper climate-controlled flat storage and acclimation of any Tongue & Groove (T&G) boards and materials, and acknowledge that all warranties from Nailed It Property Solutions are immediately null and void.
@@ -769,11 +778,11 @@ export default function ContractCancellationPage() {
                   />
                   <span>
                     <strong className="text-white block">
-                      2. Quantum Meruit Valuation & Floyd County Mechanics&apos; Lien Preservation (O.C.G.A. § 44-14-361)
+                      2. Quantum Meruit Valuation & Floyd County Mechanics&apos; Lien Preservation
                     </strong>
                     <span className="text-slate-400">
                       I agree that the Total Settlement Charges (${cancellation.totalSettlementCharges.toFixed(2)}) and Net Balance Due ($
-                      {cancellation.settlementBalanceDue.toFixed(2)}) are fair and enforceable, and that Contractor retains full Georgia statutory
+                      {cancellation.settlementBalanceDue.toFixed(2)}) are fair and enforceable, and that Contractor retains full Georgia
                       Mechanics&apos; & Materialmen&apos;s Lien rights in Floyd County Superior Court until paid in full.
                     </span>
                   </span>
@@ -793,7 +802,7 @@ export default function ContractCancellationPage() {
                   />
                   <span>
                     <strong className="text-white block">
-                      3. Irrevocable Waiver of Chargebacks / Stop-Payments & Conditional Release (O.C.G.A. § 13-6-11)
+                      3. Irrevocable Waiver of Chargebacks / Stop-Payments & Conditional Release
                     </strong>
                     <span className="text-slate-400">
                       I irrevocably waive any right to initiate a credit card chargeback, ACH reversal, or check stop-payment on any prior deposit ($

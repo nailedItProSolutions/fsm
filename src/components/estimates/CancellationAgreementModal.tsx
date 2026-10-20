@@ -388,7 +388,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                   <p className="text-xs text-slate-300 mt-1">
                     Registry Seal: <span className="font-mono text-amber-300">{createdCancellation.sealCode}</span> •
                     Floyd County Lien Protection Deadline:{' '}
-                    <span className="font-bold text-white">{createdCancellation.lienRightsExpiresAt}</span> (90 Days under O.C.G.A. § 44-14-361.1)
+                    <span className="font-bold text-white">{createdCancellation.lienRightsExpiresAt}</span> (90 Days under Georgia Lien Law)
                   </p>
                 </div>
               </div>
@@ -740,7 +740,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-amber-400" />
-                    3. Itemized Stop-Work & Liquidated Settlement Schedule (O.C.G.A. § 9-2-7 & § 13-6-7)
+                    3. Itemized Stop-Work & Liquidated Settlement Schedule
                   </h3>
                   <p className="text-[11px] text-slate-400">
                     Includes completed labor, installed/custom materials, 20% supplier restocking fee, and 15% mobilization/schedule allocation fee.
@@ -777,7 +777,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                       </select>
                     </div>
                     <div className="md:col-span-4">
-                      <label className="text-[10px] uppercase text-slate-500 block mb-0.5">Description & Statutory Basis</label>
+                      <label className="text-[10px] uppercase text-slate-500 block mb-0.5">Description & Legal Basis</label>
                       <input
                         type="text"
                         value={item.description}
@@ -788,7 +788,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                         type="text"
                         value={item.details || ''}
                         onChange={(e) => handleItemChange(idx, 'details', e.target.value)}
-                        placeholder="Details / statutory citation..."
+                        placeholder="Details / legal basis..."
                         className="w-full px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800/70 text-slate-400 text-[11px] mt-1"
                       />
                     </div>
@@ -929,7 +929,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                     <div className="text-[11px] text-slate-400 pt-1 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 shrink-0 text-amber-400" />
                       <span>
-                        Floyd County Mechanics&apos; & Materialmen&apos;s Lien rights (O.C.G.A. § 44-14-361) remain reserved until $
+                        Floyd County Mechanics&apos; & Materialmen&apos;s Lien rights remain reserved until $
                         {settlementBalanceDue.toFixed(2)} is paid in cleared funds.
                       </span>
                     </div>

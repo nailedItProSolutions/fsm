@@ -2816,7 +2816,13 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
       Math.round((newTotalCharges - priorPaid + refund - paidNow) * 100) / 100
     );
 
-    let updatedTerms = c.terms || '';
+    const cleanCodes = (str: string) =>
+      str
+        .replace(/\s*\(O\.C\.G\.A\.\s*§[^)]*\)/gi, '')
+        .replace(/,?\s*O\.C\.G\.A\.\s*§\s*[\d.-]+(?:\s*(?:et\s*seq\.|&\s*§\s*[\d.-]+|and\s*§\s*[\d.-]+))*/gi, '')
+        .replace(/O\.C\.G\.A\.\s*§\s*[\d.-]+(?:\s*(?:et\s*seq\.|&\s*§\s*[\d.-]+|and\s*§\s*[\d.-]+))*\s*-?\s*/gi, '');
+
+    let updatedTerms = cleanCodes(c.terms || '');
     if (c.settlementTax && c.settlementTax > 0 && updatedTerms) {
       updatedTerms = updatedTerms
         .split(`$${oldTotalCharges.toFixed(2)}`)
@@ -2827,11 +2833,16 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
 
     return {
       ...c,
+      items: (c.items || []).map((item) => ({
+        ...item,
+        details: item.details ? cleanCodes(item.details) : item.details,
+      })),
       settlementSubtotal: subtotal,
       taxRate: 0,
       settlementTax: 0,
       totalSettlementCharges: newTotalCharges,
       settlementBalanceDue: newBalanceDue,
+      contractorSignedBy: 'Charles Willis — Representative for Nailed It Property Solutions',
       terms: updatedTerms,
     };
   }
@@ -2916,7 +2927,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         ? 'executed_unpaid'
         : 'pending_signature';
 
-    // Stop-work date + 90 days for O.C.G.A. § 44-14-361.1 Georgia Mechanics' Lien deadline
+    // Stop-work date + 90 days for Georgia Mechanics' Lien deadline
     const stopDateObj = new Date(data.stopWorkDate || now);
     const lienDeadlineObj = new Date(stopDateObj.getTime() + 90 * 24 * 60 * 60 * 1000);
     const lienRightsExpiresAt = lienDeadlineObj.toISOString().split('T')[0];
@@ -2975,7 +2986,7 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
         floydCountyGeorgiaVenueAccepted: isClientSigned,
       },
       terms: data.terms,
-      contractorSignedBy: 'Charles Willis - Owner & Field Specialist',
+      contractorSignedBy: 'Charles Willis — Representative for Nailed It Property Solutions',
       contractorSignedAt: now,
       clientSignatureName: isClientSigned ? data.clientSignatureName!.trim() : undefined,
       clientSignedAt: isClientSigned ? now : undefined,
