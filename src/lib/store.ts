@@ -45,7 +45,7 @@ export const INITIAL_USERS: UserProfile[] = [
     email: 'admin@nailedit.com',
     displayName: 'Charles Willis - Owner & Field Specialist',
     role: 'admin',
-    phone: '(706) 844-8193',
+    phone: '(706) 237-8184',
     employeeId: '1014958',
     pin: '8572',
     active: true,
@@ -56,7 +56,7 @@ export const INITIAL_USERS: UserProfile[] = [
     email: 'charles@nailedit.com',
     displayName: 'Charles Willis',
     role: 'technician',
-    phone: '(706) 555-0142',
+    phone: '(706) 237-8184',
     employeeId: '1014958',
     pin: '8572',
     telegramChatId: '839201948',
@@ -982,7 +982,7 @@ export class FSMStore {
                 ...u,
                 displayName: 'Charles Willis - Owner & Field Specialist',
                 role: 'admin',
-                phone: '(706) 844-8193',
+                phone: '(706) 237-8184',
                 employeeId: '1014958',
                 pin: '8572',
               };
@@ -1008,7 +1008,7 @@ export class FSMStore {
               parsedAuth.role = 'admin';
               parsedAuth.employeeId = '1014958';
               parsedAuth.pin = '8572';
-              parsedAuth.phone = '(706) 844-8193';
+              parsedAuth.phone = '(706) 237-8184';
               localStorage.setItem('nailed_it_auth_user', JSON.stringify(parsedAuth));
             }
           } catch (e) {}

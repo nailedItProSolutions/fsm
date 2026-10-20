@@ -162,7 +162,7 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
     if (isEmergency || finalPriority === 'emergency') {
       setEmergencySmsPayload({
         techName: tech ? tech.displayName : (assignedTechId ? 'Field Tech' : 'Rome On-Call Tech'),
-        techPhone: tech?.phone || '(706) 844-8193',
+        techPhone: tech?.phone || '(706) 237-8184',
         job: newJob,
       });
     } else {

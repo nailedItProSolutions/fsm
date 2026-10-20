@@ -203,7 +203,7 @@ export default function ContractCancellationPage() {
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 font-semibold">
-                  <Phone className="w-3 h-3 text-neutral-700 print:hidden" /> (706) 844-8193
+                  <Phone className="w-3 h-3 text-neutral-700 print:hidden" /> (706)237-8184
                 </span>
                 <span>•</span>
                 <span className="font-semibold text-neutral-800">

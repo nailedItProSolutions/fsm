@@ -841,7 +841,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                 <div className="flex justify-between text-[#b8b0a5]">
                   <span>Direct Mobile Number:</span>
                   <span className="text-[#c5a059] font-mono">
-                    {technicians.find(t => t.uid === smsPreviewJob.assignedTechId)?.phone || '(706) 844-8193'}
+                    {technicians.find(t => t.uid === smsPreviewJob.assignedTechId)?.phone || '(706) 237-8184'}
                   </span>
                 </div>
                 <div className="flex justify-between text-[#b8b0a5]">

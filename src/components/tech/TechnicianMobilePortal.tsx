@@ -495,7 +495,7 @@ export const TechnicianMobilePortal: React.FC = () => {
                           </a>
 
                           <a
-                            href={`tel:${client?.phone || '7068448193'}`}
+                            href={`tel:${client?.phone || '7062378184'}`}
                             className="bg-[#242424] hover:bg-[#2e2e2e] text-[#fdfbf7] py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition border border-[#333333]"
                           >
                             <Phone className="w-3.5 h-3.5 text-emerald-400" />
