@@ -158,16 +158,13 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Live financial calculations
+  // Live financial calculations (no tax on cancellation settlements)
   const originalContractTotal = Number(agreement?.updatedTotal ?? estimate.total ?? 0);
-  const taxRate = Number(estimate.taxRate ?? 0.07);
+  const taxRate = 0;
   const settlementSubtotal =
     Math.round(items.reduce((sum, i) => sum + (Number(i.total) || 0), 0) * 100) / 100;
-  const taxableSubtotal = items
-    .filter((i) => i.category === 'materials_installed' || i.category === 'materials_uninstalled')
-    .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
-  const settlementTax = Math.round(taxableSubtotal * taxRate * 100) / 100;
-  const totalSettlementCharges = Math.round((settlementSubtotal + settlementTax) * 100) / 100;
+  const settlementTax = 0;
+  const totalSettlementCharges = settlementSubtotal;
   const netBeforeNowPayment = Math.max(
     0,
     Math.round((totalSettlementCharges - priorPaymentsCredited + refundIssued) * 100) / 100
@@ -772,8 +769,8 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                         className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs"
                       >
                         <option value="labor_completed">Completed Field Labor</option>
-                        <option value="materials_installed">Installed / Staged Materials (Taxable)</option>
-                        <option value="materials_uninstalled">Special-Order Materials (Taxable)</option>
+                        <option value="materials_installed">Installed / Staged Materials</option>
+                        <option value="materials_uninstalled">Special-Order Materials</option>
                         <option value="restocking_fee">Supplier Restocking / Return Fee (20%)</option>
                         <option value="mobilization_fee">Mobilization & Lost Dispatch Fee (15%)</option>
                         <option value="permit_inspection">Permit / Inspection / Disposal Fee</option>
@@ -908,16 +905,8 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Settlement Subtotal (Labor, Materials & Fees):</span>
-                    <span className="font-mono text-white">${settlementSubtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Floyd County / GA Sales Tax ({(taxRate * 100).toFixed(0)}% on Materials):</span>
-                    <span className="font-mono text-white">${settlementTax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-slate-200 pt-1 border-t border-slate-800">
-                    <span>Gross Stop-Work Settlement Charges:</span>
+                  <div className="flex justify-between font-bold text-slate-200">
+                    <span>Gross Stop-Work Settlement Charges (Labor, Materials & Fees):</span>
                     <span className="font-mono text-amber-400">${totalSettlementCharges.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-emerald-400">

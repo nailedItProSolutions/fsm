@@ -1034,7 +1034,9 @@ export class FSMStore {
             };
           });
 
-          this.contractCancellations = parsed.contractCancellations || [];
+          this.contractCancellations = (parsed.contractCancellations || []).map((c: ContractCancellation) =>
+            this.normalizeCancellationNoTax(c)
+          );
 
           // Ensure estimates linked to active work agreements reflect the agreement's updated total & items
           this.estimates.forEach((est) => {
@@ -1059,7 +1061,8 @@ export class FSMStore {
               }
             }
             if ((est as any).cancellationSnapshot) {
-              const snap = (est as any).cancellationSnapshot as ContractCancellation;
+              const snap = this.normalizeCancellationNoTax((est as any).cancellationSnapshot as ContractCancellation);
+              (est as any).cancellationSnapshot = snap;
               if (snap?.id && !this.contractCancellations.some((c) => c.id === snap.id)) {
                 this.contractCancellations.push(snap);
               }
@@ -1203,7 +1206,8 @@ export class FSMStore {
           }
         }
         if ((est as any).cancellationSnapshot) {
-          const snap = (est as any).cancellationSnapshot as ContractCancellation;
+          const snap = this.normalizeCancellationNoTax((est as any).cancellationSnapshot as ContractCancellation);
+          (est as any).cancellationSnapshot = snap;
           if (snap?.id) {
             const existingIdx = this.contractCancellations.findIndex((c) => c.id === snap.id);
             if (existingIdx >= 0) {
@@ -2796,6 +2800,42 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     return agr;
   }
 
+  private normalizeCancellationNoTax(c: ContractCancellation): ContractCancellation {
+    if (!c) return c;
+    const subtotal = Math.round(
+      (c.items || []).reduce((sum, item) => sum + (Number(item.total) || 0), 0) * 100
+    ) / 100;
+    const oldTotalCharges = Number(c.totalSettlementCharges || subtotal);
+    const oldBalanceDue = Number(c.settlementBalanceDue || 0);
+    const priorPaid = Math.max(0, Number(c.priorPaymentsCredited) || 0);
+    const refund = Math.max(0, Number(c.refundIssued) || 0);
+    const paidNow = Math.max(0, Number(c.settlementPaidAmount) || 0);
+    const newTotalCharges = subtotal;
+    const newBalanceDue = Math.max(
+      0,
+      Math.round((newTotalCharges - priorPaid + refund - paidNow) * 100) / 100
+    );
+
+    let updatedTerms = c.terms || '';
+    if (c.settlementTax && c.settlementTax > 0 && updatedTerms) {
+      updatedTerms = updatedTerms
+        .split(`$${oldTotalCharges.toFixed(2)}`)
+        .join(`$${newTotalCharges.toFixed(2)}`)
+        .split(`$${oldBalanceDue.toFixed(2)}`)
+        .join(`$${newBalanceDue.toFixed(2)}`);
+    }
+
+    return {
+      ...c,
+      settlementSubtotal: subtotal,
+      taxRate: 0,
+      settlementTax: 0,
+      totalSettlementCharges: newTotalCharges,
+      settlementBalanceDue: newBalanceDue,
+      terms: updatedTerms,
+    };
+  }
+
   // --- Service Contract Cancellations & Stop-Work Settlements (Rome / Floyd County, GA) ---
   public getContractCancellations(): ContractCancellation[] {
     return [...this.contractCancellations].sort(
@@ -2858,12 +2898,9 @@ public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'to
     const settlementSubtotal = Math.round(
       data.items.reduce((sum, item) => sum + (Number(item.total) || 0), 0) * 100
     ) / 100;
-    const taxRate = data.taxRate !== undefined ? Number(data.taxRate) : Number(est.taxRate ?? 0.07);
-    const taxableSubtotal = data.items
-      .filter((i) => i.category === 'materials_installed' || i.category === 'materials_uninstalled')
-      .reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-    const settlementTax = Math.round(taxableSubtotal * taxRate * 100) / 100;
-    const totalSettlementCharges = Math.round((settlementSubtotal + settlementTax) * 100) / 100;
+    const taxRate = 0;
+    const settlementTax = 0;
+    const totalSettlementCharges = settlementSubtotal;
 
     const priorPaymentsCredited = Math.max(0, Number(data.priorPaymentsCredited) || 0);
     const refundIssued = Math.max(0, Number(data.refundIssued) || 0);

@@ -394,11 +394,10 @@ export default function ContractCancellationPage() {
                 </div>
 
                 <div className="w-full sm:w-72 space-y-0.5 shrink-0">
-                  <div className="flex justify-between text-neutral-700">
-                    <span>Settlement Subtotal & Tax ({(cancellation.taxRate * 100).toFixed(0)}%):</span>
+                  <div className="flex justify-between text-neutral-800">
+                    <span>Gross Stop-Work Settlement Charges:</span>
                     <span className="font-mono font-semibold">
-                      ${cancellation.settlementSubtotal.toFixed(2)} + ${cancellation.settlementTax.toFixed(2)} = $
-                      {cancellation.totalSettlementCharges.toFixed(2)}
+                      ${cancellation.totalSettlementCharges.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-neutral-800">
