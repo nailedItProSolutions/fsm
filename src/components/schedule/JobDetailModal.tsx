@@ -478,9 +478,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     <Link
                       href={`/cancellation/${cncId}`}
                       target="_blank"
-                      className="bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-700/60 font-bold px-3 py-2 rounded-lg text-xs transition flex items-center space-x-1.5"
+                      className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-[#c5a059] border border-[#c5a059]/40 font-bold px-3 py-2 rounded-lg text-xs transition flex items-center space-x-1.5"
                     >
-                      <Gavel className="w-3.5 h-3.5 text-rose-400" />
+                      <Gavel className="w-3.5 h-3.5 text-[#c5a059]" />
                       <span>Cancellation Agreement</span>
                     </Link>
                   );
@@ -490,10 +490,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsCancelModalOpen(true)}
-                      className="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 font-bold px-3 py-2 rounded-lg text-xs transition flex items-center space-x-1.5"
+                      className="bg-[#1f1f1f] hover:bg-[#2a2a2a] text-[#c5a059] border border-[#333333] font-bold px-3 py-2 rounded-lg text-xs transition flex items-center space-x-1.5"
                       title="Issue Rome, Floyd County, GA Mid-Job Stop-Work & Cancellation Agreement"
                     >
-                      <Gavel className="w-3.5 h-3.5 text-rose-400" />
+                      <Gavel className="w-3.5 h-3.5 text-[#c5a059]" />
                       <span>Mid-Job Stop-Work / Cancel</span>
                     </button>
                   );

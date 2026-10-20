@@ -609,7 +609,7 @@ export const InvestorPortal: React.FC = () => {
                     {est.cancellationAgreementId && (
                       <Link
                         href={`/cancellation/${est.cancellationAgreementId}`}
-                        className="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
                       >
                         <span>Cancellation Agreement</span>
                         <ExternalLink className="w-3 h-3" />
@@ -657,7 +657,7 @@ export const InvestorPortal: React.FC = () => {
                     {agr.cancellationAgreementId && (
                       <Link
                         href={`/cancellation/${agr.cancellationAgreementId}`}
-                        className="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-bold rounded-lg transition inline-flex items-center space-x-1"
                       >
                         <span>Cancellation Agreement</span>
                         <ExternalLink className="w-3 h-3" />

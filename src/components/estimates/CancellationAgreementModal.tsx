@@ -112,14 +112,16 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
   });
 
   const [unfinishedWorkRisks, setUnfinishedWorkRisks] = useState<string>(
-    'Work halted mid-stream prior to final finish, pressure/load testing, weatherproofing, and code inspection. Client assumes all responsibility for securing exposed trade areas against moisture intrusion, structural settlement, or third-party tampering.'
+    'Work halted mid-stream prior to final finish, pressure/load testing, weatherproofing, and code inspection. Client assumes all responsibility for exposed ceiling/structural areas, proper climate-controlled flat storage and acclimation of Tongue & Groove (T&G) boards and lumber, and securing open trade areas against moisture intrusion or third-party tampering.'
   );
 
   const [exposedSystemsList, setExposedSystemsList] = useState<string[]>([
-    EXPOSED_SYSTEM_CATEGORIES[0],
-    EXPOSED_SYSTEM_CATEGORIES[2],
-    EXPOSED_SYSTEM_CATEGORIES[5],
+    EXPOSED_SYSTEM_CATEGORIES[0], // Exposed Ceiling, Joists, Rafters & Overhead Structural Cavities
+    EXPOSED_SYSTEM_CATEGORIES[1], // Tongue & Groove (T&G) Boards, Millwork & Wood Materials — Proper Climate Acclimation, Flat Stacking, Moisture Control & On-Site Storage
+    EXPOSED_SYSTEM_CATEGORIES[4], // Drywall, Framing & Structural Wall Cavities
+    EXPOSED_SYSTEM_CATEGORIES[9], // Staged / Uninstalled Materials Left On-Site
   ]);
+  const [customExposedRisk, setCustomExposedRisk] = useState<string>('');
 
   const [items, setItems] = useState<CancellationSettlementItem[]>(() =>
     buildDefaultCancellationItems({
@@ -178,7 +180,6 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
   // Keep legal terms synchronized unless user manually edited them
   useEffect(() => {
     if (!isCustomTerms) {
-      const effectiveReason = customReason.trim() || reasonPreset;
       const generated = buildGeorgiaCancellationTerms({
         clientName: estimate.clientName,
         propertyAddress: estimate.propertyAddress,
@@ -240,6 +241,15 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
     setExposedSystemsList((prev) =>
       prev.includes(sys) ? prev.filter((s) => s !== sys) : [...prev, sys]
     );
+  };
+
+  const handleAddCustomExposedRisk = () => {
+    const trimmed = customExposedRisk.trim();
+    if (!trimmed) return;
+    if (!exposedSystemsList.includes(trimmed)) {
+      setExposedSystemsList((prev) => [...prev, trimmed]);
+    }
+    setCustomExposedRisk('');
   };
 
   const handleItemChange = (
@@ -327,26 +337,31 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
+  // Combine preset categories + any custom items added by user
+  const allExposedOptions = Array.from(
+    new Set([...EXPOSED_SYSTEM_CATEGORIES, ...exposedSystemsList])
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-rose-500/40 rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden my-8 max-h-[92vh] flex flex-col">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden my-8 max-h-[92vh] flex flex-col">
         {/* Top Legal Header Banner */}
-        <div className="px-6 py-4 bg-gradient-to-r from-rose-950/90 via-slate-900 to-slate-900 border-b border-rose-500/30 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
-              <Gavel className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Gavel className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black text-white tracking-tight">
+                <h2 className="text-base font-black text-white tracking-tight">
                   Georgia Service Contract Cancellation & Stop-Work Agreement
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-amber-300 border border-slate-700">
                   Rome • Floyd County, GA (O.C.G.A.)
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Mid-Job Liability Shield, As-Is Warranty Void, Quantum Meruit Settlement & Floyd County Lien Preservation
+                Mid-Job Liability Release, As-Is & Material Storage Risk Assumption, Quantum Meruit & Lien Preservation
               </p>
             </div>
           </div>
@@ -361,28 +376,28 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
         {/* Success View */}
         {createdCancellation ? (
           <div className="p-8 space-y-6 overflow-y-auto">
-            <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="p-6 rounded-2xl bg-slate-800/80 border border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
                   <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    Legal Stop-Work & Cancellation Instrument Generated
+                    Official Stop-Work & Cancellation Instrument Ready
                   </span>
                   <h3 className="text-xl font-black text-white mt-0.5">
                     {createdCancellation.cancellationNumber} • {createdCancellation.clientName}
                   </h3>
                   <p className="text-xs text-slate-300 mt-1">
-                    Cryptographic Seal: <span className="font-mono text-amber-300">{createdCancellation.sealCode}</span> •
+                    Registry Seal: <span className="font-mono text-amber-300">{createdCancellation.sealCode}</span> •
                     Floyd County Lien Protection Deadline:{' '}
-                    <span className="font-bold text-rose-300">{createdCancellation.lienRightsExpiresAt}</span> (90 Days under O.C.G.A. § 44-14-361.1)
+                    <span className="font-bold text-white">{createdCancellation.lienRightsExpiresAt}</span> (90 Days under O.C.G.A. § 44-14-361.1)
                   </p>
                 </div>
               </div>
               <div className="text-right shrink-0">
                 <div className="text-xs text-slate-400">Net Settlement Balance Due</div>
-                <div className="text-2xl font-black text-rose-400">
+                <div className="text-2xl font-black text-amber-400">
                   ${createdCancellation.settlementBalanceDue.toFixed(2)}
                 </div>
               </div>
@@ -409,8 +424,8 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
               </div>
               <div className="p-4 rounded-xl bg-slate-800/70 border border-slate-700">
                 <div className="text-xs text-slate-400">Warranty & Liability Status</div>
-                <div className="text-sm font-bold text-rose-400 mt-1 flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4" /> ALL WARRANTIES VOIDED (&ldquo;AS-IS&rdquo;)
+                <div className="text-sm font-bold text-slate-200 mt-1 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-amber-400" /> ALL WARRANTIES VOIDED (&ldquo;AS-IS&rdquo;)
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1">
                   Venue: Floyd County Superior Court, Rome, GA
@@ -442,7 +457,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                 </button>
                 <Link
                   href={`/cancellation/${createdCancellation.id}`}
-                  className="flex-1 px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-600/25 transition"
+                  className="flex-1 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Open Official Cancellation Contract & Print View
@@ -463,7 +478,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
         ) : (
           <form onSubmit={handleCreate} className="p-6 space-y-6 overflow-y-auto">
             {error && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -497,7 +512,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
               </div>
               <div>
                 <span className="text-slate-500 block">Governing Jurisdiction</span>
-                <span className="font-bold text-rose-300">Rome, Floyd County, GA</span>
+                <span className="font-bold text-slate-200">Rome, Floyd County, GA</span>
                 <span className="text-slate-400 block">O.C.G.A. Title 13 & Title 44 Lien Law</span>
               </div>
             </div>
@@ -506,7 +521,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
             <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-800 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Scale className="w-4 h-4 text-rose-400" />
+                  <Scale className="w-4 h-4 text-amber-400" />
                   1. Project Stop-Work Stage & Mid-Job Progress Valuation
                 </h3>
                 <button
@@ -542,7 +557,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                       setCompletionPercentage(recommendedPct);
                       handleRecalculateDefaultItems(nextStage, recommendedPct);
                     }}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   >
                     {(Object.keys(CANCELLATION_STAGE_LABELS) as CancellationStage[]).map((k) => (
                       <option key={k} value={k}>
@@ -559,7 +574,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                   <select
                     value={initiatedBy}
                     onChange={(e) => setInitiatedBy(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   >
                     <option value="client">Client / Property Owner Request (Mid-Contract Stop-Work)</option>
                     <option value="contractor">Contractor Stop-Work (Non-Payment / Unsafe Site / Interference)</option>
@@ -575,7 +590,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                     type="date"
                     value={stopWorkDate}
                     onChange={(e) => setStopWorkDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -596,7 +611,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                       const pct = Number(e.target.value);
                       setCompletionPercentage(pct);
                     }}
-                    className="w-full accent-rose-500"
+                    className="w-full accent-amber-500"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 mt-0.5">
                     <span>0% (Pre-Start)</span>
@@ -612,7 +627,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                   <select
                     value={reasonPreset}
                     onChange={(e) => setReasonPreset(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   >
                     {CANCELLATION_REASON_PRESETS.map((r) => (
                       <option key={r} value={r}>
@@ -625,21 +640,21 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                     placeholder="Or enter specific custom cancellation reason / field incident details..."
                     value={customReason}
                     onChange={(e) => setCustomReason(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Section 2: Mid-Job "As-Is" Demarcation, Completed Work & Unfinished Work Hazard Disclosure */}
-            <div className="p-5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-4">
+            {/* Section 2: Mid-Job "As-Is" Demarcation, Exposed Ceiling, T&G Storage & Warranty Voiding */}
+            <div className="p-5 rounded-xl bg-slate-800/40 border border-slate-700 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-rose-200 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-rose-400" />
-                  2. Mid-Job &ldquo;As-Is&rdquo; Demarcation, Exposed Systems & Complete Warranty Voiding
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-amber-400" />
+                  2. Client Assumes Risk For: Exposed Systems, T&G Material Storage & &ldquo;As-Is&rdquo; Demarcation
                 </h3>
-                <span className="text-[11px] text-rose-300 font-semibold">
-                  Protects against post-cancellation damage & third-party contractor claims
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Voids all warranties & shifts post-departure risk to Client
                 </span>
               </div>
 
@@ -652,35 +667,35 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                     rows={3}
                     value={workPerformedSummary}
                     onChange={(e) => setWorkPerformedSummary(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Unfinished Work Risks & Demobilization Condition Warning
+                    Unfinished Work Risks & Material Storage Warning
                   </label>
                   <textarea
                     rows={3}
                     value={unfinishedWorkRisks}
                     onChange={(e) => setUnfinishedWorkRisks(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-rose-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-rose-300 mb-2">
-                  Select All Unfinished / Exposed Systems Disclaimed Upon Mid-Job Departure:
+              <div className="space-y-2.5">
+                <label className="block text-xs font-semibold text-amber-300">
+                  Select All Unfinished Systems & On-Site Material Storage Risks Assumed Strictly by Client:
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {EXPOSED_SYSTEM_CATEGORIES.map((sys) => {
+                  {allExposedOptions.map((sys) => {
                     const checked = exposedSystemsList.includes(sys);
                     return (
                       <label
                         key={sys}
                         className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
                           checked
-                            ? 'bg-rose-500/15 border-rose-500/40 text-white'
+                            ? 'bg-amber-500/10 border-amber-500/40 text-white'
                             : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
@@ -688,12 +703,36 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                           type="checkbox"
                           checked={checked}
                           onChange={() => handleToggleExposedSystem(sys)}
-                          className="mt-0.5 accent-rose-500"
+                          className="mt-0.5 accent-amber-500"
                         />
                         <span>{sys}</span>
                       </label>
                     );
                   })}
+                </div>
+
+                {/* Add custom client-assumed risk item */}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={customExposedRisk}
+                    onChange={(e) => setCustomExposedRisk(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomExposedRisk();
+                      }
+                    }}
+                    placeholder="Add custom risk item (e.g., Unpainted exterior trim, Open attic access, Client-stored tile boxes)..."
+                    className="flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomExposedRisk}
+                    className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Risk Item
+                  </button>
                 </div>
               </div>
             </div>
@@ -783,7 +822,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(idx)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-slate-800 transition"
                         title="Remove line item"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -860,7 +899,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                       type="checkbox"
                       checked={generateSettlementInvoice}
                       onChange={(e) => setGenerateSettlementInvoice(e.target.checked)}
-                      className="accent-rose-500"
+                      className="accent-amber-500"
                     />
                     <span>
                       Automatically generate a formal <strong>Cancellation Settlement Invoice</strong> if a net balance is owed
@@ -893,15 +932,15 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                   )}
                   <div className="flex justify-between items-center pt-2 border-t border-slate-800 text-sm font-black">
                     <span className="text-white">Net Cancellation Settlement Due:</span>
-                    <span className="font-mono text-lg text-rose-400">
+                    <span className="font-mono text-lg text-amber-400">
                       ${settlementBalanceDue.toFixed(2)}
                     </span>
                   </div>
                   {settlementBalanceDue > 0 && (
-                    <div className="text-[11px] text-rose-300/90 pt-1 flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <div className="text-[11px] text-slate-400 pt-1 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 shrink-0 text-amber-400" />
                       <span>
-                        Floyd County Mechanics&apos; & Materialmen&apos;s Lien rights (O.C.G.A. § 44-14-361) remain strictly reserved until $
+                        Floyd County Mechanics&apos; & Materialmen&apos;s Lien rights (O.C.G.A. § 44-14-361) remain reserved until $
                         {settlementBalanceDue.toFixed(2)} is paid in cleared funds.
                       </span>
                     </div>
@@ -926,13 +965,13 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                 </button>
               </div>
               <textarea
-                rows={9}
+                rows={8}
                 value={terms}
                 onChange={(e) => {
                   setIsCustomTerms(true);
                   setTerms(e.target.value);
                 }}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px] leading-relaxed focus:border-rose-500 focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 font-mono text-[11px] leading-relaxed focus:border-amber-500 focus:outline-none"
               />
 
               <div className="pt-2">
@@ -944,7 +983,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
                   value={clientSignatureName}
                   onChange={(e) => setClientSignatureName(e.target.value)}
                   placeholder={`Leave blank to send to ${estimate.clientName} for remote signing, or type full legal name if signing in person...`}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm italic font-serif focus:border-rose-500 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm italic font-serif focus:border-amber-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -960,7 +999,7 @@ export const CancellationAgreementModal: React.FC<CancellationAgreementModalProp
               </button>
               <button
                 type="submit"
-                className="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-rose-600/25 transition"
+                className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center gap-2 shadow-lg transition"
               >
                 <Gavel className="w-4 h-4" />
                 Issue Georgia Cancellation & Stop-Work Agreement

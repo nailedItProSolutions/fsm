@@ -838,18 +838,18 @@ export default function WorkAgreementPage() {
               {(agreement.cancellationAgreementId || linkedEstimate?.cancellationAgreementId) ? (
                 <Link
                   href={`/cancellation/${agreement.cancellationAgreementId || linkedEstimate?.cancellationAgreementId}`}
-                  className="px-3.5 py-2 bg-rose-950/60 hover:bg-rose-900/70 border border-rose-700/60 text-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                  className="px-3.5 py-2 bg-[#181818] hover:bg-[#222] border border-[#c5a059]/40 text-[#c5a059] font-bold text-xs rounded-xl transition flex items-center gap-1.5"
                 >
-                  <Gavel className="w-4 h-4 text-rose-400" />
+                  <Gavel className="w-4 h-4 text-[#c5a059]" />
                   <span>View Cancellation Agreement</span>
                 </Link>
               ) : isAdmin && linkedEstimate ? (
                 <button
                   onClick={() => setShowCancelModal(true)}
-                  className="px-3.5 py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                  className="px-3.5 py-2 bg-[#181818] hover:bg-[#222] border border-[#333] text-[#c5a059] hover:text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5"
                   title="Issue Rome, Floyd County, GA Legally Protected Service Contract Cancellation & Stop-Work Agreement"
                 >
-                  <Gavel className="w-4 h-4 text-rose-400" />
+                  <Gavel className="w-4 h-4 text-[#c5a059]" />
                   <span>Cancel / Stop-Work Agreement</span>
                 </button>
               ) : null}

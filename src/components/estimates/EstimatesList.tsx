@@ -367,19 +367,19 @@ export const EstimatesList: React.FC = () => {
                       <Link
                         href={`/cancellation/${est.cancellationAgreementId}`}
                         target="_blank"
-                        className="bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-700/50 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                        className="bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-700/50 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
                         title="Open Georgia Service Contract Cancellation & Stop-Work Agreement"
                       >
-                        <Gavel className="w-3.5 h-3.5 text-rose-400" />
+                        <Gavel className="w-3.5 h-3.5 text-amber-400" />
                         <span>Cancellation Active</span>
                       </Link>
                     ) : (
                       <button
                         onClick={() => setCancellingEstimate(est)}
-                        className="bg-rose-950/30 hover:bg-rose-950/60 text-rose-300 border border-rose-800/40 font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1"
+                        className="bg-[#1c1c1c] hover:bg-[#252525] text-[#c5a059] border border-[#333333] font-bold text-[11px] px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1"
                         title="Issue Rome, Floyd County, GA Legally Protected Service Contract Cancellation & Stop-Work Agreement"
                       >
-                        <Gavel className="w-3.5 h-3.5 text-rose-400" />
+                        <Gavel className="w-3.5 h-3.5 text-[#c5a059]" />
                         <span>Cancel / Stop-Work</span>
                       </button>
                     )}
